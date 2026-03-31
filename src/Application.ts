@@ -71,9 +71,9 @@ export class Application {
         if (/^https?:\/\//i.test(source)) {
             const browser = new Browser({
                 settings: {
-                    errorCapture: BrowserErrorCaptureEnum.processLevel,
-                    // enableJavaScriptEvaluation: true,
-                    suppressInsecureJavaScriptEnvironmentWarning: true
+                    errorCapture: BrowserErrorCaptureEnum.tryAndCatch,
+                    enableJavaScriptEvaluation: true,
+                    suppressInsecureJavaScriptEnvironmentWarning: true,
                 },
             })
             const page = browser.newPage()

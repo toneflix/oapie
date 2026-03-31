@@ -95,11 +95,13 @@ describe('Application', () => {
         expect(mockedBrowserClass.instances).toHaveLength(2)
         expect(mockedBrowserClass.instances.map((instance) => instance.settings)).toEqual([
             {
-                errorCapture: BrowserErrorCaptureEnum.processLevel,
+                errorCapture: BrowserErrorCaptureEnum.tryAndCatch,
+                enableJavaScriptEvaluation: true,
                 suppressInsecureJavaScriptEnvironmentWarning: true,
             },
             {
-                errorCapture: BrowserErrorCaptureEnum.processLevel,
+                errorCapture: BrowserErrorCaptureEnum.tryAndCatch,
+                enableJavaScriptEvaluation: true,
                 suppressInsecureJavaScriptEnvironmentWarning: true,
             },
         ])

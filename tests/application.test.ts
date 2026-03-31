@@ -1,16 +1,69 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { Application } from '../src/Application'
-import axios from 'axios'
 import { createOpenApiDocumentFromReadmeOperations } from '../src/OpenApiTransform'
 import { extractReadmeOperationFromHtml } from '../src/ReadmeExtractor'
+import { Browser, BrowserErrorCaptureEnum, Window } from 'happy-dom'
 import { readFile } from 'node:fs/promises'
 
-vi.mock('axios', () => ({
-    default: {
-        get: vi.fn(),
-    },
-}))
+vi.mock('happy-dom', async () => {
+    const actual = await vi.importActual<typeof import('happy-dom')>('happy-dom')
+
+    class MockBrowserPage {
+        public mainFrame: { document: Window['document'] }
+
+        public constructor () {
+            const window = new actual.Window()
+
+            this.mainFrame = {
+                document: window.document,
+            }
+        }
+
+        public async goto (url: string): Promise<Response | null> {
+            const html = mockedRemoteHtml.get(url)
+
+            if (!html) {
+                throw new Error(`Unexpected URL: ${url}`)
+            }
+
+            this.mainFrame.document.write(html)
+
+            return null
+        }
+
+        public async waitUntilComplete (): Promise<void> {
+        }
+    }
+
+    class MockBrowser {
+        public static instances: MockBrowser[] = []
+        public readonly settings: { errorCapture?: unknown }
+        public readonly page = new MockBrowserPage()
+        public closed = false
+
+        public constructor (options?: { settings?: { errorCapture?: unknown } }) {
+            this.settings = options?.settings ?? {}
+            MockBrowser.instances.push(this)
+        }
+
+        public newPage (): MockBrowserPage {
+            return this.page
+        }
+
+        public async close (): Promise<void> {
+            this.closed = true
+        }
+    }
+
+    return {
+        ...actual,
+        Browser: MockBrowser,
+        BrowserErrorCaptureEnum: actual.BrowserErrorCaptureEnum,
+    }
+})
+
+const mockedRemoteHtml = new Map<string, string>()
 
 describe('Application', () => {
     it('keeps the root operation in crawl mode and reuses it when building the OpenAPI-like document', async () => {
@@ -18,19 +71,8 @@ describe('Application', () => {
         const siblingSource = 'https://docs.example.com/reference/jobs'
         const rootHtml = await readFile(new URL('./fixtures/readme-crawl-root.html', import.meta.url), 'utf8')
         const siblingHtml = await readFile(new URL('./fixtures/readme-text-response-example.html', import.meta.url), 'utf8')
-        const mockedAxiosGet = vi.mocked(axios.get)
-
-        mockedAxiosGet.mockImplementation(async (url) => {
-            if (url === rootSource) {
-                return { data: rootHtml }
-            }
-
-            if (url === siblingSource) {
-                return { data: siblingHtml }
-            }
-
-            throw new Error(`Unexpected URL: ${String(url)}`)
-        })
+        mockedRemoteHtml.set(rootSource, rootHtml)
+        mockedRemoteHtml.set(siblingSource, siblingHtml)
 
         const app = new Application()
         const loadedRootHtml = await app.loadHtmlSource(rootSource)
@@ -46,11 +88,16 @@ describe('Application', () => {
             rootSource,
             siblingSource,
         ])
-        expect(mockedAxiosGet).toHaveBeenCalledTimes(2)
-        expect(mockedAxiosGet.mock.calls.map(([url]) => url)).toEqual([
-            rootSource,
-            siblingSource,
+        const mockedBrowserClass = Browser as unknown as {
+            instances: Array<{ settings: { errorCapture?: unknown }, closed: boolean }>
+        }
+
+        expect(mockedBrowserClass.instances).toHaveLength(2)
+        expect(mockedBrowserClass.instances.map((instance) => instance.settings)).toEqual([
+            { errorCapture: BrowserErrorCaptureEnum.processLevel },
+            { errorCapture: BrowserErrorCaptureEnum.processLevel },
         ])
+        expect(mockedBrowserClass.instances.every((instance) => instance.closed)).toBe(true)
 
         const document = createOpenApiDocumentFromReadmeOperations(crawlResult.operations, 'Crawled API', '1.0.0')
 
@@ -87,5 +134,8 @@ describe('Application', () => {
                 },
             },
         })
+
+        mockedRemoteHtml.clear()
+        mockedBrowserClass.instances.length = 0
     })
 })

@@ -1,4 +1,4 @@
-import { OpenApiDocumentLike, OpenApiMediaType, OpenApiOperationLike, OpenApiResponse, OpenApiSchema } from './types/open-api'
+import { OpenApiDocumentLike, OpenApiMediaType, OpenApiOperationLike, OpenApiParameterLike, OpenApiResponse, OpenApiSchema } from './types/open-api'
 import type { ReadmeOperation, ReadmeParameter, ReadmeResponseBody } from './types/base'
 
 export const createOpenApiDocumentFromReadmeOperations = (
@@ -47,25 +47,39 @@ export const transformReadmeOperationToOpenApi = (
             summary,
             description: operation.description ?? undefined,
             operationId: buildOperationId(method, path),
+            parameters: createParameters(operation.requestParams),
             requestBody: createRequestBody(operation.requestParams, operation.requestExampleNormalized?.body),
             responses: createResponses(operation.responseSchemas, operation.responseBodies),
         },
     }
 }
 
+const createParameters = (
+    params: ReadmeParameter[]
+): OpenApiOperationLike['parameters'] | undefined => {
+    const parameters = params
+        .filter((param) => isOpenApiParameterLocation(param.in))
+        .map((param) => createParameter(param))
+
+    return parameters.length > 0 ? parameters : undefined
+}
+
 const createRequestBody = (
     params: ReadmeParameter[],
     example: unknown | null
 ): OpenApiOperationLike['requestBody'] | undefined => {
-    if (params.length === 0) {
+    const bodyParams = params.filter((param) => param.in === 'body' || param.in === null)
+
+    if (bodyParams.length === 0 && !isRecord(example)) {
         return undefined
     }
 
-    const properties = Object.fromEntries(params.map((param) => [
+    const properties = Object.fromEntries(bodyParams.map((param) => [
         param.name,
         createParameterSchema(param),
     ]))
-    const required = params.filter((param) => param.required).map((param) => param.name)
+    const required = bodyParams.filter((param) => param.required).map((param) => param.name)
+    const hasBodyParams = bodyParams.length > 0
 
     return {
         required: required.length > 0,
@@ -73,13 +87,24 @@ const createRequestBody = (
             'application/json': {
                 schema: {
                     type: 'object',
-                    properties,
-                    required,
+                    ...(hasBodyParams ? { properties } : {}),
+                    ...(required.length > 0 ? { required } : {}),
                     example: isRecord(example) ? example : undefined,
                 },
                 example: example ?? undefined,
             },
         },
+    }
+}
+
+const createParameter = (param: ReadmeParameter): OpenApiParameterLike => {
+    return {
+        name: param.name,
+        in: param.in as OpenApiParameterLike['in'],
+        required: param.in === 'path' ? true : param.required,
+        description: param.description ?? undefined,
+        schema: createParameterSchema(param),
+        example: param.defaultValue ?? undefined,
     }
 }
 
@@ -192,4 +217,8 @@ const buildOperationId = (method: string, path: string): string => {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const isOpenApiParameterLocation = (value: ReadmeParameter['in']): value is OpenApiParameterLike['in'] => {
+    return value === 'query' || value === 'header' || value === 'path' || value === 'cookie'
 }

@@ -7,6 +7,15 @@ export interface OpenApiSchema {
     example?: unknown
 }
 
+export interface OpenApiParameterLike {
+    name: string
+    in: 'query' | 'header' | 'path' | 'cookie'
+    required?: boolean
+    description?: string
+    schema?: OpenApiSchema
+    example?: unknown
+}
+
 export interface OpenApiMediaType {
     schema?: OpenApiSchema
     example?: unknown
@@ -21,6 +30,7 @@ export interface OpenApiOperationLike {
     summary?: string
     description?: string
     operationId?: string
+    parameters?: OpenApiParameterLike[]
     requestBody?: {
         required: boolean
         content: Record<string, OpenApiMediaType>

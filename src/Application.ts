@@ -1,4 +1,5 @@
-import axios from 'axios'
+import { Browser, BrowserErrorCaptureEnum } from 'happy-dom'
+
 import { extractReadmeOperationFromHtml } from './ReadmeExtractor'
 import path from 'node:path'
 import { readFile } from 'node:fs/promises'
@@ -68,11 +69,29 @@ export class Application {
         }
 
         if (/^https?:\/\//i.test(source)) {
-            const response = await axios.get<string>(source, {
-                responseType: 'text',
+            const browser = new Browser({
+                settings: {
+                    errorCapture: BrowserErrorCaptureEnum.processLevel,
+                    // enableJavaScriptEvaluation: true,
+                    suppressInsecureJavaScriptEnvironmentWarning: true
+                },
             })
+            const page = browser.newPage()
 
-            return response.data
+            try {
+                await page.goto(source)
+                await page.waitUntilComplete()
+
+                const html = page.mainFrame.document.querySelector('html')?.outerHTML
+
+                if (!html) {
+                    throw new Error(`Unable to extract HTML from remote source: ${source}`)
+                }
+
+                return html
+            } finally {
+                await browser.close()
+            }
         }
 
         const filePath = path.resolve(process.cwd(), source)

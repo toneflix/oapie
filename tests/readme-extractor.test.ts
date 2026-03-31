@@ -52,6 +52,7 @@ describe('extractReadmeOperationFromHtml', () => {
         expect(operation.requestParams).toEqual([
             {
                 name: 'first_name',
+                in: 'body',
                 type: 'string',
                 required: true,
                 defaultValue: 'John',
@@ -59,6 +60,7 @@ describe('extractReadmeOperationFromHtml', () => {
             },
             {
                 name: 'last_name',
+                in: 'body',
                 type: 'string',
                 required: true,
                 defaultValue: 'Doe',
@@ -66,6 +68,7 @@ describe('extractReadmeOperationFromHtml', () => {
             },
             {
                 name: 'email',
+                in: 'body',
                 type: 'string',
                 required: true,
                 defaultValue: 'johndoe@example.com',
@@ -73,6 +76,7 @@ describe('extractReadmeOperationFromHtml', () => {
             },
             {
                 name: 'country',
+                in: 'body',
                 type: 'string',
                 required: true,
                 defaultValue: 'NG',
@@ -323,6 +327,7 @@ describe('extractReadmeOperationFromHtml', () => {
                         summary: 'Create a Customer (Tier 0)',
                         description: 'This resource enables the creation of a new customer. A customer ID is returned which can be used for further actions within the Maplerad ecosystem.',
                         operationId: 'postV1Customers',
+                        parameters: undefined,
                         requestBody: {
                             required: true,
                             content: {
@@ -399,6 +404,7 @@ describe('extractReadmeOperationFromHtml', () => {
                         summary: 'Create a Customer (Tier 0)',
                         description: 'This resource enables the creation of a new customer. A customer ID is returned which can be used for further actions within the Maplerad ecosystem.',
                         operationId: 'postV1Customers',
+                        parameters: undefined,
                         requestBody: {
                             required: true,
                             content: {
@@ -456,6 +462,7 @@ describe('extractReadmeOperationFromHtml', () => {
                         summary: undefined,
                         description: 'Queue a background job.',
                         operationId: 'postJobs',
+                        parameters: undefined,
                         requestBody: undefined,
                         responses: {
                             '202': {

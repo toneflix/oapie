@@ -115,6 +115,7 @@ const extractRequestParams = (root: QueryableNode | null): ReadmeParameter[] => 
 
         return {
             name: name ?? '',
+            in: inferParameterLocation(param, label, root),
             type: inferParameterType(param, input),
             required: isRequiredParameter(param, input),
             defaultValue: readInputValue(input),
@@ -240,6 +241,68 @@ const resolveParameterInput = (
     const fallback = param.querySelector('input, textarea, select')
 
     return (byId ?? fallback) as AttributeQueryNode | null
+}
+
+const inferParameterLocation = (
+    param: HappyDomElement,
+    label: AttributedNode,
+    root: QueryableNode
+): ReadmeParameter['in'] => {
+    const fieldId = label.getAttribute('for')?.toLowerCase() ?? ''
+    const parentFieldsetId = param.closest('[id]')?.getAttribute('id')?.toLowerCase() ?? ''
+    const locationFromId = inferParameterLocationFromText(`${fieldId} ${parentFieldsetId}`)
+
+    if (locationFromId) {
+        return locationFromId
+    }
+
+    let current: HappyDomElement | null = param
+
+    while (current && current !== root) {
+        let sibling: HappyDomElement | null = current.previousElementSibling
+
+        while (sibling) {
+            if (sibling.tagName === 'HEADER') {
+                const locationFromHeader = inferParameterLocationFromText(readText(sibling) ?? '')
+
+                if (locationFromHeader) {
+                    return locationFromHeader
+                }
+            }
+
+            sibling = sibling.previousElementSibling
+        }
+
+        current = current.parentElement
+    }
+
+    return null
+}
+
+const inferParameterLocationFromText = (value: string): ReadmeParameter['in'] => {
+    const normalized = value.trim().toLowerCase()
+
+    if (normalized.includes('query params') || normalized.includes('query-')) {
+        return 'query'
+    }
+
+    if (normalized.includes('headers') || normalized.includes('header-')) {
+        return 'header'
+    }
+
+    if (normalized.includes('body params') || normalized.includes('request body') || normalized.includes('body-')) {
+        return 'body'
+    }
+
+    if (normalized.includes('path params') || normalized.includes('path-')) {
+        return 'path'
+    }
+
+    if (normalized.includes('cookie') || normalized.includes('cookie-')) {
+        return 'cookie'
+    }
+
+    return null
 }
 
 const inferParameterType = (

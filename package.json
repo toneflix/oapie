@@ -63,7 +63,6 @@
     "dependencies": {
         "@h3ravel/musket": "^0.10.1",
         "@h3ravel/shared": "^0.30.3",
-        "axios": "^1.13.5",
         "cli-table3": "^0.6.5",
         "dotenv": "^17.2.3",
         "happy-dom": "^20.8.9",

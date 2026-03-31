@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+
+<body>
+    <article id="content">
+        <header class="headline-container21aRBSn8Bqg6">
+            <div class="headline-container-article-info2GaOf2jMpV0r">
+                <span class="rm-APIMethod headline-container-api-method" data-testid="http-method">get</span>
+                <span data-testid="serverurl">https://api.example.com/customers</span>
+            </div>
+            <div class="rm-Markdown markdown-body grid-item excerptT2m-MzSJGRK7" data-testid="RDMD">
+                <p>Fetch a customer list.</p>
+            </div>
+        </header>
+    </article>
+
+    <div class="Sidebar1t2G1ZJq-vU1 rm-Sidebar hub-sidebar-content">
+        <section class="Sidebar-listWrapper6Q9_yUrG906C rm-Sidebar-section">
+            <h2 class="Sidebar-headingTRQyOa2pk0gh rm-Sidebar-heading">Customers</h2>
+            <ul class="rm-Sidebar-list">
+                <li><a class="rm-Sidebar-link active" aria-current="page" href="/reference/get-customers"><span
+                            class="Sidebar-link-text_label1gCT_uPnx7Gu">Get Customers</span><span
+                            data-testid="http-method">get</span></a></li>
+            </ul>
+        </section>
+    </div>
+
+    <section class="APIRequest3ZiZ6icF7aNH rm-PlaygroundRequest">
+        <header class="Flex Flex_row APIRequest-header1qZm0uqnEaFN">
+            <section>
+                <button type="button"><span class="Button-label">JavaScript Request</span></button>
+            </section>
+        </header>
+        <pre class="CodeSnippet"><div class="react-codemirror2 CodeEditor"><div class="CodeMirror"><div class="CodeMirror-code">
+            <div><pre class="CodeMirror-line"><span>await fetch("https://api.example.com/customers", {</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  method: "GET"</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  headers: {</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    "accept": "application/json"</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  },</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  body: JSON.stringify({</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    "limit": 20</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  })</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>})</span></pre>
+        </div>
+        </div>
+        </div>
+        </div>
+        </pre>
+    </section>
+
+    <section class="APIResponse3FBSi0-qfTQs rm-PlaygroundResponse">
+        <header class="Flex Flex_row APIResponse-header3Y3zkft15LCF">
+            <div class="APIResponse-header-title1t9Ud0xUwU_k">Response</div>
+        </header>
+        <div class="APIResponse-empty-examples31R-lIqoi1VN">
+            <div class="APIResponse-empty-examples-header3TsaXZxKJS3C">application/json</div>
+            <button type="button">
+                <span class="APIResponse-menu-status APIResponse-empty-examples-button-label2PSfvM6i4NUd">
+                    <span class="APIResponse-status-code3P_6g-mcLB3V">200</span>
+                    <span> - Result</span>
+                </span>
+            </button>
+        </div>
+        <div class="APIResponse_asCodeSnippet17b9royy9c6e">
+            <pre class="CodeSnippet"><div class="react-codemirror2 CodeEditor"><div class="CodeMirror"><div class="CodeMirror-code">
+                <div><pre class="CodeMirror-line"><span>{</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  "data": {</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    "id": "cus_123"</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  }</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>}</span></pre>
+        </div>
+        </div>
+        </div>
+        </div>
+        </pre>
+        </div>
+    </section>
+</body>
+
+</html>

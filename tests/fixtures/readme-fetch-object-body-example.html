@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+
+<body>
+    <article id="content">
+        <header>
+            <div>
+                <span data-testid="http-method">post</span>
+                <span data-testid="serverurl">https://api.example.com/customers/search</span>
+            </div>
+            <div data-testid="RDMD">
+                <p>Search customers.</p>
+            </div>
+        </header>
+    </article>
+
+    <section class="rm-PlaygroundRequest">
+        <header>
+            <section>
+                <button type="button"><span>JavaScript Request</span></button>
+            </section>
+        </header>
+        <pre
+            class="CodeSnippet"><div class="CodeMirror"><div class="CodeMirror-code">
+            <div><pre class="CodeMirror-line"><span>await fetch('https://api.example.com/customers/search', {</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  method: 'POST',</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  headers: {</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    accept: 'application/json',</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    'content-type': 'application/json',</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  },</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  body: {</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    query: 'ada',</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    include_inactive: false,</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    limit: 10,</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  },</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>})</span></pre>
+        </div>
+        </div>
+        </div>
+        </pre>
+    </section>
+</body>
+
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+
+<body>
+    <article id="content">
+        <header>
+            <div><span data-testid="http-method">get</span><span
+                    data-testid="serverurl">https://api.example.com/customers/cus_ok</span></div>
+            <div data-testid="RDMD">
+                <p>Fetch a single customer.</p>
+            </div>
+        </header>
+
+        <header id="response-schemas">
+            <div>Responses</div>
+        </header>
+        <section class="rm-APIResponseSchemaPicker" data-testid="accordion">
+            <div class="rm-APIResponseSchemaPicker-option">
+                <button type="button">
+                    <div>200</div>
+                    <div data-testid="RDMD">
+                        <p>Successful response</p>
+                    </div>
+                </button>
+            </div>
+            <div class="rm-APIResponseSchemaPicker-option">
+                <button type="button">
+                    <div>400</div>
+                    <div data-testid="RDMD">
+                        <p>Validation error</p>
+                    </div>
+                </button>
+            </div>
+        </section>
+    </article>
+
+    <section class="rm-PlaygroundResponse">
+        <header>
+            <div>Response</div>
+        </header>
+        <div>
+            <div>application/json</div>
+            <button type="button">
+                <span><span>200</span><span> - Result</span></span>
+            </button>
+            <button type="button">
+                <span><span>400</span><span> - Validation Error</span></span>
+            </button>
+        </div>
+        <div>
+            <pre class="CodeSnippet"><div class="CodeMirror"><div class="CodeMirror-code">
+                <div><pre class="CodeMirror-line"><span>{</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  "data": {</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    "id": "cus_ok"</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  }</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>}</span></pre>
+        </div>
+        </div>
+        </div>
+        </pre>
+        <pre class="CodeSnippet"><div class="CodeMirror"><div class="CodeMirror-code">
+                <div><pre class="CodeMirror-line"><span>{</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  "error": {</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>    "message": "Invalid customer id"</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>  }</span></pre>
+        </div>
+        <div>
+            <pre class="CodeMirror-line"><span>}</span></pre>
+        </div>
+        </div>
+        </div>
+        </pre>
+        </div>
+    </section>
+</body>
+
+</html>

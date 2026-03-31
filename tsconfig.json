@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./build",
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "paths": {
+      "src/*": ["./src/*"],
+      "ghit": ["./src/index.ts"],
+      "ghit/*": ["./src/*"]
+    }
+  },
+  "include": ["./**/*.d.ts", "./github/**/*", "./test/**/*", "./tests/**/*", "./src/**/*"],
+  "exclude": ["./build", "/.node_modules"]
+}

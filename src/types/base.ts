@@ -20,6 +20,7 @@ export interface TextNodeLike {
 export interface ReadmeParameter {
     name: string
     in: 'query' | 'header' | 'path' | 'cookie' | 'body' | null
+    path: string[]
     type: string | null
     required: boolean
     defaultValue: string | null

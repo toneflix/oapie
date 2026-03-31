@@ -126,4 +126,28 @@ describe('parse command', () => {
             await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
         }
     })
+
+    it('infers full nested request body depth from collapsed body examples', async () => {
+        const workspaceRoot = path.resolve(import.meta.dirname, '..')
+        const { stdout } = await execFileAsync(process.execPath, [
+            '--import',
+            'tsx',
+            'src/cli.ts',
+            'parse',
+            'tests/fixtures/anchor-example.html',
+            '--shape=openapi',
+            '--output=json',
+        ], {
+            cwd: workspaceRoot,
+        })
+        const document = JSON.parse(stdout)
+        const schema = document.paths['/api/v1/customers']?.post?.requestBody?.content?.['application/json']?.schema
+
+        expect(schema?.properties?.data?.properties?.type?.type).toBe('string')
+        expect(schema?.properties?.data?.properties?.attributes?.properties?.fullName?.properties?.firstName?.type).toBe('string')
+        expect(schema?.properties?.data?.properties?.attributes?.properties?.fullName?.properties?.lastName?.type).toBe('string')
+        expect(schema?.properties?.data?.properties?.attributes?.properties?.address?.properties?.country?.type).toBe('string')
+        expect(document.paths['/api/v1/customers']?.post?.responses['200']?.content?.['application/json']?.schema?.properties?.data?.properties?.type?.type).toBe('string')
+        expect(document.paths['/api/v1/customers']?.post?.responses['200']?.content?.['text/plain']).toBeUndefined()
+    })
 })

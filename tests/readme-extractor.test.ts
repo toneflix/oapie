@@ -53,6 +53,7 @@ describe('extractReadmeOperationFromHtml', () => {
             {
                 name: 'first_name',
                 in: 'body',
+                path: ['first_name'],
                 type: 'string',
                 required: true,
                 defaultValue: 'John',
@@ -61,6 +62,7 @@ describe('extractReadmeOperationFromHtml', () => {
             {
                 name: 'last_name',
                 in: 'body',
+                path: ['last_name'],
                 type: 'string',
                 required: true,
                 defaultValue: 'Doe',
@@ -69,6 +71,7 @@ describe('extractReadmeOperationFromHtml', () => {
             {
                 name: 'email',
                 in: 'body',
+                path: ['email'],
                 type: 'string',
                 required: true,
                 defaultValue: 'johndoe@example.com',
@@ -77,6 +80,7 @@ describe('extractReadmeOperationFromHtml', () => {
             {
                 name: 'country',
                 in: 'body',
+                path: ['country'],
                 type: 'string',
                 required: true,
                 defaultValue: 'NG',
@@ -229,6 +233,41 @@ describe('extractReadmeOperationFromHtml', () => {
         })
     })
 
+    it('extracts nested body parameter paths', async () => {
+        const html = await readFile(new URL('./fixtures/readme-nested-body-example.html', import.meta.url), 'utf8')
+        const operation = extractReadmeOperationFromHtml(html)
+
+        expect(operation.requestParams).toEqual([
+            {
+                name: 'first',
+                in: 'body',
+                path: ['data', 'name', 'first'],
+                type: 'string',
+                required: true,
+                defaultValue: 'Ada',
+                description: 'Customer first name.',
+            },
+            {
+                name: 'last',
+                in: 'body',
+                path: ['data', 'name', 'last'],
+                type: 'string',
+                required: true,
+                defaultValue: 'Lovelace',
+                description: 'Customer last name.',
+            },
+            {
+                name: 'email',
+                in: 'body',
+                path: ['data', 'email'],
+                type: 'string',
+                required: true,
+                defaultValue: 'ada@example.com',
+                description: 'Customer email address.',
+            },
+        ])
+    })
+
     it('keeps plain-text responses as text bodies', async () => {
         const html = await readFile(new URL('./fixtures/readme-text-response-example.html', import.meta.url), 'utf8')
         const operation = extractReadmeOperationFromHtml(html)
@@ -245,6 +284,28 @@ describe('extractReadmeOperationFromHtml', () => {
         ])
         expect(operation.responseExample).toBe('Accepted for processing')
         expect(operation.responseExampleRaw).toBe('Accepted for processing')
+    })
+
+    it('repairs truncated json response snippets when the response is clearly json-shaped', async () => {
+        const html = await readFile(new URL('./fixtures/anchor-example.html', import.meta.url), 'utf8')
+        const operation = extractReadmeOperationFromHtml(html)
+
+        expect(operation.responseBodies[0]).toEqual(expect.objectContaining({
+            format: 'json',
+            contentType: null,
+            statusCode: '200',
+        }))
+        expect(operation.responseBodies[0]?.body).toEqual(expect.objectContaining({
+            data: expect.objectContaining({
+                type: 'IndividualCustomer',
+                attributes: expect.objectContaining({
+                    fullName: expect.objectContaining({
+                        firstName: 'OMOTAYO',
+                        lastName: 'BRAHM-OLORUNOJE',
+                    }),
+                }),
+            }),
+        }))
     })
 
     it('aligns multiple response examples with their matching status labels', async () => {
@@ -478,6 +539,53 @@ describe('extractReadmeOperationFromHtml', () => {
                                 },
                             },
                         },
+                    },
+                },
+            },
+        })
+    })
+
+    it('builds nested request body schemas from nested body params', async () => {
+        const html = await readFile(new URL('./fixtures/readme-nested-body-example.html', import.meta.url), 'utf8')
+        const operation = extractReadmeOperationFromHtml(html)
+        const document = createOpenApiDocumentFromReadmeOperations([operation], 'Nested API', '1.0.0')
+
+        expect(document.paths['/v1/customers/nested']?.post?.requestBody).toEqual({
+            required: true,
+            content: {
+                'application/json': {
+                    schema: {
+                        type: 'object',
+                        properties: {
+                            data: {
+                                type: 'object',
+                                properties: {
+                                    name: {
+                                        type: 'object',
+                                        properties: {
+                                            first: {
+                                                type: 'string',
+                                                description: 'Customer first name.',
+                                                default: 'Ada',
+                                            },
+                                            last: {
+                                                type: 'string',
+                                                description: 'Customer last name.',
+                                                default: 'Lovelace',
+                                            },
+                                        },
+                                        required: ['first', 'last'],
+                                    },
+                                    email: {
+                                        type: 'string',
+                                        description: 'Customer email address.',
+                                        default: 'ada@example.com',
+                                    },
+                                },
+                                required: ['name', 'email'],
+                            },
+                        },
+                        required: ['data'],
                     },
                 },
             },

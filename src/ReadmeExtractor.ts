@@ -116,6 +116,7 @@ const extractRequestParams = (root: QueryableNode | null): ReadmeParameter[] => 
         return {
             name: name ?? '',
             in: inferParameterLocation(param, label, root),
+            path: inferParameterPath(label, name),
             type: inferParameterType(param, input),
             required: isRequiredParameter(param, input),
             defaultValue: readInputValue(input),
@@ -305,6 +306,23 @@ const inferParameterLocationFromText = (value: string): ReadmeParameter['in'] =>
     return null
 }
 
+const inferParameterPath = (
+    label: AttributedNode,
+    name: string | null
+): string[] => {
+    const fieldId = label.getAttribute('for') ?? ''
+    const suffix = fieldId.includes('_') ? fieldId.slice(fieldId.indexOf('_') + 1) : ''
+
+    if (suffix.includes('.')) {
+        return suffix
+            .split('.')
+            .map((segment) => segment.trim())
+            .filter((segment) => segment.length > 0)
+    }
+
+    return name ? [name] : []
+}
+
 const inferParameterType = (
     param: QueryableNode,
     input: AttributedNode | null
@@ -364,16 +382,18 @@ const normalizeResponseBody = (
     const trimmed = body.trim()
 
     if (contentType?.toLowerCase().includes('json') || /^(?:\{|\[)/.test(trimmed)) {
-        try {
+        const parsedBody = parsePossiblyTruncatedJson(trimmed)
+
+        if (parsedBody !== null) {
             return {
                 format: 'json',
-                body: JSON.parse(trimmed),
+                body: parsedBody,
             }
-        } catch {
-            return {
-                format: 'text',
-                body,
-            }
+        }
+
+        return {
+            format: 'text',
+            body,
         }
     }
 
@@ -630,6 +650,69 @@ const parseLooseStructuredValue = (value: string): unknown | null => {
     } catch {
         return null
     }
+}
+
+const parsePossiblyTruncatedJson = (value: string): unknown | null => {
+    const trimmed = value.trim()
+
+    if (!/^(?:\{|\[)/.test(trimmed)) {
+        return null
+    }
+
+    try {
+        return JSON.parse(trimmed)
+    } catch {
+        const repaired = `${trimmed}${buildMissingJsonClosers(trimmed)}`
+
+        try {
+            return JSON.parse(repaired)
+        } catch {
+            return null
+        }
+    }
+}
+
+const buildMissingJsonClosers = (value: string): string => {
+    const stack: string[] = []
+    let inString = false
+    let isEscaped = false
+
+    for (const character of value) {
+        if (isEscaped) {
+            isEscaped = false
+            continue
+        }
+
+        if (character === '\\') {
+            isEscaped = true
+            continue
+        }
+
+        if (character === '"') {
+            inString = !inString
+            continue
+        }
+
+        if (inString) {
+            continue
+        }
+
+        if (character === '{') {
+            stack.push('}')
+            continue
+        }
+
+        if (character === '[') {
+            stack.push(']')
+            continue
+        }
+
+        if ((character === '}' || character === ']') && stack[stack.length - 1] === character) {
+            stack.pop()
+        }
+    }
+
+    return stack.reverse().join('')
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {

@@ -3,6 +3,7 @@ export interface OpenApiSchema {
     description?: string
     default?: unknown
     properties?: Record<string, OpenApiSchema>
+    items?: OpenApiSchema
     required?: string[]
     example?: unknown
 }

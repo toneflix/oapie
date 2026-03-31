@@ -1,9 +1,9 @@
+import { Browser, BrowserErrorCaptureEnum, Window } from 'happy-dom'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Application } from '../src/Application'
 import { createOpenApiDocumentFromReadmeOperations } from '../src/OpenApiTransform'
 import { extractReadmeOperationFromHtml } from '../src/ReadmeExtractor'
-import { Browser, BrowserErrorCaptureEnum, Window } from 'happy-dom'
 import { readFile } from 'node:fs/promises'
 
 vi.mock('happy-dom', async () => {
@@ -12,7 +12,7 @@ vi.mock('happy-dom', async () => {
     class MockBrowserPage {
         public mainFrame: { document: Window['document'] }
 
-        public constructor () {
+        public constructor() {
             const window = new actual.Window()
 
             this.mainFrame = {
@@ -42,7 +42,7 @@ vi.mock('happy-dom', async () => {
         public readonly page = new MockBrowserPage()
         public closed = false
 
-        public constructor (options?: { settings?: { errorCapture?: unknown } }) {
+        public constructor(options?: { settings?: { errorCapture?: unknown } }) {
             this.settings = options?.settings ?? {}
             MockBrowser.instances.push(this)
         }
@@ -94,8 +94,14 @@ describe('Application', () => {
 
         expect(mockedBrowserClass.instances).toHaveLength(2)
         expect(mockedBrowserClass.instances.map((instance) => instance.settings)).toEqual([
-            { errorCapture: BrowserErrorCaptureEnum.processLevel },
-            { errorCapture: BrowserErrorCaptureEnum.processLevel },
+            {
+                errorCapture: BrowserErrorCaptureEnum.processLevel,
+                suppressInsecureJavaScriptEnvironmentWarning: true,
+            },
+            {
+                errorCapture: BrowserErrorCaptureEnum.processLevel,
+                suppressInsecureJavaScriptEnvironmentWarning: true,
+            },
         ])
         expect(mockedBrowserClass.instances.every((instance) => instance.closed)).toBe(true)
 

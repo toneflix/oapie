@@ -308,6 +308,40 @@ describe('extractReadmeOperationFromHtml', () => {
         }))
     })
 
+    it('repairs dedicated malformed response snippets without relying on Anchor-specific markup', async () => {
+        const html = await readFile(new URL('./fixtures/readme-truncated-json-response-example.html', import.meta.url), 'utf8')
+        const operation = extractReadmeOperationFromHtml(html)
+        const document = createOpenApiDocumentFromReadmeOperations([operation], 'Repair API', '1.0.0')
+
+        expect(operation.responseBodies).toEqual([
+            {
+                format: 'json',
+                contentType: null,
+                statusCode: '200',
+                label: '200 - OK',
+                body: {
+                    data: {
+                        id: 'evt_123',
+                        type: 'event',
+                        attributes: {
+                            status: 'processed',
+                        },
+                    },
+                },
+                rawBody: [
+                    '{',
+                    '  "data": {',
+                    '    "id": "evt_123",',
+                    '    "type": "event",',
+                    '    "attributes": {',
+                    '      "status": "processed"',
+                ].join('\n'),
+            },
+        ])
+        expect(document.paths['/events']?.get?.responses['200']?.content?.['application/json']?.schema?.properties?.data?.properties?.attributes?.properties?.status?.type).toBe('string')
+        expect(document.paths['/events']?.get?.responses['200']?.content?.['text/plain']).toBeUndefined()
+    })
+
     it('aligns multiple response examples with their matching status labels', async () => {
         const html = await readFile(new URL('./fixtures/readme-multi-response-example.html', import.meta.url), 'utf8')
         const operation = extractReadmeOperationFromHtml(html)

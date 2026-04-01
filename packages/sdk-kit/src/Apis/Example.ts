@@ -1,4 +1,4 @@
-import { ExampleApiResponse, ExampleInput } from 'sdk-core/contracts'
+import { ExampleApiResponse, ExampleInput } from '../Contracts'
 
 import { Core } from '../Core'
 import { CountryCode } from '../Contracts/Codes'

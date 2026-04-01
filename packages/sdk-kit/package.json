@@ -1,15 +1,15 @@
 {
-  "name": "@oapiex/sdk-core",
+  "name": "@oapiex/sdk-kit",
   "type": "module",
   "version": "0.1.1",
   "description": "A TypeScript Base for building SDKs using OpenAPI specifications extracted by OAPIEX.",
   "main": "./dist/index.cjs",
   "private": false,
-  "homepage": "https://toneflix.github.io/oapiex/sdk-core",
+  "homepage": "https://toneflix.github.io/oapiex/sdk-kit",
   "repository": {
     "url": "https://github.com/toneflix/oapiex.git",
     "type": "git",
-    "directory": "packages/sdk-core"
+    "directory": "packages/sdk-kit"
   },
   "publishConfig": {
     "access": "public"

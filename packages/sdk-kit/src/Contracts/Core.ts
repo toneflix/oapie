@@ -99,3 +99,11 @@ export interface InitOptions {
      */
     environment?: 'sandbox' | 'live'
 }
+
+export interface UserConfig {
+    environment?: 'sandbox' | 'live'
+    urls: {
+        live: string
+        sandbox: string
+    }
+}

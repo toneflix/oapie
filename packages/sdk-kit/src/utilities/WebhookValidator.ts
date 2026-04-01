@@ -1,6 +1,6 @@
-import '../utilities/global'
+import './global'
 
-import { XGenericObject } from 'sdk-core/contracts'
+import { XGenericObject } from '../Contracts'
 import crypto from 'crypto'
 
 export class WebhookValidator<Options extends XGenericObject = XGenericObject> {

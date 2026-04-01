@@ -43,8 +43,8 @@
     "toneflix"
   ],
   "scripts": {
-    "quick:test": "pnpm vitest",
-    "test": "pnpm run quick:test",
+    "test": "pnpm vitest --run",
+    "test:watch": "pnpm vitest",
     "coverage": "pnpm vitest --coverage",
     "lint": "eslint . --ext .ts --ext .js",
     "build": "tsdown",

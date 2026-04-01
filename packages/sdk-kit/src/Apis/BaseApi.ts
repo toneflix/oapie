@@ -1,5 +1,5 @@
 import { BadRequestException } from '../Exceptions/BadRequestException'
-import { Core } from '../Core'
+import type { Core } from '../Core'
 import { Example } from './Example'
 import { ForbiddenRequestException } from '../Exceptions/ForbiddenRequestException'
 import { Http } from '../Http'
@@ -26,10 +26,19 @@ export class BaseApi {
     /**
      * Create a BaseApi instance
      * 
-     * @param coreInstance Optional Core instance
+     * @param coreInstance Core instance
      */
-    constructor(coreInstance?: Core) {
-        this.#core = coreInstance ?? new Core()
+    constructor(coreInstance: Core) {
+        this.#core = coreInstance
+    }
+
+    /**
+     * Set access validator function
+     * 
+     * @param validator 
+     */
+    setAccessValidator (validator: (...args: any[]) => Promise<boolean | string>) {
+        this.#core.setAccessValidator(validator)
     }
 
     /**
@@ -63,12 +72,11 @@ export class BaseApi {
     /**
      * Initialize BaseApi and its sub-APIs
      * 
-     * @param coreInstance Optional Core instance
+     * @param coreInstance Core instance
      * @returns 
      */
-    static initialize (coreInstance?: Core) {
-
-        Http.setDebugLevel(coreInstance?.debugLevel)
+    static initialize (coreInstance: Core) {
+        Http.setDebugLevel(coreInstance.debugLevel)
 
         const baseApi = new BaseApi(coreInstance)
 

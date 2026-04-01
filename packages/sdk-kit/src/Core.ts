@@ -44,7 +44,12 @@ export class Core {
      */
     constructor(clientId?: InitOptions)
     constructor(clientId?: string, clientSecret?: string, encryptionKey?: string, env?: 'sandbox' | 'live')
-    constructor(clientId?: string | InitOptions, clientSecret?: string, encryptionKey?: string, env?: 'sandbox' | 'live') {
+    constructor(
+        clientId?: string | InitOptions,
+        clientSecret?: string,
+        encryptionKey?: string,
+        env?: 'sandbox' | 'live'
+    ) {
         if (typeof clientId === 'object') {
             this.clientId = clientId.clientId
             this.clientSecret = clientId.clientSecret
@@ -106,12 +111,17 @@ export class Core {
         return this.environment
     }
 
+    /**
+     * Set access validator function
+     * 
+     * @param validator 
+     */
     setAccessValidator (validator: (...args: any[]) => Promise<boolean | string>) {
         this.accessValidator = validator
     }
 
     async validateAccess () {
-        const check = this.accessValidator ? await this.accessValidator() : true
+        const check = this.accessValidator ? await this.accessValidator(this) : true
 
         if (check !== true) {
             throw new Error(typeof check === 'string' ? check : 'Access validation failed')

@@ -1,8 +1,8 @@
 import { ExampleApiResponse, ExampleInput } from '../Contracts'
 
-import { Core } from '../Core'
 import { CountryCode } from '../Contracts/Codes'
 import { Http } from '../Http'
+import type { Core } from '../Core'
 
 export class Example {
     #core: Core

@@ -62,4 +62,5 @@ declare global {
         truncate (n: number): string;
     }
 }
-export { } 
+
+export { }

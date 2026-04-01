@@ -3,6 +3,7 @@ import { OpenApiMediaType, OpenApiOperationLike, OpenApiResponse, OpenApiSchema 
 
 import type { Element as HappyDomElement } from 'happy-dom'
 import { Window } from 'happy-dom'
+import { isRecord } from './Core'
 import { parsePossiblyTruncatedJson } from './JsonRepair'
 
 export const extractReadmeOperationFromHtml = (html: string): ReadmeOperation => {
@@ -37,7 +38,7 @@ export const extractReadmeOperationFromHtml = (html: string): ReadmeOperation =>
     return mergeReadmeOperations(extractedOperation, ssrPropsOperation)
 }
 
-const mergeReadmeOperations = (
+export const mergeReadmeOperations = (
     primary: ReadmeOperation,
     fallback: ReadmeOperation | null
 ): ReadmeOperation => {
@@ -61,7 +62,9 @@ const mergeReadmeOperations = (
     }
 }
 
-const extractReadmeOperationFromSsrProps = (document: Window['document']): ReadmeOperation | null => {
+export const extractReadmeOperationFromSsrProps = (
+    document: Window['document']
+): ReadmeOperation | null => {
     const rawSsrProps = document.querySelector('script#ssr-props')?.textContent?.trim()
 
     if (!rawSsrProps) {
@@ -76,7 +79,9 @@ const extractReadmeOperationFromSsrProps = (document: Window['document']): Readm
         return null
     }
 
-    const apiDocument = isRecord(ssrProps) && isRecord(ssrProps.document) ? ssrProps.document.api : null
+    const apiDocument = isRecord(ssrProps) && isRecord(ssrProps.document)
+        ? ssrProps.document.api
+        : null
 
     if (!isRecord(apiDocument)) {
         return null
@@ -115,7 +120,7 @@ const extractReadmeOperationFromSsrProps = (document: Window['document']): Readm
     }
 }
 
-const extractOperationParametersFromOpenApi = (
+export const extractOperationParametersFromOpenApi = (
     parameters: OpenApiOperationLike['parameters'] | undefined
 ): ReadmeParameter[] => {
     if (!parameters) {
@@ -135,7 +140,7 @@ const extractOperationParametersFromOpenApi = (
     }))
 }
 
-const resolveSsrOperation = (
+export const resolveSsrOperation = (
     schema: Record<string, unknown> | null,
     path: string | null,
     method: string | null
@@ -153,7 +158,7 @@ const resolveSsrOperation = (
     return pathItem[method] as unknown as OpenApiOperationLike
 }
 
-const buildOperationUrl = (serverUrl: string | null, path: string | null): string | null => {
+export const buildOperationUrl = (serverUrl: string | null, path: string | null): string | null => {
     if (!serverUrl || !path) {
         return null
     }
@@ -161,7 +166,7 @@ const buildOperationUrl = (serverUrl: string | null, path: string | null): strin
     return `${serverUrl.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`
 }
 
-const extractRequestParamsFromOpenApi = (
+export const extractRequestParamsFromOpenApi = (
     requestBody: OpenApiOperationLike['requestBody'] | undefined
 ): ReadmeParameter[] => {
     const schema = requestBody?.content?.['application/json']?.schema
@@ -173,7 +178,7 @@ const extractRequestParamsFromOpenApi = (
     return flattenOpenApiSchemaProperties(schema)
 }
 
-const flattenOpenApiSchemaProperties = (
+export const flattenOpenApiSchemaProperties = (
     schema: OpenApiSchema,
     path: string[] = []
 ): ReadmeParameter[] => {
@@ -209,7 +214,7 @@ const flattenOpenApiSchemaProperties = (
     return params
 }
 
-const extractResponseSchemasFromOpenApi = (
+export const extractResponseSchemasFromOpenApi = (
     responses: Record<string, OpenApiResponse>
 ): ReadmeResponseSchema[] => {
     return Object.entries(responses).map(([statusCode, response]) => ({
@@ -218,7 +223,7 @@ const extractResponseSchemasFromOpenApi = (
     }))
 }
 
-const extractResponseBodiesFromOpenApi = (
+export const extractResponseBodiesFromOpenApi = (
     responses: Record<string, OpenApiResponse>
 ): ReadmeResponseBody[] => {
     const bodies: ReadmeResponseBody[] = []
@@ -248,7 +253,7 @@ const extractResponseBodiesFromOpenApi = (
     return bodies
 }
 
-const resolveOpenApiMediaExample = (mediaType: OpenApiMediaType): unknown | null => {
+export const resolveOpenApiMediaExample = (mediaType: OpenApiMediaType): unknown | null => {
     if (mediaType.example !== undefined) {
         return mediaType.example
     }
@@ -272,7 +277,7 @@ const resolveOpenApiMediaExample = (mediaType: OpenApiMediaType): unknown | null
     return null
 }
 
-const extractOperationDescription = (root: QueryableNode): string | null => {
+export const extractOperationDescription = (root: QueryableNode): string | null => {
     const header = root.querySelector('header')
 
     if (!header) {
@@ -284,7 +289,7 @@ const extractOperationDescription = (root: QueryableNode): string | null => {
     return readText(markdownBlocks[markdownBlocks.length - 1] ?? null)
 }
 
-const extractRequestCodeSnippets = (root: QueryableNode | null): ReadmeCodeSnippet[] => {
+export const extractRequestCodeSnippets = (root: QueryableNode | null): ReadmeCodeSnippet[] => {
     if (!root) {
         return []
     }
@@ -297,7 +302,7 @@ const extractRequestCodeSnippets = (root: QueryableNode | null): ReadmeCodeSnipp
     }))
 }
 
-const extractResponseBodies = (root: QueryableNode | null): ReadmeResponseBody[] => {
+export const extractResponseBodies = (root: QueryableNode | null): ReadmeResponseBody[] => {
     if (!root) {
         return []
     }
@@ -322,7 +327,7 @@ const extractResponseBodies = (root: QueryableNode | null): ReadmeResponseBody[]
     })
 }
 
-const extractSidebarLinks = (root: QueryableNode | null): ReadmeSidebarLink[] => {
+export const extractSidebarLinks = (root: QueryableNode | null): ReadmeSidebarLink[] => {
     if (!root) {
         return []
     }
@@ -342,7 +347,7 @@ const extractSidebarLinks = (root: QueryableNode | null): ReadmeSidebarLink[] =>
     }).filter((link) => link.label.length > 0)
 }
 
-const extractRequestParams = (root: QueryableNode | null): ReadmeParameter[] => {
+export const extractRequestParams = (root: QueryableNode | null): ReadmeParameter[] => {
     if (!root) {
         return []
     }
@@ -364,7 +369,7 @@ const extractRequestParams = (root: QueryableNode | null): ReadmeParameter[] => 
     }).filter((param) => param.name.length > 0)
 }
 
-const extractResponseSchemas = (root: QueryableNode): ReadmeResponseSchema[] => {
+export const extractResponseSchemas = (root: QueryableNode): ReadmeResponseSchema[] => {
     const section = root.querySelector('#response-schemas')
     const picker = section?.nextElementSibling
 
@@ -384,13 +389,13 @@ const extractResponseSchemas = (root: QueryableNode): ReadmeResponseSchema[] => 
     }).filter((schema) => schema.statusCode !== null)
 }
 
-const extractCodeSnippets = (root: QueryableNode): string[] => {
+export const extractCodeSnippets = (root: QueryableNode): string[] => {
     return Array.from(root.querySelectorAll('.CodeSnippet'))
         .map((snippet) => extractCodeMirrorText(snippet))
         .filter((snippet): snippet is string => Boolean(snippet))
 }
 
-const extractCodeMirrorText = (root: QueryableNode | null): string | null => {
+export const extractCodeMirrorText = (root: QueryableNode | null): string | null => {
     if (!root) {
         return null
     }
@@ -407,7 +412,7 @@ const extractCodeMirrorText = (root: QueryableNode | null): string | null => {
         .trimEnd() || null
 }
 
-const extractRequestSnippetLabel = (root: QueryableNode): string | null => {
+export const extractRequestSnippetLabel = (root: QueryableNode): string | null => {
     const header = root.querySelector('header')
 
     if (!header) {
@@ -421,7 +426,7 @@ const extractRequestSnippetLabel = (root: QueryableNode): string | null => {
     return buttonTexts.find((text) => text.toLowerCase() !== 'examples') ?? buttonTexts[0] ?? null
 }
 
-const readInputValue = (element: AttributedNode | null): string | null => {
+export const readInputValue = (element: AttributedNode | null): string | null => {
     if (!element) {
         return null
     }
@@ -429,7 +434,7 @@ const readInputValue = (element: AttributedNode | null): string | null => {
     return element.getAttribute('value')?.trim() || null
 }
 
-const extractSidebarLinkLabel = (link: QueryableNode, method: string | null): string => {
+export const extractSidebarLinkLabel = (link: QueryableNode, method: string | null): string => {
     const candidates = readTexts(link.querySelectorAll('span'))
         .filter((text) => !method || text.toUpperCase() !== method)
         .sort((left, right) => right.length - left.length)
@@ -437,13 +442,13 @@ const extractSidebarLinkLabel = (link: QueryableNode, method: string | null): st
     return candidates[0] ?? readText(link) ?? ''
 }
 
-const extractResponseContentTypes = (root: QueryableNode): string[] => {
+export const extractResponseContentTypes = (root: QueryableNode): string[] => {
     const texts = readTexts(root.querySelectorAll('div'))
 
     return texts.filter((text) => /^[\w.+-]+\/[\w.+-]+$/i.test(text))
 }
 
-const extractResponseLabels = (root: QueryableNode): string[] => {
+export const extractResponseLabels = (root: QueryableNode): string[] => {
     const statusElements = Array.from(root.querySelectorAll('button, [role="button"]'))
         .map((element) => extractButtonText(element))
         .filter((text): text is string => Boolean(text))
@@ -451,7 +456,7 @@ const extractResponseLabels = (root: QueryableNode): string[] => {
     return statusElements.filter((text) => /\b\d{3}\b/.test(text))
 }
 
-const findParameterRoot = (
+export const findParameterRoot = (
     label: HappyDomElement,
     root: QueryableNode
 ): HappyDomElement => {
@@ -472,7 +477,7 @@ const findParameterRoot = (
     return label
 }
 
-const resolveParameterInput = (
+export const resolveParameterInput = (
     param: QueryableNode,
     label: AttributedNode
 ): AttributeQueryNode | null => {
@@ -483,7 +488,7 @@ const resolveParameterInput = (
     return (byId ?? fallback) as AttributeQueryNode | null
 }
 
-const inferParameterLocation = (
+export const inferParameterLocation = (
     param: HappyDomElement,
     label: AttributedNode,
     root: QueryableNode
@@ -519,7 +524,7 @@ const inferParameterLocation = (
     return null
 }
 
-const inferParameterLocationFromText = (value: string): ReadmeParameter['in'] => {
+export const inferParameterLocationFromText = (value: string): ReadmeParameter['in'] => {
     const normalized = value.trim().toLowerCase()
 
     if (normalized.includes('query params') || normalized.includes('query-')) {
@@ -545,7 +550,7 @@ const inferParameterLocationFromText = (value: string): ReadmeParameter['in'] =>
     return null
 }
 
-const inferParameterPath = (
+export const inferParameterPath = (
     label: AttributedNode,
     name: string | null
 ): string[] => {
@@ -562,7 +567,7 @@ const inferParameterPath = (
     return name ? [name] : []
 }
 
-const inferParameterType = (
+export const inferParameterType = (
     param: QueryableNode,
     input: AttributedNode | null
 ): string | null => {
@@ -591,7 +596,7 @@ const inferParameterType = (
     return null
 }
 
-const isRequiredParameter = (
+export const isRequiredParameter = (
     param: QueryableNode,
     input: AttributeQueryNode | null
 ): boolean => {
@@ -602,7 +607,7 @@ const isRequiredParameter = (
     return readTexts(param.querySelectorAll('*')).some((text) => text.toLowerCase() === 'required')
 }
 
-const extractParameterDescription = (param: QueryableNode): string | null => {
+export const extractParameterDescription = (param: QueryableNode): string | null => {
     const description = param.querySelector('[id$="__description"]')
 
     if (description) {
@@ -614,7 +619,7 @@ const extractParameterDescription = (param: QueryableNode): string | null => {
     return readText(markdownBlocks[0] ?? null)
 }
 
-const normalizeResponseBody = (
+export const normalizeResponseBody = (
     body: string,
     contentType: string | null
 ): Pick<ReadmeResponseBody, 'format' | 'body'> => {
@@ -642,7 +647,7 @@ const normalizeResponseBody = (
     }
 }
 
-const normalizeRequestCodeSnippet = (
+export const normalizeRequestCodeSnippet = (
     snippet: ReadmeCodeSnippet | null
 ): ReadmeOperation['requestExampleNormalized'] => {
     if (!snippet) {
@@ -660,7 +665,9 @@ const normalizeRequestCodeSnippet = (
     }
 }
 
-const normalizeCurlSnippet = (snippet: ReadmeCodeSnippet): ReadmeOperation['requestExampleNormalized'] => {
+export const normalizeCurlSnippet = (
+    snippet: ReadmeCodeSnippet
+): ReadmeOperation['requestExampleNormalized'] => {
     if (!snippet.body.startsWith('curl ')) {
         return null
     }
@@ -686,7 +693,9 @@ const normalizeCurlSnippet = (snippet: ReadmeCodeSnippet): ReadmeOperation['requ
     }
 }
 
-const normalizeFetchSnippet = (snippet: ReadmeCodeSnippet): ReadmeOperation['requestExampleNormalized'] => {
+export const normalizeFetchSnippet = (
+    snippet: ReadmeCodeSnippet
+): ReadmeOperation['requestExampleNormalized'] => {
     const fetchMatch = snippet.body.match(/fetch\(\s*(["'])(.*?)\1\s*,\s*\{([\s\S]*)\}\s*\)/)
 
     if (!fetchMatch) {
@@ -711,7 +720,7 @@ const normalizeFetchSnippet = (snippet: ReadmeCodeSnippet): ReadmeOperation['req
     }
 }
 
-const extractFetchHeaders = (optionsBody: string): Record<string, string> => {
+export const extractFetchHeaders = (optionsBody: string): Record<string, string> => {
     const headersBlock = extractObjectPropertyValue(optionsBody, 'headers')
 
     if (!headersBlock) {
@@ -730,11 +739,11 @@ const extractFetchHeaders = (optionsBody: string): Record<string, string> => {
     ]))
 }
 
-const extractFetchBody = (optionsBody: string): string | null => {
+export const extractFetchBody = (optionsBody: string): string | null => {
     return extractObjectPropertyValue(optionsBody, 'body')
 }
 
-const normalizeStructuredRequestBody = (
+export const normalizeStructuredRequestBody = (
     body: string,
     contentType: string | null
 ): Pick<ReadmeResponseBody, 'format' | 'body'> => {
@@ -750,7 +759,7 @@ const normalizeStructuredRequestBody = (
     return normalizeResponseBody(body, contentType)
 }
 
-const extractObjectPropertyValue = (source: string, propertyName: string): string | null => {
+export const extractObjectPropertyValue = (source: string, propertyName: string): string | null => {
     const propertyMatch = source.match(new RegExp(`\\b${propertyName}\\s*:`, 'm'))
 
     if (!propertyMatch || propertyMatch.index === undefined) {
@@ -790,7 +799,7 @@ const extractObjectPropertyValue = (source: string, propertyName: string): strin
     return bareValue?.trim() ?? null
 }
 
-const extractBalancedSegment = (
+export const extractBalancedSegment = (
     source: string,
     startIndex: number,
     openChar: string,
@@ -843,7 +852,7 @@ const extractBalancedSegment = (
     return null
 }
 
-const extractStringLiteralValue = (source: string, startIndex: number): string | null => {
+export const extractStringLiteralValue = (source: string, startIndex: number): string | null => {
     const quoteChar = source[startIndex]
     let value = ''
     let isEscaped = false
@@ -872,7 +881,7 @@ const extractStringLiteralValue = (source: string, startIndex: number): string |
     return null
 }
 
-const parseLooseStructuredValue = (value: string): unknown | null => {
+export const parseLooseStructuredValue = (value: string): unknown | null => {
     const trimmed = value.trim()
 
     if (!/^[[{]/.test(trimmed)) {
@@ -891,27 +900,23 @@ const parseLooseStructuredValue = (value: string): unknown | null => {
     }
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-const escapeSelector = (value: string): string => {
+export const escapeSelector = (value: string): string => {
     return value.replace(/([#.:[\],=])/g, '\\$1')
 }
 
-const readText = (element: TextNodeLike | null): string | null => {
+export const readText = (element: TextNodeLike | null): string | null => {
     const value = element?.textContent?.replace(/\s+/g, ' ').trim()
 
     return value ? value : null
 }
 
-const readTexts = (elements: Iterable<TextNodeLike>): string[] => {
+export const readTexts = (elements: Iterable<TextNodeLike>): string[] => {
     return Array.from(elements)
         .map((element) => readText(element))
         .filter((value): value is string => Boolean(value))
 }
 
-const extractButtonText = (element: QueryableNode): string | null => {
+export const extractButtonText = (element: QueryableNode): string | null => {
     const texts = readTexts(element.querySelectorAll('span, div, code'))
         .filter((text) => text.trim().length > 0)
 

@@ -1,6 +1,7 @@
 import { OpenApiDocumentLike, OpenApiMediaType, OpenApiOperationLike, OpenApiParameterLike, OpenApiResponse, OpenApiSchema } from './types/open-api'
 import type { ReadmeOperation, ReadmeParameter, ReadmeResponseBody } from './types/base'
 
+import { isRecord } from './Core'
 import { parsePossiblyTruncatedJson } from './JsonRepair'
 
 export const createOpenApiDocumentFromReadmeOperations = (
@@ -30,7 +31,7 @@ export const createOpenApiDocumentFromReadmeOperations = (
     }
 }
 
-const shouldSkipNormalizedOperation = (
+export const shouldSkipNormalizedOperation = (
     normalized: { path: string, method: string, operation: OpenApiOperationLike }
 ): boolean => {
     return normalized.path === '/'
@@ -74,7 +75,7 @@ export const transformReadmeOperationToOpenApi = (
     }
 }
 
-const shouldSkipPlaceholderOperation = (
+export const shouldSkipPlaceholderOperation = (
     url: URL,
     operation: ReadmeOperation
 ): boolean => {
@@ -88,7 +89,7 @@ const shouldSkipPlaceholderOperation = (
         && operation.requestExampleNormalized?.url === 'https://example.com/'
 }
 
-const decodeOpenApiPathname = (pathname: string): string => {
+export const decodeOpenApiPathname = (pathname: string): string => {
     return pathname
         .split('/')
         .map((segment) => {
@@ -105,11 +106,11 @@ const decodeOpenApiPathname = (pathname: string): string => {
         .join('/')
 }
 
-const hasExtractedBodyParams = (params: ReadmeParameter[]): boolean => {
+export const hasExtractedBodyParams = (params: ReadmeParameter[]): boolean => {
     return params.some((param) => param.in === 'body' || param.in === null)
 }
 
-const createParameters = (
+export const createParameters = (
     params: ReadmeParameter[]
 ): OpenApiOperationLike['parameters'] | undefined => {
     const parameters = params
@@ -119,7 +120,7 @@ const createParameters = (
     return parameters.length > 0 ? parameters : undefined
 }
 
-const createRequestBody = (
+export const createRequestBody = (
     params: ReadmeParameter[],
     example: unknown | null,
     fallbackExample: unknown | null
@@ -144,7 +145,7 @@ const createRequestBody = (
     }
 }
 
-const buildRequestBodySchema = (
+export const buildRequestBodySchema = (
     params: ReadmeParameter[],
     example: unknown | null,
     fallbackExample: unknown | null
@@ -167,7 +168,7 @@ const buildRequestBodySchema = (
     return schema
 }
 
-const inferSchemaFromExample = (value: unknown): OpenApiSchema | undefined => {
+export const inferSchemaFromExample = (value: unknown): OpenApiSchema | undefined => {
     if (Array.isArray(value)) {
         return {
             type: 'array',
@@ -215,7 +216,7 @@ const inferSchemaFromExample = (value: unknown): OpenApiSchema | undefined => {
     return undefined
 }
 
-const insertRequestBodyParam = (
+export const insertRequestBodyParam = (
     rootSchema: OpenApiSchema,
     param: ReadmeParameter
 ): void => {
@@ -248,7 +249,7 @@ const insertRequestBodyParam = (
     }
 }
 
-const createParameter = (param: ReadmeParameter): OpenApiParameterLike => {
+export const createParameter = (param: ReadmeParameter): OpenApiParameterLike => {
     return {
         name: param.name,
         in: param.in as OpenApiParameterLike['in'],
@@ -259,7 +260,7 @@ const createParameter = (param: ReadmeParameter): OpenApiParameterLike => {
     }
 }
 
-const createParameterSchema = (param: ReadmeParameter): OpenApiSchema => {
+export const createParameterSchema = (param: ReadmeParameter): OpenApiSchema => {
     return {
         type: param.type ?? undefined,
         description: param.description ?? undefined,
@@ -267,7 +268,7 @@ const createParameterSchema = (param: ReadmeParameter): OpenApiSchema => {
     }
 }
 
-const createResponses = (
+export const createResponses = (
     schemas: ReadmeOperation['responseSchemas'],
     responseBodies: ReadmeResponseBody[]
 ): Record<string, OpenApiResponse> => {
@@ -303,7 +304,7 @@ const createResponses = (
     return responses
 }
 
-const createResponseContent = (
+export const createResponseContent = (
     bodies: ReadmeResponseBody[]
 ): Record<string, OpenApiMediaType> | undefined => {
     if (bodies.length === 0) {
@@ -324,7 +325,7 @@ const createResponseContent = (
     return content
 }
 
-const inferSchemaFromBody = (
+export const inferSchemaFromBody = (
     body: unknown,
     format: ReadmeResponseBody['format']
 ): OpenApiSchema | undefined => {
@@ -342,7 +343,7 @@ const inferSchemaFromBody = (
     return undefined
 }
 
-const resolveFallbackRequestBodyExample = (operation: ReadmeOperation): unknown | null => {
+export const resolveFallbackRequestBodyExample = (operation: ReadmeOperation): unknown | null => {
     const jsonResponseBody = operation.responseBodies.find((body) => body.format === 'json')?.body
 
     if (jsonResponseBody != null) {
@@ -364,7 +365,7 @@ const resolveFallbackRequestBodyExample = (operation: ReadmeOperation): unknown 
     return null
 }
 
-const createExampleSchema = (value: unknown): OpenApiSchema | null => {
+export const createExampleSchema = (value: unknown): OpenApiSchema | null => {
     if (value == null) {
         return null
     }
@@ -372,7 +373,7 @@ const createExampleSchema = (value: unknown): OpenApiSchema | null => {
     return inferSchemaFromExample(value) ?? null
 }
 
-const mergeOpenApiSchemas = (
+export const mergeOpenApiSchemas = (
     left: OpenApiSchema | null,
     right: OpenApiSchema | null
 ): OpenApiSchema | null => {
@@ -416,7 +417,7 @@ const mergeOpenApiSchemas = (
     return merged
 }
 
-const buildOperationId = (method: string, path: string): string => {
+export const buildOperationId = (method: string, path: string): string => {
     const normalizedPath = path
         .replace(/\{([^}]+)\}/g, '$1')
         .split('/')
@@ -430,10 +431,6 @@ const buildOperationId = (method: string, path: string): string => {
     return `${method}${normalizedPath}`
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-const isOpenApiParameterLocation = (value: ReadmeParameter['in']): value is OpenApiParameterLike['in'] => {
+export const isOpenApiParameterLocation = (value: ReadmeParameter['in']): value is OpenApiParameterLike['in'] => {
     return value === 'query' || value === 'header' || value === 'path' || value === 'cookie'
 }

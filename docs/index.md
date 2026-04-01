@@ -1,0 +1,63 @@
+---
+layout: home
+
+hero:
+  name: 'OAPIE'
+  tagline: 'A CLI and library for extracting OpenAPI documents from ReadMe powered API docs.'
+  text: OpenAPI Extraction Toolkit
+  actions:
+    - theme: brand
+      text: Get Started
+      link: /guide/getting-started
+    - theme: alt
+      text: CLI Reference
+      link: /reference/cli
+
+features:
+  - title: Remote and local parsing
+    details: Parse saved HTML files or live documentation URLs with one CLI.
+  - title: OpenAPI generation
+    details: Convert extracted operations into raw payloads or OpenAPI-shaped documents.
+  - title: Crawl-aware extraction
+    details: Reuse a shared browser session while crawling linked reference pages.
+---
+
+## Install
+
+::: code-group
+
+```bash [pnpm]
+pnpm add -g oapie
+```
+
+```bash [npm]
+npm i -g oapie
+```
+
+```bash [yarn]
+yarn global add oapie
+```
+
+:::
+
+Or install it in a project for programmatic usage:
+
+::: code-group
+
+```bash [pnpm]
+pnpm add oapie
+```
+
+```bash [npm]
+npm i oapie
+```
+
+```bash [yarn]
+yarn add oapie
+```
+
+:::
+
+## Start Here
+
+[Getting Started](/guide/getting-started) | [Extraction Flow](/guide/extraction-flow) | [CLI Reference](/reference/cli) | [Programmatic Usage](/reference/programmatic-usage) | [Configuration Reference](/reference/configuration)

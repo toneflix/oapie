@@ -204,6 +204,7 @@ const browser = async (
         }
     } else if (config.browser === 'puppeteer') {
         const activeSession = getBrowserSession()
+        const browserTimeout = Math.max(config.requestTimeout, 30000)
         let browserInstance = activeSession?.browser === 'puppeteer'
             ? activeSession.puppeteerBrowser
             : undefined
@@ -235,17 +236,14 @@ const browser = async (
             try {
                 await page.goto(source, {
                     waitUntil: 'domcontentloaded',
-                    timeout: config.requestTimeout
+                    timeout: browserTimeout
                 })
             } catch (error) {
                 if (!page || !(await hasExtractableReadmeContent(page))) {
                     throw error
                 }
             }
-            await waitForExtractableReadmeContent(page, config.requestTimeout, initial)
-            await waitForOperationHydration(page, config.requestTimeout)
-
-            let html = await page.content()
+            let html = await extractStablePageHtml(page, browserTimeout, initial)
             if (!html) {
                 throw new Error(`Unable to extract HTML from remote source: ${source}`)
             }
@@ -326,6 +324,60 @@ const waitForOperationHydration = async (page: Page, timeout: number): Promise<v
     } catch {/** */ }
 }
 
+const extractStablePageHtml = async (
+    page: Page,
+    timeout: number,
+    initial = false,
+    maxAttempts = 3
+): Promise<string> => {
+    let lastError: unknown
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+            await waitForExtractableReadmeContent(page, timeout, initial)
+            await waitForOperationHydration(page, timeout)
+
+            return await page.content()
+        } catch (error) {
+            lastError = error
+
+            if (!isExecutionContextNavigationError(error) || attempt === maxAttempts) {
+                throw error
+            }
+
+            await waitForNavigationSettle(page, timeout)
+        }
+    }
+
+    throw lastError instanceof Error
+        ? lastError
+        : new Error('Unable to extract stable HTML from remote source')
+}
+
+const waitForNavigationSettle = async (page: Page, timeout: number): Promise<void> => {
+    try {
+        await page.waitForFunction(() => {
+            return document.readyState === 'interactive' || document.readyState === 'complete'
+        }, { timeout: Math.min(timeout, 5000) })
+    } catch {/** */ }
+
+    try {
+        await page.waitForNetworkIdle?.({ idleTime: 500, timeout: Math.min(timeout, 5000) })
+    } catch {/** */ }
+}
+
+const isExecutionContextNavigationError = (error: unknown): boolean => {
+    if (!(error instanceof Error)) {
+        return false
+    }
+
+    const message = error.message.toLowerCase()
+
+    return message.includes('execution context was destroyed')
+        || message.includes('cannot find context with specified id')
+        || message.includes('most likely because of a navigation')
+}
+
 const hasExtractableReadmeContent = async (
     page: {
         $: (selector: string) => Promise<unknown>
@@ -374,5 +426,6 @@ export {
     endBrowserSession,
     getBrowserSession,
     isSupportedBrowser,
+    extractStablePageHtml,
     mergeSsrPropsIntoRenderedHtml,
 }

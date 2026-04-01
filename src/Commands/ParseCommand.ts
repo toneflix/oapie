@@ -8,12 +8,12 @@ import { createOpenApiDocumentFromReadmeOperations } from '../OpenApiTransform'
 import { extractReadmeOperationFromHtml } from '../ReadmeExtractor'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import prettier from 'prettier'
+import { buildOutputFilePath, getRootTypeNameForShape, serializeOutput } from '../generator/OutputGenerator'
 
 export class ParseCommand extends Command<Application> {
     protected signature = `parse
         {source : Local HTML file path or remote URL}
-        {--O|output=pretty : Output format [pretty,json,js]}
+        {--O|output=pretty : Output format [pretty,json,js,ts]}
         {--S|shape=raw : Result shape [raw,openapi]}
         {--B|browser? : Remote loader [axios,happy-dom,jsdom,puppeteer]}
         {--c|crawl : Crawl sidebar links and parse every discovered operation}
@@ -55,9 +55,11 @@ export class ParseCommand extends Command<Application> {
             const normalizedPayload = shape === 'openapi'
                 ? this.buildOpenApiPayload(payload)
                 : payload
-            const serialized = output === 'js'
-                ? `export default ${JSON.stringify(normalizedPayload, null, 2)}`
-                : JSON.stringify(normalizedPayload, null, output === 'json' ? 0 : 2)
+            const serialized = await serializeOutput(
+                normalizedPayload,
+                output,
+                getRootTypeNameForShape(shape)
+            )
 
             const filePath = await this.saveOutputToFile(
                 serialized,
@@ -100,29 +102,11 @@ export class ParseCommand extends Command<Application> {
         shape: string,
         outputFormat: UserConfig['outputFormat']
     ): Promise<string> => {
-        const ext = {
-            pretty: 'txt',
-            json: 'json',
-            js: 'js',
-        }[outputFormat]
+        const outputDir = buildOutputFilePath(process.cwd(), source, shape, outputFormat)
+        const outputDirname = path.dirname(outputDir)
+        await fs.mkdir(outputDirname, { recursive: true })
+        await fs.writeFile(outputDir, content, 'utf8')
 
-        const outputDir = path.resolve(process.cwd(), 'output')
-        await fs.mkdir(outputDir, { recursive: true })
-        const safeSource = source.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '')
-        const shapeSuffix = shape === 'openapi' ? '.openapi' : ''
-        const filename = `${safeSource || 'output'}${shapeSuffix}.${ext}`
-        const filePath = path.join(outputDir, filename)
-
-        if (outputFormat === 'js') {
-            content = await prettier.format(content, {
-                parser: 'babel',
-                semi: false,
-                singleQuote: true,
-            })
-        }
-
-        await fs.writeFile(filePath, content, 'utf8')
-
-        return filePath
+        return outputDir
     }
 }

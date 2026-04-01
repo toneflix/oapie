@@ -56,7 +56,7 @@
         "test": "pnpm vitest --run",
         "test:watch": "pnpm vitest",
         "lint": "eslint . --ext .ts --ext .js",
-        "cmd": "tsx src/cli.ts",
+        "cmd": "node --import tsx src/cli.ts",
         "build": "tsdown",
         "version": "pnpm run build",
         "unlink": "pnpm uninstall --global oapiex || true",

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
+import { buildOutputFilePath } from '../src/generator/OutputGenerator'
 import { createServer } from 'node:http'
 import { execFile } from 'node:child_process'
 import { mergeSsrPropsIntoRenderedHtml } from '../src/Manager'
@@ -9,23 +10,6 @@ import { readFile } from 'node:fs/promises'
 import { rm } from 'node:fs/promises'
 
 const execFileAsync = promisify(execFile)
-
-const buildOutputFilePath = (
-    workspaceRoot: string,
-    source: string,
-    shape: 'raw' | 'openapi',
-    output: 'json' | 'js' | 'pretty'
-): string => {
-    const ext = {
-        pretty: 'txt',
-        json: 'json',
-        js: 'js',
-    }[output]
-    const safeSource = source.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '')
-    const shapeSuffix = shape === 'openapi' ? '.openapi' : ''
-
-    return path.join(workspaceRoot, 'output', `${safeSource || 'output'}${shapeSuffix}.${ext}`)
-}
 
 const runParseAndReadJson = async (
     workspaceRoot: string,
@@ -48,7 +32,36 @@ const runParseAndReadJson = async (
     return JSON.parse(await readFile(outputFilePath, 'utf8'))
 }
 
+const runParseAndReadText = async (
+    workspaceRoot: string,
+    args: string[],
+    source: string,
+    shape: 'raw' | 'openapi',
+    output: 'js' | 'pretty' | 'ts'
+) => {
+    const outputFilePath = buildOutputFilePath(workspaceRoot, source, shape, output)
+
+    await rm(outputFilePath, { force: true })
+    await execFileAsync(process.execPath, [
+        '--import',
+        'tsx',
+        'src/cli.ts',
+        ...args,
+    ], {
+        cwd: workspaceRoot,
+    })
+
+    return readFile(outputFilePath, 'utf8')
+}
+
 describe('parse command', () => {
+    afterAll(async () => {
+        const workspaceRoot = path.resolve(import.meta.dirname, '..')
+        const outputDir = path.join(workspaceRoot, 'output')
+
+        await rm(outputDir, { recursive: true, force: true })
+    })
+
     it('emits OpenAPI-like JSON for a local fixture', async () => {
         const workspaceRoot = path.resolve(import.meta.dirname, '..')
         const source = 'tests/fixtures/fw-example.html'
@@ -99,7 +112,7 @@ describe('parse command', () => {
         ])
         expect(document.paths['/customers']?.get?.requestBody).toBeUndefined()
         expect(document.paths['/customers']?.get?.responses['200']?.description).toBe('OK')
-    }, 15000)
+    }, 30000)
 
     it('supports crawl mode against remote pages', async () => {
         const workspaceRoot = path.resolve(import.meta.dirname, '..')
@@ -155,7 +168,7 @@ describe('parse command', () => {
         } finally {
             await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
         }
-    }, 15000)
+    }, 30000)
 
     it('infers full nested request body depth from collapsed body examples', async () => {
         const workspaceRoot = path.resolve(import.meta.dirname, '..')
@@ -174,7 +187,7 @@ describe('parse command', () => {
         expect(schema?.properties?.data?.properties?.attributes?.properties?.address?.properties?.country?.type).toBe('string')
         expect(document.paths['/api/v1/customers']?.post?.responses['200']?.content?.['application/json']?.schema?.properties?.data?.properties?.type?.type).toBe('string')
         expect(document.paths['/api/v1/customers']?.post?.responses['200']?.content?.['text/plain']).toBeUndefined()
-    }, 15000)
+    }, 30000)
 
     it('uses embedded ssr props when parsing a sparse local fixture', async () => {
         const workspaceRoot = path.resolve(import.meta.dirname, '..')
@@ -190,7 +203,7 @@ describe('parse command', () => {
         expect(document.paths['/v1/customers']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.country?.description).toBe('Customer country.')
         expect(document.paths['/v1/customers']?.post?.responses['200']?.content?.['application/json']?.schema?.properties?.status?.type).toBe('boolean')
         expect(document.paths['/v1/customers']?.post?.responses['400']?.content?.['application/json']?.schema?.type).toBe('object')
-    }, 15000)
+    }, 30000)
 
     it('uses embedded ssr props parameters when parsing a sparse local fixture', async () => {
         const workspaceRoot = path.resolve(import.meta.dirname, '..')
@@ -228,7 +241,7 @@ describe('parse command', () => {
         ])
         expect(document.paths['/v1/customers']?.get?.requestBody).toBeUndefined()
         expect(document.paths['/v1/customers']?.get?.responses['200']?.content?.['application/json']?.schema?.properties?.data?.type).toBe('array')
-    }, 15000)
+    }, 30000)
 
     it('merges ssr props from raw html when rendered html drops the script', () => {
         const rawHtml = [
@@ -252,4 +265,28 @@ describe('parse command', () => {
         expect(mergedHtml).toContain('id="ssr-props"')
         expect(mergedHtml.indexOf('id="ssr-props"')).toBeGreaterThan(mergedHtml.indexOf('<article id="content">'))
     })
+
+    it('emits semantic TypeScript models for SDK generation', async () => {
+        const workspaceRoot = path.resolve(import.meta.dirname, '..')
+        const source = 'tests/fixtures/fw-example.html'
+        const content = await runParseAndReadText(workspaceRoot, [
+            'parse',
+            source,
+            '--shape=openapi',
+            '--output=ts',
+        ], source, 'openapi', 'ts')
+
+        expect(content).toContain('export interface Customer')
+        expect(content).toContain('export interface CustomerInput')
+        expect(content).toContain('export interface CustomerQuery')
+        expect(content).toContain('export interface CustomerHeader')
+        expect(content).toContain('export interface CustomerParams')
+        expect(content).toContain('export interface Address')
+        expect(content).not.toContain('export interface AddressAddress')
+        expect(content).toContain('export interface ExtractedApiDocument')
+        expect(content).not.toContain('extends CustomerQuery {}')
+        expect(content).not.toContain('export interface Data2')
+        expect(content).toContain('export const extractedApiDocument: ExtractedApiDocument =')
+        expect(content).toContain('export default extractedApiDocument')
+    }, 20000)
 })

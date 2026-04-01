@@ -3,7 +3,7 @@ import type { IOptionalBrowserSettings } from 'happy-dom'
 export type BrowserName = 'axios' | 'happy-dom' | 'jsdom' | 'puppeteer'
 
 export interface UserConfig {
-    outputFormat: 'pretty' | 'json' | 'js'
+    outputFormat: 'pretty' | 'json' | 'js' | 'ts'
     outputShape: 'raw' | 'openapi'
     requestTimeout: number
     maxRedirects: number

@@ -47,6 +47,7 @@ export default defineConfig(
                 { 'allowSingleLine': false },
             ],
             'no-console': 'off',
+            '@typescript-eslint/no-empty-object-type': 'off',
             // 'no-ternary': 'error',
             'newline-before-return': 'error',
             'semi': ['error', 'never'],

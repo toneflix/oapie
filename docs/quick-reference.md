@@ -20,9 +20,9 @@ oapie parse <source>
 
 ## Config File Names
 
-- `oapie.config.ts`
-- `oapie.config.js`
-- `oapie.config.cjs`
+- `oapiex.config.ts`
+- `oapiex.config.js`
+- `oapiex.config.cjs`
 
 ## Output Location
 

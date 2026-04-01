@@ -2,9 +2,9 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: 'OAPIE',
+  title: 'OAPIEX',
   description: 'Extract OpenAPI documents from ReadMe powered documentation sites and saved HTML files.',
-  base: '/oapie/',
+  base: '/oapiex/',
   cleanUrls: true,
   lastUpdated: true,
   themeConfig: {
@@ -16,8 +16,6 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'CLI', link: '/reference/cli' },
       { text: 'Programmatic', link: '/reference/programmatic-usage' },
-      { text: 'GitHub', link: 'https://github.com/toneflix/oapi-extractor' },
-      { text: 'npm', link: 'https://www.npmjs.com/package/oapie' }
     ],
     sidebar: [
       {
@@ -55,7 +53,8 @@ export default defineConfig({
       }
     ],
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/toneflix/oapie' }
+      { icon: 'github', link: 'https://github.com/toneflix/oapiex' },
+      { icon: 'npm', link: 'https://www.npmjs.com/package/oapiex' }
     ],
     footer: {
       message: 'Released under the MIT License.',

@@ -2,25 +2,25 @@
 
 ## Install
 
-Install OAPIE as a project dependency:
+Install OAPIEX as a project dependency:
 
 ::: code-group
 
 ```bash [pnpm]
-pnpm add oapie
+pnpm add oapiex
 ```
 
 ```bash [npm]
-npm i oapie
+npm i oapiex
 ```
 
 ```bash [yarn]
-yarn add  oapie
+yarn add  oapiex
 ```
 
 :::
 
-You can then import the programmatic API directly from `oapie`.
+You can then import the programmatic API directly from `oapiex`.
 
 ## Main Building Blocks
 
@@ -35,7 +35,7 @@ The core programmatic pieces are:
 ## Extract A Single Operation
 
 ```ts
-import { Application, extractReadmeOperationFromHtml } from 'oapie';
+import { Application, extractReadmeOperationFromHtml } from 'oapiex';
 
 const app = new Application({
   browser: 'puppeteer',
@@ -63,7 +63,7 @@ import {
   Application,
   createOpenApiDocumentFromReadmeOperations,
   extractReadmeOperationFromHtml,
-} from 'oapie';
+} from 'oapiex';
 
 const app = new Application({
   browser: 'puppeteer',
@@ -92,7 +92,7 @@ import {
   Application,
   createOpenApiDocumentFromReadmeOperations,
   extractReadmeOperationFromHtml,
-} from 'oapie';
+} from 'oapiex';
 
 const source = 'https://maplerad.dev/reference/create-a-customer';
 
@@ -123,7 +123,7 @@ If you already have the page HTML, you can skip `Application` and call the extra
 
 ```ts
 import { readFile } from 'node:fs/promises';
-import { extractReadmeOperationFromHtml } from 'oapie';
+import { extractReadmeOperationFromHtml } from 'oapiex';
 
 const html = await readFile('./saved-page.html', 'utf8');
 const operation = extractReadmeOperationFromHtml(html);
@@ -134,7 +134,7 @@ console.log(operation);
 ## Configure Defaults In Code
 
 ```ts
-import { defineConfig } from 'oapie';
+import { defineConfig } from 'oapiex';
 
 const config = defineConfig({
   browser: 'axios',
@@ -157,7 +157,7 @@ import {
   defineConfig,
   endBrowserSession,
   startBrowserSession,
-} from 'oapie';
+} from 'oapiex';
 
 const config = defineConfig({ browser: 'puppeteer' });
 

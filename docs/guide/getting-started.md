@@ -7,15 +7,15 @@ Install the CLI globally:
 ::: code-group
 
 ```bash [pnpm]
-pnpm add -g oapie
+pnpm add -g oapiex
 ```
 
 ```bash [npm]
-npm i -g oapie
+npm i -g oapiex
 ```
 
 ```bash [yarn]
-yarn global add oapie
+yarn global add oapiex
 ```
 
 :::
@@ -25,15 +25,15 @@ Or install it locally in a project:
 ::: code-group
 
 ```bash [pnpm]
-pnpm add oapie
+pnpm add oapiex
 ```
 
 ```bash [npm]
-npm i oapie
+npm i oapiex
 ```
 
 ```bash [yarn]
-yarn add  oapie
+yarn add  oapiex
 ```
 
 :::
@@ -69,14 +69,14 @@ When crawl mode is enabled, OAPIE resolves sidebar links from the current page a
 oapie init
 ```
 
-This creates `oapie.config.js` in the current directory with the default settings.
+This creates `oapiex.config.js` in the current directory with the default settings.
 
 ## Programmatic Usage
 
-If you want to use OAPIE without the CLI, install it as a dependency and import from `oapie`:
+If you want to use OAPIEX without the CLI, install it as a dependency and import from `oapiex`:
 
 ```ts
-import { Application, extractReadmeOperationFromHtml } from 'oapie';
+import { Application, extractReadmeOperationFromHtml } from 'oapiex';
 
 const app = new Application({ browser: 'puppeteer' });
 const html = await app.loadHtmlSource(

@@ -2,16 +2,16 @@
 
 ## Config File Resolution
 
-OAPIE looks for configuration files in the current working directory using these names:
+OAPIEX looks for configuration files in the current working directory using these names:
 
-- `oapie.config.ts`
-- `oapie.config.js`
-- `oapie.config.cjs`
+- `oapiex.config.ts`
+- `oapiex.config.js`
+- `oapiex.config.cjs`
 
 ## Example
 
 ```js
-import { defineConfig } from 'oapie';
+import { defineConfig } from 'oapiex';
 
 export default defineConfig({
   outputFormat: 'json',

@@ -1,6 +1,6 @@
 # Roadmap
 
-This page collects likely future directions for OAPIE. It is not a strict release plan, but it is the current list of areas that would add the most value.
+This page collects likely future directions for OAPIEX. It is not a strict release plan, but it is the current list of areas that would add the most value.
 
 ## Documentation Platform Support
 
@@ -33,10 +33,10 @@ This page collects likely future directions for OAPIE. It is not a strict releas
 
 ## Programmatic API
 
-- stabilize the public library export surface for `import { ... } from 'oapie'`
+- stabilize the public library export surface for `import { ... } from 'oapiex'`
 - expose higher-level helpers for one-call extraction and transformation
 - publish richer TypeScript types for extracted operations and OpenAPI output
-- support configurable logging hooks for embedding OAPIE in other tools
+- support configurable logging hooks for embedding OAPIEX in other tools
 
 ## CLI And Config
 

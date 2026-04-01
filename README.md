@@ -1,18 +1,18 @@
-# OAPIE
+# OAPIEX
 
-[![NPM Downloads](https://img.shields.io/npm/dt/oapie.svg)](https://www.npmjs.com/package/oapie)
-[![npm version](https://img.shields.io/npm/v/oapie.svg)](https://www.npmjs.com/package/oapie)
-[![License](https://img.shields.io/npm/l/oapie.svg)](https://github.com/toneflix/oapie/blob/main/LICENSE)
-[![Deploy Docs](https://github.com/toneflix/oapie/actions/workflows/docs.yml/badge.svg)](https://github.com/toneflix/oapie/actions/workflows/docs.yml)
-[![Run Tests](https://github.com/toneflix/oapie/actions/workflows/test.yml/badge.svg)](https://github.com/toneflix/oapie/actions/workflows/test.yml)
-[![Publish Package](https://github.com/toneflix/oapie/actions/workflows/publish.yml/badge.svg)](https://github.com/toneflix/oapie/actions/workflows/publish.yml)
+[![NPM Downloads](https://img.shields.io/npm/dt/oapiex.svg)](https://www.npmjs.com/package/oapiex)
+[![npm version](https://img.shields.io/npm/v/oapiex.svg)](https://www.npmjs.com/package/oapiex)
+[![License](https://img.shields.io/npm/l/oapiex.svg)](https://github.com/toneflix/oapiex/blob/main/LICENSE)
+[![Deploy Docs](https://github.com/toneflix/oapiex/actions/workflows/docs.yml/badge.svg)](https://github.com/toneflix/oapiex/actions/workflows/docs.yml)
+[![Run Tests](https://github.com/toneflix/oapiex/actions/workflows/test.yml/badge.svg)](https://github.com/toneflix/oapiex/actions/workflows/test.yml)
+[![Publish Package](https://github.com/toneflix/oapiex/actions/workflows/publish.yml/badge.svg)](https://github.com/toneflix/oapiex/actions/workflows/publish.yml)
 
 OAPIE is a CLI and TypeScript library for extracting API operation data from documentation sites and converting it into raw extracted payloads or OpenAPI-like documents.
 
 It currently focuses on ReadMe-powered API docs and saved HTML pages, with room to expand to additional documentation platforms.
 
-- npm: https://www.npmjs.com/package/oapie
-- docs: https://toneflix.github.io/oapie
+- npm: https://www.npmjs.com/package/oapiex
+- docs: https://toneflix.github.io/oapiex
 - repository: https://github.com/toneflix/oapi
 
 ## Features
@@ -28,34 +28,34 @@ It currently focuses on ReadMe-powered API docs and saved HTML pages, with room 
 
 ### CLI
 
-Install globally if you want the `oapie` command available everywhere:
+Install globally if you want the `oapiex` command available everywhere:
 
 ```bash
-pnpm add -g oapie
+pnpm add -g oapiex
 ```
 
 ```bash
-npm i -g oapie
+npm i -g oapiex
 ```
 
 ```bash
-yarn global add oapie
+yarn global add oapiex
 ```
 
 ### Library
 
-Install locally if you want to use OAPIE from your own scripts or tooling:
+Install locally if you want to use OAPIEX from your own scripts or tooling:
 
 ```bash
-pnpm add oapie
+pnpm add oapiex
 ```
 
 ```bash
-npm i oapie
+npm i oapiex
 ```
 
 ```bash
-yarn add oapie
+yarn add oapiex
 ```
 
 ## CLI Quick Start
@@ -88,7 +88,7 @@ oapie init
 Extract a single operation:
 
 ```ts
-import { Application, extractReadmeOperationFromHtml } from 'oapie';
+import { Application, extractReadmeOperationFromHtml } from 'oapiex';
 
 const app = new Application({
   browser: 'puppeteer',
@@ -112,7 +112,7 @@ import {
   Application,
   createOpenApiDocumentFromReadmeOperations,
   extractReadmeOperationFromHtml,
-} from 'oapie';
+} from 'oapiex';
 
 const app = new Application({ browser: 'puppeteer' });
 const html = await app.loadHtmlSource(
@@ -132,16 +132,16 @@ console.log(document.paths);
 
 ## Configuration
 
-OAPIE looks for one of these files in the current working directory:
+OAPIEX looks for one of these files in the current working directory:
 
-- `oapie.config.ts`
-- `oapie.config.js`
-- `oapie.config.cjs`
+- `oapiex.config.ts`
+- `oapiex.config.js`
+- `oapiex.config.cjs`
 
 Example:
 
 ```ts
-import { defineConfig } from 'oapie';
+import { defineConfig } from 'oapiex';
 
 export default defineConfig({
   outputFormat: 'json',
@@ -181,11 +181,11 @@ Full documentation is available at https://oapi-extractor.toneflix.net.
 
 Useful sections:
 
-- Getting started: https://toneflix.github.io/oapie/guide/getting-started
-- CLI reference: https://toneflix.github.io/oapie/reference/cli
-- Programmatic usage: https://toneflix.github.io/oapie/reference/programmatic-usage
-- Configuration: https://toneflix.github.io/oapie/reference/configuration
-- Roadmap: https://toneflix.github.io/oapie/project/roadmap
+- Getting started: https://toneflix.github.io/oapiex/guide/getting-started
+- CLI reference: https://toneflix.github.io/oapiex/reference/cli
+- Programmatic usage: https://toneflix.github.io/oapiex/reference/programmatic-usage
+- Configuration: https://toneflix.github.io/oapiex/reference/configuration
+- Roadmap: https://toneflix.github.io/oapiex/project/roadmap
 
 ## Roadmap Highlights
 
@@ -197,7 +197,7 @@ Current future-looking areas include:
 - support for Apidog documentation pages
 - support for Postman documentation pages
 
-See the full roadmap at https://toneflix.github.io/oapie/project/roadmap.
+See the full roadmap at https://toneflix.github.io/oapiex/project/roadmap.
 
 ## Development
 

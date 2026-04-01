@@ -1,5 +1,7 @@
 # OAPIE
 
+[![Test](https://github.com/toneflix/oapie/actions/workflows/test.yml/badge.svg)](https://github.com/toneflix/oapie/actions/workflows/test.yml)
+
 OAPIE is a CLI and TypeScript library for extracting API operation data from documentation sites and converting it into raw extracted payloads or OpenAPI-like documents.
 
 It currently focuses on ReadMe-powered API docs and saved HTML pages, with room to expand to additional documentation platforms.

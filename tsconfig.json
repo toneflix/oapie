@@ -28,5 +28,13 @@
     "./tests/**/*",
     "./src/**/*"
   ],
-  "exclude": ["./build", "./node_modules"]
+  "exclude": [
+    "./build",
+    "./node_modules",
+    "./dist",
+    "./coverage",
+    "./output",
+    "./bin",
+    "./tmp"
+  ]
 }

@@ -1,18 +1,49 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import axios from 'axios'
 
 import { BadRequestException } from '../src/Exceptions/BadRequestException'
+import { BaseApi } from '../src/Apis/BaseApi'
 import { Core } from '../src/Core'
-import { Example } from '../src/Apis/Example'
 import { Http } from '../src/Http'
-import axios from 'axios'
+
+class TestExampleApi {
+    constructor(private core: Core) { }
+
+    async list (): Promise<Array<{ id: string }>> {
+        await this.core.validateAccess()
+
+        const { data } = await Http.send<Array<{ id: string }>>(
+            'https://example.test/app/example',
+            'GET',
+            {},
+            {}
+        )
+
+        return data
+    }
+}
+
+class TestBaseApi extends BaseApi {
+    testExamples!: TestExampleApi
+
+    protected override boot () {
+        this.testExamples = new TestExampleApi(this.core)
+    }
+}
+
+class TestCore extends Core {
+    static override apiClass = TestBaseApi
+
+    declare api: TestBaseApi
+}
 
 describe('BaseApi', () => {
     afterEach(() => {
         vi.restoreAllMocks()
     })
 
-    it('initializes the examples api with the same core instance', async () => {
-        const core = new Core({
+    it('boots sdk-specific child apis with the same core instance', async () => {
+        const core = new TestCore({
             clientId: 'client-id',
             clientSecret: 'client-secret',
             environment: 'sandbox',
@@ -27,23 +58,23 @@ describe('BaseApi', () => {
 
         core.setAccessValidator(validator)
 
-        expect(core.api.examples).toBeInstanceOf(Example)
+        expect(core.api.testExamples).toBeInstanceOf(TestExampleApi)
 
-        await expect(core.api.examples.list('NG')).resolves.toEqual([])
+        await expect(core.api.testExamples.list()).resolves.toEqual([])
 
         expect(validator).toHaveBeenCalledTimes(1)
         expect(validator).toHaveBeenCalledWith(core)
         expect(sendSpy).toHaveBeenCalledTimes(1)
         expect(sendSpy).toHaveBeenCalledWith(
-            'https://developersandbox-api.flutterwave.com/app/example?code=NG',
+            'https://example.test/app/example',
             'GET',
             {},
-            { 'X-Key-1': undefined },
+            {},
         )
     })
 
     it('delegates setAccessValidator to the injected core', () => {
-        const core = new Core({
+        const core = new TestCore({
             clientId: 'client-id',
             clientSecret: 'client-secret',
             environment: 'sandbox',
@@ -57,8 +88,8 @@ describe('BaseApi', () => {
         expect(setAccessValidatorSpy).toHaveBeenCalledWith(validator)
     })
 
-    it('stores the last exception when an example request fails', async () => {
-        const core = new Core({
+    it('stores the last exception when a child api request fails', async () => {
+        const core = new TestCore({
             clientId: 'client-id',
             clientSecret: 'client-secret',
             environment: 'sandbox',
@@ -78,7 +109,6 @@ describe('BaseApi', () => {
                 },
             },
         })
-
         const axiosInstance = Object.assign(request, {
             interceptors: {
                 request: { use: vi.fn() },
@@ -89,7 +119,7 @@ describe('BaseApi', () => {
 
         vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
 
-        await expect(core.api.examples.list('NG')).rejects.toBeInstanceOf(BadRequestException)
+        await expect(core.api.testExamples.list()).rejects.toBeInstanceOf(BadRequestException)
 
         const lastException = core.api.getLastException()
 

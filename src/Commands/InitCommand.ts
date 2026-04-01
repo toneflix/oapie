@@ -8,15 +8,23 @@ const __filename = fileURLToPath(import.meta.url)
 export class InitCommand extends Command {
     protected signature = `init 
         {--f|force : Overwrite existing config}
+        {--p|pkg? : Generate config for another package (e.g. sdk-kit) instead of oapiex [sdk]}
     `
     protected description = 'Generate a default oapiex.config.ts in the current directory'
 
     public async handle (): Promise<void> {
         const cwd = process.cwd()
         const configPath = path.join(cwd, 'oapiex.config.js')
-        const force = Boolean(this.option('force', false))
+        const force = this.option('force', false)
+        const pkg = this.option('pkg', 'base').trim().toLowerCase() as 'base' | 'sdk'
 
-        const configTemplate = this.buildConfigTemplate()
+        const configTemplate = {
+            base: this.buildConfigTemplate(),
+            sdk: this.buildSdkConfigTemplate(),
+        }
+
+        if (!['base', 'sdk'].includes(pkg))
+            return void this.error(`Invalid package option: ${pkg}`)
 
         try {
             await fs.access(configPath)
@@ -28,7 +36,7 @@ export class InitCommand extends Command {
             // File does not exist, proceed
         }
 
-        await fs.writeFile(configPath, configTemplate, 'utf8')
+        await fs.writeFile(configPath, configTemplate[pkg], 'utf8')
         this.line(`Created ${configPath} `)
     }
 
@@ -51,6 +59,23 @@ export class InitCommand extends Command {
             `  userAgent: '${def.userAgent}',`,
             `  retryCount: ${def.retryCount},`,
             `  retryDelay: ${def.retryDelay},`,
+            '})',
+        ].join('\n')
+    }
+
+    buildSdkConfigTemplate (): string {
+        return [
+            'import { defineConfig } from \'@oapiex/sdk-kit\'',
+            '',
+            '/**',
+            ' * See https://oapi-extractor.toneflix.net/configuration for docs',
+            ' */',
+            'export default defineConfig({',
+            '  environment: \'sandbox\',',
+            '  urls: {',
+            '    live: \'https://live.oapiex.com\',',
+            '    sandbox: \'https://sandbox.oapiex.com\',',
+            '  },',
             '})',
         ].join('\n')
     }

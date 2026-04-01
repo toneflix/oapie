@@ -7,4 +7,4 @@ export interface ExampleApiResponse {
 export interface ExampleInput {
     code: string
     platform: string
-} 
+}

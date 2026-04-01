@@ -79,7 +79,7 @@ importers:
         specifier: ^3.5.13
         version: 3.5.31(typescript@5.9.3)
 
-  packages/sdk-core:
+  packages/sdk-kit:
     dependencies:
       axios:
         specifier: ^1.13.2

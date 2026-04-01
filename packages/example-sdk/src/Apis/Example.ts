@@ -1,24 +1,15 @@
-import { ExampleApiResponse, ExampleInput } from '../Contracts'
+import type { CountryCode, Core as KitCore } from '@oapiex/sdk-kit'
+import type { ExampleApiResponse, ExampleInput } from '../Contracts'
 
-import { CountryCode } from '../Contracts/Codes'
-import { Http } from '../Http'
-import type { Core } from '../Core'
+import { Http } from '@oapiex/sdk-kit'
 
 export class Example {
-    #core: Core
+    #core: KitCore
 
-    constructor(coreInstance: Core) {
+    constructor(coreInstance: KitCore) {
         this.#core = coreInstance
     }
 
-    /**
-     * Retrieve supported banks by country.
-     * 
-     * @param code 
-     * @param key1 
-     * @method GET
-     * @returns 
-     */
     async list (code: CountryCode, key1?: string): Promise<ExampleApiResponse[]> {
         await this.#core.validateAccess()
 
@@ -32,11 +23,6 @@ export class Example {
         return data
     }
 
-    /**
-     * Save your customer's example information
-     * 
-     * @method POST
-     */
     async save (params: ExampleInput, key1?: string, key2?: string): Promise<ExampleApiResponse> {
         await this.#core.validateAccess()
 

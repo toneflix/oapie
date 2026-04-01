@@ -17,7 +17,9 @@
     "emitDecoratorMetadata": true,
     "paths": {
       "src/*": ["./src/*"],
-      "oapiex": ["./src/index.ts"]
+      "oapiex": ["./src/index.ts"],
+      "@oapiex/sdk-kit": ["./packages/sdk-kit/src/index.ts"],
+      "@oapiex/sdk-kit/contracts": ["./packages/sdk-kit/src/Contracts/index.ts"]
     }
   },
   "include": [

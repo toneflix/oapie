@@ -6,6 +6,8 @@ import { Http } from './Http'
 import { InitOptions } from './Contracts/Core'
 
 export class Core {
+    static apiClass: typeof BaseApi = BaseApi
+
     debugLevel = 0
 
     /**
@@ -65,7 +67,13 @@ export class Core {
         }
 
         this.builder.setEnvironment(this.environment)
-        this.api = BaseApi.initialize(this)
+        this.api = this.createApi()
+    }
+
+    protected createApi (): BaseApi {
+        const ApiClass = (this.constructor as typeof Core).apiClass ?? BaseApi
+
+        return ApiClass.initialize(this)
     }
 
     /**

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
+    "target": "esnext",
+    "module": "es2022",
+    "moduleResolution": "Node",
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@oapiex/sdk-kit": ["../sdk-kit/dist/index.d.ts"],
+      "@oapiex/sdk-kit/contracts": ["../sdk-kit/dist/contracts.d.ts"]
+    }
+  },
+  "include": ["./src/**/*", "./tests/**/*"],
+  "exclude": ["./dist", "./node_modules"]
+}

@@ -1,6 +1,5 @@
 import { BadRequestException } from '../Exceptions/BadRequestException'
 import type { Core } from '../Core'
-import { Example } from './Example'
 import { ForbiddenRequestException } from '../Exceptions/ForbiddenRequestException'
 import { Http } from '../Http'
 import { HttpException } from '../Exceptions/HttpException'
@@ -11,11 +10,6 @@ export class BaseApi {
      * Flutterwave instance
      */
     #core: Core
-
-    /**
-     * Examples API instance
-     */
-    examples!: Example
 
     private lastException?:
         BadRequestException |
@@ -30,6 +24,20 @@ export class BaseApi {
      */
     constructor(coreInstance: Core) {
         this.#core = coreInstance
+    }
+
+    /**
+     * Get the owning core instance for SDK-specific API bootstrapping.
+     */
+    protected get core (): Core {
+        return this.#core
+    }
+
+    /**
+     * Hook for SDK-specific API registration.
+     */
+    protected boot () {
+        // Default BaseApi has no child APIs.
     }
 
     /**
@@ -75,14 +83,16 @@ export class BaseApi {
      * @param coreInstance Core instance
      * @returns 
      */
-    static initialize (coreInstance: Core) {
+    static initialize<T extends BaseApi> (
+        this: new (coreInstance: Core) => T,
+        coreInstance: Core
+    ): T {
         Http.setDebugLevel(coreInstance.debugLevel)
 
-        const baseApi = new BaseApi(coreInstance)
+        const baseApi = new this(coreInstance)
 
         Http.setApiInstance(baseApi)
-
-        baseApi.examples = new Example(baseApi.#core)
+        baseApi.boot()
 
         return baseApi
     }

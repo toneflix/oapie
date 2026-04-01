@@ -9,11 +9,11 @@ export class InitCommand extends Command {
     protected signature = `init 
         {--f|force : Overwrite existing config}
     `
-    protected description = 'Generate a default oapie.config.ts in the current directory'
+    protected description = 'Generate a default openapie.config.ts in the current directory'
 
     public async handle (): Promise<void> {
         const cwd = process.cwd()
-        const configPath = path.join(cwd, 'oapie.config.js')
+        const configPath = path.join(cwd, 'openapie.config.js')
         const force = Boolean(this.option('force', false))
 
         const configTemplate = this.buildConfigTemplate()
@@ -34,7 +34,7 @@ export class InitCommand extends Command {
 
     buildConfigTemplate (): string {
         const def = defaultConfig
-        const from = __filename.includes('node_modules') ? 'oapie' : './src/Manager'
+        const from = __filename.includes('node_modules') ? 'openapie' : './src/Manager'
 
         return [
             `import { defineConfig } from '${from}'`,

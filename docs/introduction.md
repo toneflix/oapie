@@ -2,16 +2,16 @@
 layout: doc
 ---
 
-# What OAPIE Does
+# What OPENAPIE Does
 
-OAPIE is a CLI and library for extracting API operation data from documentation sites powered by ReadMe. It can:
+OPENAPIE is a CLI and library for extracting API operation data from documentation sites powered by ReadMe. It can:
 
 - load a local HTML file or remote docs URL
 - extract request parameters, examples, response examples, and metadata
 - crawl linked reference pages
 - convert extracted operations into an OpenAPI-like document
 - write the result into the `output/` directory relative to the current working directory
-- run inside your own scripts through the `oapie` package API
+- run inside your own scripts through the `openapie` package API
 
 ## Start Here
 
@@ -25,4 +25,4 @@ OAPIE is a CLI and library for extracting API operation data from documentation 
 ## Integration Styles
 
 - Use the CLI when you want file output in `output/` with minimal setup.
-- Use the programmatic API when you want to load, extract, crawl, or transform pages inside your own scripts or tooling via `import { ... } from 'oapie'`.
+- Use the programmatic API when you want to load, extract, crawl, or transform pages inside your own scripts or tooling via `import { ... } from 'openapie'`.

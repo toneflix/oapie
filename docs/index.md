@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: 'OAPIE'
+  name: 'OPENAPIE'
   tagline: 'A CLI and library for extracting OpenAPI documents from ReadMe powered API docs.'
   text: OpenAPI Extraction Toolkit
   actions:
@@ -27,15 +27,15 @@ features:
 ::: code-group
 
 ```bash [pnpm]
-pnpm add -g oapie
+pnpm add -g openapie
 ```
 
 ```bash [npm]
-npm i -g oapie
+npm i -g openapie
 ```
 
 ```bash [yarn]
-yarn global add oapie
+yarn global add openapie
 ```
 
 :::
@@ -45,15 +45,15 @@ Or install it in a project for programmatic usage:
 ::: code-group
 
 ```bash [pnpm]
-pnpm add oapie
+pnpm add openapie
 ```
 
 ```bash [npm]
-npm i oapie
+npm i openapie
 ```
 
 ```bash [yarn]
-yarn add oapie
+yarn add openapie
 ```
 
 :::

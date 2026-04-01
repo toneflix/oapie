@@ -151,7 +151,7 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 
 /bin
-oapie.config.*
+openapie.config.*
 apis.generated.ts
 apis.generated.js
 .ghit

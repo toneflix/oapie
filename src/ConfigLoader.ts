@@ -1,13 +1,13 @@
-import path from 'node:path'
-import fs from 'node:fs/promises'
-import { pathToFileURL } from 'node:url'
 import { UserConfig } from './types/app'
 import { defaultConfig } from './Manager'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const CONFIG_BASENAMES = [
-    'oapie.config.ts',
-    'oapie.config.js',
-    'oapie.config.cjs',
+    'openapie.config.ts',
+    'openapie.config.js',
+    'openapie.config.cjs',
 ]
 
 export async function loadUserConfig (

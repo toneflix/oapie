@@ -12,7 +12,7 @@ export const createOpenApiDocumentFromReadmeOperations = (
     for (const operation of operations) {
         const normalized = transformReadmeOperationToOpenApi(operation)
 
-        if (!normalized) {
+        if (!normalized || shouldSkipNormalizedOperation(normalized)) {
             continue
         }
 
@@ -30,6 +30,15 @@ export const createOpenApiDocumentFromReadmeOperations = (
     }
 }
 
+const shouldSkipNormalizedOperation = (
+    normalized: { path: string, method: string, operation: OpenApiOperationLike }
+): boolean => {
+    return normalized.path === '/'
+        && normalized.method === 'get'
+        && normalized.operation.operationId === 'get'
+        && Object.keys(normalized.operation.responses).length === 0
+}
+
 export const transformReadmeOperationToOpenApi = (
     operation: ReadmeOperation
 ): { path: string, method: string, operation: OpenApiOperationLike } | null => {
@@ -38,8 +47,13 @@ export const transformReadmeOperationToOpenApi = (
     }
 
     const url = new URL(operation.url)
+
+    if (shouldSkipPlaceholderOperation(url, operation)) {
+        return null
+    }
+
     const method = operation.method.toLowerCase()
-    const path = url.pathname
+    const path = decodeOpenApiPathname(url.pathname)
     const summary = operation.sidebarLinks.find((link) => link.active)?.label
 
     return {
@@ -53,11 +67,46 @@ export const transformReadmeOperationToOpenApi = (
             requestBody: createRequestBody(
                 operation.requestParams,
                 operation.requestExampleNormalized?.body,
-                resolveFallbackRequestBodyExample(operation),
+                hasExtractedBodyParams(operation.requestParams) ? null : resolveFallbackRequestBodyExample(operation),
             ),
             responses: createResponses(operation.responseSchemas, operation.responseBodies),
         },
     }
+}
+
+const shouldSkipPlaceholderOperation = (
+    url: URL,
+    operation: ReadmeOperation
+): boolean => {
+    if (url.hostname !== 'example.com' || url.pathname !== '/') {
+        return false
+    }
+
+    return operation.requestParams.length === 0
+        && operation.responseSchemas.length === 0
+        && operation.responseBodies.length === 0
+        && operation.requestExampleNormalized?.url === 'https://example.com/'
+}
+
+const decodeOpenApiPathname = (pathname: string): string => {
+    return pathname
+        .split('/')
+        .map((segment) => {
+            if (!segment) {
+                return segment
+            }
+
+            try {
+                return decodeURIComponent(segment)
+            } catch {
+                return segment
+            }
+        })
+        .join('/')
+}
+
+const hasExtractedBodyParams = (params: ReadmeParameter[]): boolean => {
+    return params.some((param) => param.in === 'body' || param.in === null)
 }
 
 const createParameters = (

@@ -1,65 +1,16 @@
-import { Browser, BrowserErrorCaptureEnum, Window } from 'happy-dom'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Application } from '../src/Application'
+import axios from 'axios'
 import { createOpenApiDocumentFromReadmeOperations } from '../src/OpenApiTransform'
 import { extractReadmeOperationFromHtml } from '../src/ReadmeExtractor'
 import { readFile } from 'node:fs/promises'
 
-vi.mock('happy-dom', async () => {
-    const actual = await vi.importActual<typeof import('happy-dom')>('happy-dom')
-
-    class MockBrowserPage {
-        public mainFrame: { document: Window['document'] }
-
-        public constructor() {
-            const window = new actual.Window()
-
-            this.mainFrame = {
-                document: window.document,
-            }
-        }
-
-        public async goto (url: string): Promise<Response | null> {
-            const html = mockedRemoteHtml.get(url)
-
-            if (!html) {
-                throw new Error(`Unexpected URL: ${url}`)
-            }
-
-            this.mainFrame.document.write(html)
-
-            return null
-        }
-
-        public async waitUntilComplete (): Promise<void> {
-        }
-    }
-
-    class MockBrowser {
-        public static instances: MockBrowser[] = []
-        public readonly settings: { errorCapture?: unknown }
-        public readonly page = new MockBrowserPage()
-        public closed = false
-
-        public constructor(options?: { settings?: { errorCapture?: unknown } }) {
-            this.settings = options?.settings ?? {}
-            MockBrowser.instances.push(this)
-        }
-
-        public newPage (): MockBrowserPage {
-            return this.page
-        }
-
-        public async close (): Promise<void> {
-            this.closed = true
-        }
-    }
-
+vi.mock('axios', () => {
     return {
-        ...actual,
-        Browser: MockBrowser,
-        BrowserErrorCaptureEnum: actual.BrowserErrorCaptureEnum,
+        default: {
+            get: vi.fn(),
+        },
     }
 })
 
@@ -73,8 +24,20 @@ describe('Application', () => {
         const siblingHtml = await readFile(new URL('./fixtures/readme-text-response-example.html', import.meta.url), 'utf8')
         mockedRemoteHtml.set(rootSource, rootHtml)
         mockedRemoteHtml.set(siblingSource, siblingHtml)
+        const mockedAxios = vi.mocked(axios.get)
+        mockedAxios.mockImplementation(async (url: string) => {
+            const html = mockedRemoteHtml.get(url)
 
-        const app = new Application()
+            if (!html) {
+                throw new Error(`Unexpected URL: ${url}`)
+            }
+
+            return {
+                data: html,
+            }
+        })
+
+        const app = new Application({ browser: 'axios' })
         const loadedRootHtml = await app.loadHtmlSource(rootSource)
         const crawlResult = await app.crawlReadmeOperations(
             rootSource,
@@ -88,24 +51,15 @@ describe('Application', () => {
             rootSource,
             siblingSource,
         ])
-        const mockedBrowserClass = Browser as unknown as {
-            instances: Array<{ settings: { errorCapture?: unknown }, closed: boolean }>
-        }
-
-        expect(mockedBrowserClass.instances).toHaveLength(2)
-        expect(mockedBrowserClass.instances.map((instance) => instance.settings)).toEqual([
-            {
-                errorCapture: BrowserErrorCaptureEnum.tryAndCatch,
-                enableJavaScriptEvaluation: true,
-                suppressInsecureJavaScriptEnvironmentWarning: true,
-            },
-            {
-                errorCapture: BrowserErrorCaptureEnum.tryAndCatch,
-                enableJavaScriptEvaluation: true,
-                suppressInsecureJavaScriptEnvironmentWarning: true,
-            },
-        ])
-        expect(mockedBrowserClass.instances.every((instance) => instance.closed)).toBe(true)
+        expect(mockedAxios).toHaveBeenCalledTimes(2)
+        expect(mockedAxios).toHaveBeenNthCalledWith(1, rootSource, expect.objectContaining({
+            timeout: 50000,
+            maxRedirects: 5,
+        }))
+        expect(mockedAxios).toHaveBeenNthCalledWith(2, siblingSource, expect.objectContaining({
+            timeout: 50000,
+            maxRedirects: 5,
+        }))
 
         const document = createOpenApiDocumentFromReadmeOperations(crawlResult.operations, 'Crawled API', '1.0.0')
 
@@ -144,6 +98,33 @@ describe('Application', () => {
         })
 
         mockedRemoteHtml.clear()
-        mockedBrowserClass.instances.length = 0
+        mockedAxios.mockReset()
+    })
+
+    it('accepts a loader override through application config', async () => {
+        const source = 'https://docs.example.com/reference/get-customers'
+        const html = await readFile(new URL('./fixtures/readme-crawl-root.html', import.meta.url), 'utf8')
+        mockedRemoteHtml.set(source, html)
+        const mockedAxios = vi.mocked(axios.get)
+        mockedAxios.mockImplementation(async (url: string) => {
+            const payload = mockedRemoteHtml.get(url)
+
+            if (!payload) {
+                throw new Error(`Unexpected URL: ${url}`)
+            }
+
+            return {
+                data: payload,
+            }
+        })
+
+        const app = new Application({ browser: 'axios' })
+        const loadedHtml = await app.loadHtmlSource(source)
+
+        expect(app.getConfig().browser).toBe('axios')
+        expect(loadedHtml).toBe(html)
+
+        mockedRemoteHtml.clear()
+        mockedAxios.mockReset()
     })
 })

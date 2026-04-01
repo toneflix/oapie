@@ -1,4 +1,5 @@
 import { AttributeQueryNode, AttributedNode, QueryableNode, ReadmeCodeSnippet, ReadmeOperation, ReadmeParameter, ReadmeResponseBody, ReadmeResponseSchema, ReadmeSidebarLink, TextNodeLike } from './types/base'
+import { OpenApiMediaType, OpenApiOperationLike, OpenApiResponse, OpenApiSchema } from './types/open-api'
 
 import type { Element as HappyDomElement } from 'happy-dom'
 import { Window } from 'happy-dom'
@@ -17,8 +18,7 @@ export const extractReadmeOperationFromHtml = (html: string): ReadmeOperation =>
     const requestCodeSnippets = extractRequestCodeSnippets(requestPlayground)
     const requestExampleNormalized = normalizeRequestCodeSnippet(requestCodeSnippets[0] ?? null)
     const responseBodies = extractResponseBodies(responsePlayground)
-
-    return {
+    const extractedOperation: ReadmeOperation = {
         method: readText(contentRoot.querySelector('[data-testid="http-method"]'))?.toUpperCase() ?? null,
         url: readText(contentRoot.querySelector('[data-testid="serverurl"]')),
         description: extractOperationDescription(contentRoot),
@@ -32,6 +32,244 @@ export const extractReadmeOperationFromHtml = (html: string): ReadmeOperation =>
         responseExample: responseBodies[0]?.body ?? null,
         responseExampleRaw: responseBodies[0]?.rawBody ?? null,
     }
+    const ssrPropsOperation = extractReadmeOperationFromSsrProps(document)
+
+    return mergeReadmeOperations(extractedOperation, ssrPropsOperation)
+}
+
+const mergeReadmeOperations = (
+    primary: ReadmeOperation,
+    fallback: ReadmeOperation | null
+): ReadmeOperation => {
+    if (!fallback) {
+        return primary
+    }
+
+    return {
+        method: primary.method ?? fallback.method,
+        url: primary.url ?? fallback.url,
+        description: primary.description ?? fallback.description,
+        sidebarLinks: primary.sidebarLinks.length > 0 ? primary.sidebarLinks : fallback.sidebarLinks,
+        requestParams: primary.requestParams.length > 0 ? primary.requestParams : fallback.requestParams,
+        requestCodeSnippets: primary.requestCodeSnippets.length > 0 ? primary.requestCodeSnippets : fallback.requestCodeSnippets,
+        requestExample: primary.requestExample ?? fallback.requestExample,
+        requestExampleNormalized: primary.requestExampleNormalized ?? fallback.requestExampleNormalized,
+        responseSchemas: primary.responseSchemas.length > 0 ? primary.responseSchemas : fallback.responseSchemas,
+        responseBodies: primary.responseBodies.length > 0 ? primary.responseBodies : fallback.responseBodies,
+        responseExample: primary.responseExample ?? fallback.responseExample,
+        responseExampleRaw: primary.responseExampleRaw ?? fallback.responseExampleRaw,
+    }
+}
+
+const extractReadmeOperationFromSsrProps = (document: Window['document']): ReadmeOperation | null => {
+    const rawSsrProps = document.querySelector('script#ssr-props')?.textContent?.trim()
+
+    if (!rawSsrProps) {
+        return null
+    }
+
+    let ssrProps: unknown
+
+    try {
+        ssrProps = JSON.parse(rawSsrProps)
+    } catch {
+        return null
+    }
+
+    const apiDocument = isRecord(ssrProps) && isRecord(ssrProps.document) ? ssrProps.document.api : null
+
+    if (!isRecord(apiDocument)) {
+        return null
+    }
+
+    const method = typeof apiDocument.method === 'string' ? apiDocument.method.toUpperCase() : null
+    const path = typeof apiDocument.path === 'string' ? apiDocument.path : null
+    const schema = isRecord(apiDocument.schema) ? apiDocument.schema : null
+    const operation = resolveSsrOperation(schema, path, method?.toLowerCase() ?? null)
+    const serverUrl = Array.isArray(schema?.servers) && isRecord(schema.servers[0]) && typeof schema.servers[0].url === 'string'
+        ? schema.servers[0].url
+        : null
+
+    if (!operation && !method && !path) {
+        return null
+    }
+
+    const responseBodies = extractResponseBodiesFromOpenApi(operation?.responses ?? {})
+
+    return {
+        method,
+        url: buildOperationUrl(serverUrl, path),
+        description: operation?.description ?? null,
+        sidebarLinks: [],
+        requestParams: [
+            ...extractOperationParametersFromOpenApi(operation?.parameters),
+            ...extractRequestParamsFromOpenApi(operation?.requestBody),
+        ],
+        requestCodeSnippets: [],
+        requestExample: null,
+        requestExampleNormalized: null,
+        responseSchemas: extractResponseSchemasFromOpenApi(operation?.responses ?? {}),
+        responseBodies,
+        responseExample: responseBodies[0]?.body ?? null,
+        responseExampleRaw: responseBodies[0]?.rawBody ?? null,
+    }
+}
+
+const extractOperationParametersFromOpenApi = (
+    parameters: OpenApiOperationLike['parameters'] | undefined
+): ReadmeParameter[] => {
+    if (!parameters) {
+        return []
+    }
+
+    return parameters.map((parameter) => ({
+        name: parameter.name,
+        in: parameter.in,
+        path: [parameter.name],
+        type: parameter.schema?.type ?? null,
+        required: parameter.required ?? false,
+        defaultValue: parameter.schema?.default == null
+            ? (parameter.example == null ? null : String(parameter.example))
+            : String(parameter.schema.default),
+        description: parameter.description ?? parameter.schema?.description ?? null,
+    }))
+}
+
+const resolveSsrOperation = (
+    schema: Record<string, unknown> | null,
+    path: string | null,
+    method: string | null
+): OpenApiOperationLike | null => {
+    if (!schema || !path || !method || !isRecord(schema.paths)) {
+        return null
+    }
+
+    const pathItem = schema.paths[path]
+
+    if (!isRecord(pathItem) || !isRecord(pathItem[method])) {
+        return null
+    }
+
+    return pathItem[method] as unknown as OpenApiOperationLike
+}
+
+const buildOperationUrl = (serverUrl: string | null, path: string | null): string | null => {
+    if (!serverUrl || !path) {
+        return null
+    }
+
+    return `${serverUrl.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`
+}
+
+const extractRequestParamsFromOpenApi = (
+    requestBody: OpenApiOperationLike['requestBody'] | undefined
+): ReadmeParameter[] => {
+    const schema = requestBody?.content?.['application/json']?.schema
+
+    if (!schema) {
+        return []
+    }
+
+    return flattenOpenApiSchemaProperties(schema)
+}
+
+const flattenOpenApiSchemaProperties = (
+    schema: OpenApiSchema,
+    path: string[] = []
+): ReadmeParameter[] => {
+    if (!schema.properties) {
+        return []
+    }
+
+    const params: ReadmeParameter[] = []
+
+    for (const [name, property] of Object.entries(schema.properties)) {
+        const propertyPath = [...path, name]
+        const required = schema.required?.includes(name) ?? false
+
+        if (property.type === 'object' && property.properties) {
+            params.push(...flattenOpenApiSchemaProperties(property, propertyPath).map((param) => ({
+                ...param,
+                required: param.path.length === propertyPath.length + 1 ? required && param.required : param.required,
+            })))
+            continue
+        }
+
+        params.push({
+            name,
+            in: 'body',
+            path: propertyPath,
+            type: property.type ?? null,
+            required,
+            defaultValue: property.default == null ? null : String(property.default),
+            description: property.description ?? null,
+        })
+    }
+
+    return params
+}
+
+const extractResponseSchemasFromOpenApi = (
+    responses: Record<string, OpenApiResponse>
+): ReadmeResponseSchema[] => {
+    return Object.entries(responses).map(([statusCode, response]) => ({
+        statusCode,
+        description: response.description ?? statusCode,
+    }))
+}
+
+const extractResponseBodiesFromOpenApi = (
+    responses: Record<string, OpenApiResponse>
+): ReadmeResponseBody[] => {
+    const bodies: ReadmeResponseBody[] = []
+
+    for (const [statusCode, response] of Object.entries(responses)) {
+        for (const [contentType, mediaType] of Object.entries(response.content ?? {})) {
+            const example = resolveOpenApiMediaExample(mediaType)
+
+            if (example == null) {
+                continue
+            }
+
+            const rawBody = typeof example === 'string' ? example : JSON.stringify(example, null, 2)
+            const normalized = normalizeResponseBody(rawBody, contentType)
+
+            bodies.push({
+                format: normalized.format,
+                contentType,
+                statusCode,
+                label: response.description ?? statusCode,
+                body: normalized.body,
+                rawBody,
+            })
+        }
+    }
+
+    return bodies
+}
+
+const resolveOpenApiMediaExample = (mediaType: OpenApiMediaType): unknown | null => {
+    if (mediaType.example !== undefined) {
+        return mediaType.example
+    }
+
+    const examples = (mediaType as OpenApiMediaType & {
+        examples?: Record<string, { value?: unknown }>
+    }).examples
+
+    if (examples && isRecord(examples)) {
+        for (const example of Object.values(examples)) {
+            if (isRecord(example) && 'value' in example) {
+                return example.value ?? null
+            }
+        }
+    }
+
+    if (mediaType.schema?.example !== undefined) {
+        return mediaType.schema.example
+    }
+
+    return null
 }
 
 const extractOperationDescription = (root: QueryableNode): string | null => {

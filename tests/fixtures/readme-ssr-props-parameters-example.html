@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+
+<body>
+    <article id="content"></article>
+    <script id="ssr-props" type="application/json">
+        {
+            "document": {
+                "api": {
+                    "method": "get",
+                    "path": "/customers",
+                    "schema": {
+                        "openapi": "3.1.0",
+                        "info": {
+                            "title": "test",
+                            "version": "1.0"
+                        },
+                        "servers": [
+                            {
+                                "url": "https://api.example.com/v1"
+                            }
+                        ],
+                        "paths": {
+                            "/customers": {
+                                "get": {
+                                    "description": "List customers from embedded page data.",
+                                    "parameters": [
+                                        {
+                                            "name": "page",
+                                            "in": "query",
+                                            "required": false,
+                                            "description": "Page number.",
+                                            "schema": {
+                                                "type": "integer",
+                                                "default": 1
+                                            },
+                                            "example": 1
+                                        },
+                                        {
+                                            "name": "X-Trace-Id",
+                                            "in": "header",
+                                            "required": false,
+                                            "description": "Trace identifier.",
+                                            "schema": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    ],
+                                    "responses": {
+                                        "200": {
+                                            "description": "Success",
+                                            "content": {
+                                                "application/json": {
+                                                    "examples": {
+                                                        "Result": {
+                                                            "value": "{\n  \"data\": []\n}"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

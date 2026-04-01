@@ -1,7 +1,9 @@
-import { IOptionalBrowserSettings } from 'happy-dom'
+import type { IOptionalBrowserSettings } from 'happy-dom'
+
+export type BrowserName = 'axios' | 'happy-dom' | 'jsdom' | 'puppeteer'
 
 export interface UserConfig {
-    outputFormat: 'pretty' | 'json'
+    outputFormat: 'pretty' | 'json' | 'js'
     outputShape: 'raw' | 'openapi'
     requestTimeout: number
     maxRedirects: number
@@ -9,4 +11,9 @@ export interface UserConfig {
     retryCount: number
     retryDelay: number
     happyDom: IOptionalBrowserSettings
+    browser: BrowserName
+    puppeteer?: {
+        headless?: boolean
+        args?: string[]
+    }
 }

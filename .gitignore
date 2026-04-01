@@ -149,8 +149,13 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 
 /bin
+oapie.config.*
 apis.generated.ts
 apis.generated.js
 .ghit
+output.html
 tests/issues/*
 !tests/issues/*.md
+/happy-dom
+/output
+/tmp

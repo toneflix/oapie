@@ -342,6 +342,142 @@ describe('extractReadmeOperationFromHtml', () => {
         expect(document.paths['/events']?.get?.responses['200']?.content?.['text/plain']).toBeUndefined()
     })
 
+    it('falls back to embedded ssr props when the readme dom is sparse', async () => {
+        const html = await readFile(new URL('./fixtures/readme-ssr-props-example.html', import.meta.url), 'utf8')
+        const operation = extractReadmeOperationFromHtml(html)
+        const document = createOpenApiDocumentFromReadmeOperations([operation], 'SSR API', '1.0.0')
+
+        expect(operation.method).toBe('POST')
+        expect(operation.url).toBe('https://api.example.com/v1/customers')
+        expect(operation.description).toBe('Create a customer from embedded page data.')
+        expect(operation.requestParams).toEqual([
+            {
+                name: 'first_name',
+                in: 'body',
+                path: ['first_name'],
+                type: 'string',
+                required: true,
+                defaultValue: 'Ada',
+                description: null,
+            },
+            {
+                name: 'country',
+                in: 'body',
+                path: ['country'],
+                type: 'string',
+                required: true,
+                defaultValue: 'NG',
+                description: 'Customer country.',
+            },
+        ])
+        expect(operation.responseSchemas).toEqual([
+            {
+                statusCode: '200',
+                description: 'Success',
+            },
+            {
+                statusCode: '400',
+                description: 'Bad Request',
+            },
+        ])
+        expect(operation.responseBodies[0]).toEqual({
+            format: 'json',
+            contentType: 'application/json',
+            statusCode: '200',
+            label: 'Success',
+            body: {
+                status: true,
+                data: {
+                    id: 'cus_123',
+                },
+            },
+            rawBody: [
+                '{',
+                '  "status": true,',
+                '  "data": {',
+                '    "id": "cus_123"',
+                '  }',
+                '}',
+            ].join('\n'),
+        })
+        expect(document.paths['/v1/customers']?.post?.requestBody).toEqual({
+            required: true,
+            content: {
+                'application/json': {
+                    schema: {
+                        type: 'object',
+                        properties: {
+                            first_name: {
+                                type: 'string',
+                                default: 'Ada',
+                            },
+                            country: {
+                                type: 'string',
+                                description: 'Customer country.',
+                                default: 'NG',
+                            },
+                        },
+                        required: ['first_name', 'country'],
+                    },
+                },
+            },
+        })
+    })
+
+    it('extracts query and header parameters from embedded ssr props', async () => {
+        const html = await readFile(new URL('./fixtures/readme-ssr-props-parameters-example.html', import.meta.url), 'utf8')
+        const operation = extractReadmeOperationFromHtml(html)
+        const document = createOpenApiDocumentFromReadmeOperations([operation], 'SSR Params API', '1.0.0')
+
+        expect(operation.method).toBe('GET')
+        expect(operation.url).toBe('https://api.example.com/v1/customers')
+        expect(operation.requestParams).toEqual([
+            {
+                name: 'page',
+                in: 'query',
+                path: ['page'],
+                type: 'integer',
+                required: false,
+                defaultValue: '1',
+                description: 'Page number.',
+            },
+            {
+                name: 'X-Trace-Id',
+                in: 'header',
+                path: ['X-Trace-Id'],
+                type: 'string',
+                required: false,
+                defaultValue: null,
+                description: 'Trace identifier.',
+            },
+        ])
+        expect(document.paths['/v1/customers']?.get?.parameters).toEqual([
+            {
+                name: 'page',
+                in: 'query',
+                required: false,
+                description: 'Page number.',
+                schema: {
+                    type: 'integer',
+                    description: 'Page number.',
+                    default: '1',
+                },
+                example: '1',
+            },
+            {
+                name: 'X-Trace-Id',
+                in: 'header',
+                required: false,
+                description: 'Trace identifier.',
+                schema: {
+                    type: 'string',
+                    description: 'Trace identifier.',
+                },
+            },
+        ])
+        expect(document.paths['/v1/customers']?.get?.requestBody).toBeUndefined()
+    })
+
     it('aligns multiple response examples with their matching status labels', async () => {
         const html = await readFile(new URL('./fixtures/readme-multi-response-example.html', import.meta.url), 'utf8')
         const operation = extractReadmeOperationFromHtml(html)

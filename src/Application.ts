@@ -1,12 +1,30 @@
-import { Browser, BrowserErrorCaptureEnum } from 'happy-dom'
+import { browser, defineConfig, endBrowserSession, getBrowserSession, startBrowserSession } from './Manager'
 
+import { Logger } from '@h3ravel/shared'
+import { UserConfig } from './types/app'
 import { extractReadmeOperationFromHtml } from './ReadmeExtractor'
 import path from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { resolveReadmeSidebarUrls } from './ReadmeCrawler'
 
 export class Application {
-    constructor() {
+    private config: UserConfig
+
+    constructor(config: Partial<UserConfig> = {}) {
+        this.config = defineConfig(config)
+    }
+
+    getConfig (config: Partial<UserConfig> = {}): UserConfig {
+        return { ...this.config, ...config }
+    }
+
+    configure (config: Partial<UserConfig>): UserConfig {
+        this.config = defineConfig({
+            ...this.config,
+            ...config,
+        })
+
+        return this.config
     }
 
     async crawlReadmeOperations (
@@ -24,20 +42,45 @@ export class Application {
             throw new Error('Crawl mode requires a remote source URL or --base-url when using a local file')
         }
 
-        const discoveredUrls = resolveReadmeSidebarUrls(rootOperation, crawlBaseUrl)
-        const rootSourceUrl = new URL(crawlBaseUrl).toString()
-        const rootEntry = this.attachSourceUrl(rootSourceUrl, rootOperation)
-        const urlsToFetch = discoveredUrls.filter((url) => url !== rootSourceUrl)
-        const crawledOperations = await Promise.all(urlsToFetch.map(async (url) => {
-            const html = await this.loadHtmlSource(url)
+        const sessionWasActive = Boolean(getBrowserSession())
 
-            return this.attachSourceUrl(url, extractReadmeOperationFromHtml(html))
-        }))
+        if (!sessionWasActive) {
+            await startBrowserSession(this.config)
+        }
 
-        return {
-            rootSource: rootSourceUrl,
-            discoveredUrls,
-            operations: [rootEntry, ...crawledOperations],
+        try {
+            const discoveredUrls = resolveReadmeSidebarUrls(rootOperation, crawlBaseUrl)
+            const rootSourceUrl = new URL(crawlBaseUrl).toString()
+            const rootEntry = this.attachSourceUrl(rootSourceUrl, rootOperation)
+            const urlsToFetch = discoveredUrls.filter((url) => url !== rootSourceUrl)
+
+            const crawledOperations = await Promise.all(urlsToFetch.map(async (url) => {
+                const start = Date.now()
+                const html = await this.loadHtmlSource(url)
+                const operation = extractReadmeOperationFromHtml(html)
+                const end = Date.now() - start
+
+                if (!operation.method) {
+                    return null
+                }
+
+                Logger.twoColumnDetail(
+                    Logger.log([['Crawled', 'green'], [`${end / 1000}s`, 'gray']], ' ', false),
+                    url.replace(crawlBaseUrl, '')
+                )
+
+                return this.attachSourceUrl(url, operation)
+            }))
+
+            return {
+                rootSource: rootSourceUrl,
+                discoveredUrls,
+                operations: [rootEntry, ...crawledOperations.filter((operation) => operation !== null)],
+            }
+        } finally {
+            if (!sessionWasActive) {
+                await endBrowserSession()
+            }
         }
     }
 
@@ -63,35 +106,13 @@ export class Application {
         return null
     }
 
-    async loadHtmlSource (source: string): Promise<string> {
+    async loadHtmlSource (source: string, initial?: boolean): Promise<string> {
         if (!source) {
             throw new Error('A source path or URL is required')
         }
 
         if (/^https?:\/\//i.test(source)) {
-            const browser = new Browser({
-                settings: {
-                    errorCapture: BrowserErrorCaptureEnum.tryAndCatch,
-                    enableJavaScriptEvaluation: true,
-                    suppressInsecureJavaScriptEnvironmentWarning: true,
-                },
-            })
-            const page = browser.newPage()
-
-            try {
-                await page.goto(source)
-                await page.waitUntilComplete()
-
-                const html = page.mainFrame.document.querySelector('html')?.outerHTML
-
-                if (!html) {
-                    throw new Error(`Unable to extract HTML from remote source: ${source}`)
-                }
-
-                return html
-            } finally {
-                await browser.close()
-            }
+            return browser(source, this.config, initial)
         }
 
         const filePath = path.resolve(process.cwd(), source)

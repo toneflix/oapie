@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+
+<body>
+    <article id="content"></article>
+    <script id="ssr-props" type="application/json">
+        {
+            "document": {
+                "api": {
+                    "method": "post",
+                    "path": "/customers",
+                    "schema": {
+                        "openapi": "3.1.0",
+                        "info": {
+                            "title": "test",
+                            "version": "1.0"
+                        },
+                        "servers": [
+                            {
+                                "url": "https://api.example.com/v1"
+                            }
+                        ],
+                        "paths": {
+                            "/customers": {
+                                "post": {
+                                    "description": "Create a customer from embedded page data.",
+                                    "requestBody": {
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "object",
+                                                    "required": ["first_name", "country"],
+                                                    "properties": {
+                                                        "first_name": {
+                                                            "type": "string",
+                                                            "default": "Ada"
+                                                        },
+                                                        "country": {
+                                                            "type": "string",
+                                                            "description": "Customer country.",
+                                                            "default": "NG"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "responses": {
+                                        "200": {
+                                            "description": "Success",
+                                            "content": {
+                                                "application/json": {
+                                                    "examples": {
+                                                        "Result": {
+                                                            "value": "{\n  \"status\": true,\n  \"data\": {\n    \"id\": \"cus_123\"\n  }\n}"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "400": {
+                                            "description": "Bad Request",
+                                            "content": {
+                                                "application/json": {
+                                                    "examples": {
+                                                        "Result": {
+                                                            "value": "{}"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

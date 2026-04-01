@@ -6,6 +6,7 @@
     "module": "es2022",
     "moduleResolution": "bundler",
     "baseUrl": ".",
+    "lib": ["ES2022", "DOM"],
     "esModuleInterop": true,
     "strict": true,
     "allowJs": true,
@@ -20,6 +21,12 @@
       "ghit/*": ["./src/*"]
     }
   },
-  "include": ["./**/*.d.ts", "./github/**/*", "./test/**/*", "./tests/**/*", "./src/**/*"],
-  "exclude": ["./build", "/.node_modules"]
+  "include": [
+    "./**/*.d.ts",
+    "./github/**/*",
+    "./test/**/*",
+    "./tests/**/*",
+    "./src/**/*"
+  ],
+  "exclude": ["./build", "./node_modules"]
 }

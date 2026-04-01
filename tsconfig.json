@@ -17,8 +17,7 @@
     "emitDecoratorMetadata": true,
     "paths": {
       "src/*": ["./src/*"],
-      "ghit": ["./src/index.ts"],
-      "ghit/*": ["./src/*"]
+      "oapiex": ["./src/index.ts"]
     }
   },
   "include": [

@@ -1,0 +1,74 @@
+{
+  "name": "@oapiex/sdk-core",
+  "type": "module",
+  "version": "0.1.1",
+  "description": "A TypeScript Base for building SDKs using OpenAPI specifications extracted by OAPIEX.",
+  "main": "./dist/index.cjs",
+  "private": false,
+  "homepage": "https://toneflix.github.io/oapiex/sdk-core",
+  "repository": {
+    "url": "https://github.com/toneflix/oapiex.git",
+    "type": "git",
+    "directory": "packages/sdk-core"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./contracts": {
+      "import": "./dist/contracts.js",
+      "require": "./dist/contracts.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "oapiex",
+    "cli",
+    "command-line",
+    "tool",
+    "integration",
+    "sdk",
+    "api",
+    "developer",
+    "oapiex-sdk",
+    "toneflix"
+  ],
+  "scripts": {
+    "quick:test": "pnpm vitest",
+    "test": "pnpm run quick:test",
+    "coverage": "pnpm vitest --coverage",
+    "lint": "eslint . --ext .ts --ext .js",
+    "build": "tsdown",
+    "version": "pnpm run build",
+    "barrel": "barrelize"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
+    "tsdown": "^0.15.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@eslint/markdown": "^7.5.1",
+    "@faker-js/faker": "^10.2.0",
+    "@swc/core": "^1.6.1",
+    "@types/node": "^20.14.5",
+    "@vitest/coverage-v8": "3.2.4",
+    "barrelize": "^1.7.2",
+    "eslint": "^9.39.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.53.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
+  }
+}

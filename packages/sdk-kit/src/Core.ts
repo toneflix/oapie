@@ -1,9 +1,12 @@
 import './utilities/global'
 
+import { InferRuntimeSdkApi, RuntimeSdkBundle } from './types'
+
 import { BaseApi } from './Apis/BaseApi'
 import { Builder } from './Builder'
 import { Http } from './Http'
 import { InitOptions } from './Contracts/Core'
+import { createRuntimeApi } from './RuntimeSdk'
 
 export class Core {
     static apiClass: typeof BaseApi = BaseApi
@@ -122,17 +125,48 @@ export class Core {
     /**
      * Set access validator function
      * 
-     * @param validator 
+     * @param validator Function to validate access
      */
     setAccessValidator (validator: (...args: any[]) => Promise<boolean | string>) {
         this.accessValidator = validator
     }
 
+    /**
+     * Validates access using the provided access validator function
+     * 
+     * @throws Error if validation fails
+     */
     async validateAccess () {
         const check = this.accessValidator ? await this.accessValidator(this) : true
 
         if (check !== true) {
             throw new Error(typeof check === 'string' ? check : 'Access validation failed')
         }
+    }
+
+    /**
+     * Use a manifest bundle to create the API instance
+     * 
+     * @param bundle 
+     * @returns 
+     */
+    useDocument<TBundle extends RuntimeSdkBundle> (
+        bundle: TBundle
+    ): this & { api: BaseApi & InferRuntimeSdkApi<TBundle> } {
+        this.api = createRuntimeApi(this, bundle)
+
+        return this as this & { api: BaseApi & InferRuntimeSdkApi<TBundle> }
+    }
+
+    /**
+     * Use a manifest bundle to create the API instance (alias for useDocument).
+     * 
+     * @param bundle 
+     * @returns 
+     */
+    useSdk<TBundle extends RuntimeSdkBundle> (
+        bundle: TBundle
+    ): this & { api: BaseApi & InferRuntimeSdkApi<TBundle> } {
+        return this.useDocument(bundle)
     }
 }

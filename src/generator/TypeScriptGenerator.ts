@@ -76,11 +76,15 @@ export class TypeScriptGenerator {
             .map((declaration) => this.moduleRenderer.renderDeclaration(declaration))
             .join('\n\n')
         const variableName = this.moduleRenderer.toCamelCase(rootTypeName)
+        const sdkManifest = this.typeBuilder.buildSdkManifest(document, operationTypeRefs)
 
         return [
             declarations,
             this.moduleRenderer.renderOpenApiDocumentDefinitions(rootTypeName, document, operationTypeRefs),
+            this.moduleRenderer.renderSdkApiInterface(rootTypeName, sdkManifest),
+            this.moduleRenderer.renderSdkManifest(variableName, sdkManifest),
             `export const ${variableName}: ${rootTypeName} = ${this.moduleRenderer.renderValue(document)}`,
+            this.moduleRenderer.renderSdkBundle(variableName, rootTypeName),
             '',
             `export default ${variableName}`,
         ].filter(Boolean).join('\n\n')

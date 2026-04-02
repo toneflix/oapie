@@ -665,4 +665,207 @@ describe('generateTypeScriptModule', () => {
         expect(content).toContain('data: Data')
         expect(content).toContain('export interface IssuingByIdPathGetOperation extends OpenApiOperationDefinition<Issuing, IssuingResponseExample, IssuingInput, IssuingQuery, IssuingHeader, IssuingParams> {}')
     })
+
+    it('emits an SDK manifest and typed runtime bundle helpers', () => {
+        const content = TypeScriptGenerator.generateModule({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {
+                '/app/example': {
+                    get: {
+                        parameters: [
+                            { name: 'code', in: 'query', required: true, schema: { type: 'string' } },
+                            { name: 'X-Key-1', in: 'header', required: false, schema: { type: 'string' } },
+                        ],
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                data: {
+                                                    type: 'array',
+                                                    items: {
+                                                        type: 'object',
+                                                        properties: {
+                                                            id: { type: 'string' },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    post: {
+                        parameters: [
+                            { name: 'X-Key-1', in: 'header', required: false, schema: { type: 'string' } },
+                        ],
+                        requestBody: {
+                            required: true,
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            code: { type: 'string' },
+                                        },
+                                        required: ['code'],
+                                    },
+                                },
+                            },
+                        },
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                data: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        id: { type: 'string' },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        } as never, 'ExtractedApiDocument')
+
+        expect(content).toContain('export interface OpenApiSdkManifest')
+        expect(content).toContain('export interface ExtractedApiDocumentApi')
+        expect(content).toContain('examples: {')
+        expect(content).toContain('list(query: ExampleAppQuery, headers?: ExampleHeader): Promise<Example[]>')
+        expect(content).toContain('create(body: ExampleInput, headers?: ExampleHeader): Promise<Example>')
+        expect(content).toContain('export const extractedApiDocumentManifest = {')
+        expect(content).toContain("methodName: 'list'")
+        expect(content).toContain("propertyName: 'examples'")
+        expect(content).toContain('export const extractedApiDocumentSdk: OpenApiRuntimeBundle<ExtractedApiDocumentApi> = {')
+    })
+
+    it('uses descriptive scoped manifest group names when a nested resource would otherwise collide', () => {
+        const content = TypeScriptGenerator.generateModule({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {
+                '/v1/wallets': {
+                    get: {
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                data: {
+                                                    type: 'array',
+                                                    items: {
+                                                        type: 'object',
+                                                        properties: {
+                                                            id: { type: 'string' },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                '/v1/crypto/wallets/{customer_id}': {
+                    get: {
+                        parameters: [
+                            { name: 'customer_id', in: 'path', required: true, schema: { type: 'string' } },
+                        ],
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                data: {
+                                                    type: 'array',
+                                                    items: {
+                                                        type: 'object',
+                                                        properties: {
+                                                            id: { type: 'string' },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        } as never, 'ExtractedApiDocument')
+
+        expect(content).toContain("className: 'Wallet'")
+        expect(content).toContain("propertyName: 'wallets'")
+        expect(content).toContain("className: 'CryptoWallet'")
+        expect(content).toContain("propertyName: 'cryptoWallets'")
+        expect(content).toContain('cryptoWallets: {')
+    })
+
+    it('escapes multiline string examples in emitted TS literals', () => {
+        const content = TypeScriptGenerator.generateModule({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {
+                '/v1/instructions': {
+                    get: {
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                details: {
+                                                    type: 'string',
+                                                    example: '1/ Open the app\n---\n2/ Enter your code',
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        } as never, 'ExtractedApiDocument')
+
+        expect(content).toContain("example: '1/ Open the app\\n---\\n2/ Enter your code'")
+    })
 })

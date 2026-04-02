@@ -1,4 +1,4 @@
-import { Declaration, InterfaceDeclaration, OperationTypeRefs, ShapeNode } from './types'
+import { Declaration, InterfaceDeclaration, OperationTypeRefs, SdkManifest, SdkOperationManifest, ShapeNode } from './types'
 
 import type { OpenApiDocumentLike } from '../types/open-api'
 
@@ -74,10 +74,40 @@ export class TypeScriptModuleRenderer {
             'export interface OpenApiResponseDefinition<TResponse = unknown, TExample = unknown> {\n  description: string\n  content?: Record<string, OpenApiMediaTypeDefinition<TExample>>\n}',
             'export interface OpenApiRequestBodyDefinition<TInput = unknown> {\n  required: boolean\n  content: Record<string, OpenApiMediaTypeDefinition<TInput>>\n}',
             'export interface OpenApiOperationDefinition<TResponse = unknown, TResponseExample = unknown, TInput = Record<string, never>, TQuery = Record<string, never>, THeader = Record<string, never>, TParams = Record<string, never>> {\n  summary?: string\n  description?: string\n  operationId?: string\n  parameters?: OpenApiParameterDefinition[]\n  requestBody?: OpenApiRequestBodyDefinition<TInput>\n  responses: Record<string, OpenApiResponseDefinition<TResponse, TResponseExample>>\n}',
+            'export interface OpenApiSdkParameterManifest {\n  name: string\n  accessor: string\n  in: \'query\' | \'header\' | \'path\'\n  required: boolean\n}',
+            'export interface OpenApiSdkOperationManifest {\n  path: string\n  method: string\n  methodName: string\n  summary?: string\n  operationId?: string\n  responseType: string\n  inputType: string\n  queryType: string\n  headerType: string\n  paramsType: string\n  hasBody: boolean\n  bodyRequired: boolean\n  pathParams: OpenApiSdkParameterManifest[]\n  queryParams: OpenApiSdkParameterManifest[]\n  headerParams: OpenApiSdkParameterManifest[]\n}',
+            'export interface OpenApiSdkGroupManifest {\n  className: string\n  propertyName: string\n  operations: OpenApiSdkOperationManifest[]\n}',
+            'export interface OpenApiSdkManifest {\n  groups: OpenApiSdkGroupManifest[]\n}',
+            'export interface OpenApiRuntimeBundle<TApi = unknown> {\n  document: unknown\n  manifest: OpenApiSdkManifest\n  __api?: TApi\n}',
             pathDeclarations,
             `export interface Paths {\n${pathsBody}\n}`,
             `export interface ${rootTypeName} {\n  openapi: '3.1.0'\n  info: OpenApiInfo\n  paths: Paths\n}`,
         ].join('\n\n')
+    }
+
+    renderSdkApiInterface (rootTypeName: string, manifest: SdkManifest): string {
+        const groupBodies = manifest.groups.map((group) => {
+            const methods = group.operations
+                .map((operation) => `    ${operation.methodName}${this.renderSdkMethodSignature(operation)}`)
+                .join('\n')
+
+            return `  ${group.propertyName}: {\n${methods}\n  }`
+        }).join('\n')
+
+        return `export interface ${rootTypeName}Api {\n${groupBodies}\n}`
+    }
+
+    renderSdkManifest (variableName: string, manifest: SdkManifest): string {
+        return `export const ${variableName}Manifest = ${this.renderValue(manifest)} as const satisfies OpenApiSdkManifest`
+    }
+
+    renderSdkBundle (variableName: string, rootTypeName: string): string {
+        return [
+            `export const ${variableName}Sdk: OpenApiRuntimeBundle<${rootTypeName}Api> = {`,
+            `  document: ${variableName},`,
+            `  manifest: ${variableName}Manifest,`,
+            '}',
+        ].join('\n')
     }
 
     /**
@@ -88,7 +118,7 @@ export class TypeScriptModuleRenderer {
      * @returns 
      */
     renderValue (value: unknown): string {
-        return JSON.stringify(value, null, 2)
+        return this.renderLiteral(value, 0)
     }
 
     /**
@@ -170,7 +200,91 @@ export class TypeScriptModuleRenderer {
     private formatPropertyKey (key: string): string {
         return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
             ? key
-            : `'${key.replace(/\\/g, String.raw`\\`).replace(/'/g, String.raw`\'`)}'`
+            : `'${this.escapeStringLiteral(key)}'`
+    }
+
+    private renderSdkMethodSignature (operation: SdkOperationManifest): string {
+        const args: string[] = []
+
+        if (operation.pathParams.length > 0) {
+            args.push(`(params: ${operation.paramsType}`)
+        }
+
+        if (operation.queryParams.length > 0) {
+            args.push(`${args.length === 0 ? '(' : ', '}query: ${operation.queryType}`)
+        }
+
+        if (operation.hasBody) {
+            args.push(`${args.length === 0 ? '(' : ', '}body${operation.bodyRequired ? '' : '?'}: ${operation.inputType}`)
+        }
+
+        if (operation.headerParams.length > 0) {
+            args.push(`${args.length === 0 ? '(' : ', '}headers?: ${operation.headerType}`)
+        }
+
+        if (args.length === 0) {
+            return `(): Promise<${operation.responseType}>`
+        }
+
+        return `${args.join('')}): Promise<${operation.responseType}>`
+    }
+
+    private renderLiteral (value: unknown, indentLevel: number): string {
+        if (value === null) {
+            return 'null'
+        }
+
+        if (typeof value === 'string') {
+            return `'${this.escapeStringLiteral(value)}'`
+        }
+
+        if (typeof value === 'number' || typeof value === 'boolean') {
+            return String(value)
+        }
+
+        if (Array.isArray(value)) {
+            if (value.length === 0) {
+                return '[]'
+            }
+
+            const nextIndent = this.indent(indentLevel + 1)
+            const currentIndent = this.indent(indentLevel)
+
+            return `[\n${value.map((entry) => `${nextIndent}${this.renderLiteral(entry, indentLevel + 1)}`).join(',\n')}\n${currentIndent}]`
+        }
+
+        if (typeof value === 'object') {
+            const entries = Object.entries(value)
+
+            if (entries.length === 0) {
+                return '{}'
+            }
+
+            const nextIndent = this.indent(indentLevel + 1)
+            const currentIndent = this.indent(indentLevel)
+
+            return `{\n${entries.map(([key, entry]) => `${nextIndent}${this.formatPropertyKey(key)}: ${this.renderLiteral(entry, indentLevel + 1)}`).join(',\n')}\n${currentIndent}}`
+        }
+
+        return 'undefined'
+    }
+
+    private indent (level: number): string {
+        return '  '.repeat(level)
+    }
+
+    private escapeStringLiteral (value: string): string {
+        return value
+            .replace(/\\/g, String.raw`\\`)
+            .replace(/'/g, String.raw`\'`)
+            .replace(/\r/g, String.raw`\r`)
+            .replace(/\n/g, String.raw`\n`)
+            .replace(/\t/g, String.raw`\t`)
+            .replace(/\f/g, String.raw`\f`)
+            // eslint-disable-next-line no-control-regex
+            .replace(/\x08/g, String.raw`\b`)
+            .replace(/\u2028/g, String.raw`\u2028`)
+            .replace(/\u2029/g, String.raw`\u2029`)
     }
 
     private isPathParam (segment: string): boolean {

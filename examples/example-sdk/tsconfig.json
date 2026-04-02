@@ -12,8 +12,10 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "paths": {
-      "@oapiex/sdk-kit": ["../sdk-kit/dist/index.d.ts"],
-      "@oapiex/sdk-kit/contracts": ["../sdk-kit/dist/contracts.d.ts"]
+      "@oapiex/sdk-kit": ["../../packages/sdk-kit/dist/index.d.ts"],
+      "@oapiex/sdk-kit/contracts": [
+        "../../packages/sdk-kit/dist/contracts.d.ts"
+      ]
     }
   },
   "include": ["./src/**/*", "./tests/**/*"],

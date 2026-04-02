@@ -14,7 +14,7 @@ export default defineConfig({
             'packages/*/tests/*.{test,spec}.?(c|m)[jt]s?(x)',
         ],
         exclude: [
-            'packages/example-sdk/tests/**',
+            'examples/**',
         ],
         coverage: {
             reporter: ['text', 'json', 'html', 'lcov'],

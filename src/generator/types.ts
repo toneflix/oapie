@@ -71,6 +71,41 @@ export interface OperationTypeRefs {
     params: string
 }
 
+export interface SdkParameterManifest {
+    name: string
+    accessor: string
+    in: 'query' | 'header' | 'path'
+    required: boolean
+}
+
+export interface SdkOperationManifest {
+    path: string
+    method: string
+    methodName: string
+    summary?: string
+    operationId?: string
+    responseType: string
+    inputType: string
+    queryType: string
+    headerType: string
+    paramsType: string
+    hasBody: boolean
+    bodyRequired: boolean
+    pathParams: SdkParameterManifest[]
+    queryParams: SdkParameterManifest[]
+    headerParams: SdkParameterManifest[]
+}
+
+export interface SdkGroupManifest {
+    className: string
+    propertyName: string
+    operations: SdkOperationManifest[]
+}
+
+export interface SdkManifest {
+    groups: SdkGroupManifest[]
+}
+
 export interface PayloadSchemaCandidate {
     schema?: OpenApiSchema
     example?: unknown

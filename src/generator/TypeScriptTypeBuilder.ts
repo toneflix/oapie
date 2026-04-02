@@ -1,4 +1,4 @@
-import { GeneratorContext, InterfaceAliasDeclaration, InterfaceDeclaration, PayloadSchemaCandidate, SemanticModel, ShapeAliasDeclaration, ShapeNode, ShapeProperty } from './types'
+import { GeneratorContext, InterfaceAliasDeclaration, InterfaceDeclaration, OperationTypeRefs, PayloadSchemaCandidate, SdkGroupManifest, SdkManifest, SdkOperationManifest, SdkParameterManifest, SemanticModel, ShapeAliasDeclaration, ShapeNode, ShapeProperty } from './types'
 import type { OpenApiDocumentLike, OpenApiMediaType, OpenApiOperationLike, OpenApiParameterLike, OpenApiResponse, OpenApiSchema } from '../types/open-api'
 
 export class TypeScriptTypeBuilder {
@@ -71,6 +71,66 @@ export class TypeScriptTypeBuilder {
         }
 
         return models
+    }
+
+    buildSdkManifest (
+        document: OpenApiDocumentLike,
+        operationTypeRefs: Map<string, OperationTypeRefs>
+    ): SdkManifest {
+        const sdkGroupNamesBySignature = this.deriveSdkGroupNamesBySignature(document)
+        const groups = new Map<string, SdkGroupManifest>()
+
+        for (const [path, operations] of Object.entries(document.paths)) {
+            const staticSignature = this.getStaticPathSegments(path).join('/')
+            const sdkGroupName = sdkGroupNamesBySignature.get(staticSignature) ?? 'Resource'
+            const className = sdkGroupName
+            const propertyName = this.toCamelCase(this.pluralize(className))
+            const group = groups.get(propertyName) ?? {
+                className,
+                propertyName,
+                operations: [],
+            }
+
+            for (const [method, operation] of Object.entries(operations)) {
+                const refs = operationTypeRefs.get(`${path}::${method}`) ?? {
+                    response: 'Record<string, never>',
+                    responseExample: 'unknown',
+                    input: 'Record<string, never>',
+                    query: 'Record<string, never>',
+                    header: 'Record<string, never>',
+                    params: 'Record<string, never>',
+                }
+
+                group.operations.push({
+                    path,
+                    method: method.toUpperCase(),
+                    methodName: this.deriveSdkMethodName(method, path),
+                    summary: operation.summary,
+                    operationId: operation.operationId,
+                    responseType: this.resolveSdkResponseType(operation.responses, refs.response),
+                    inputType: refs.input,
+                    queryType: refs.query,
+                    headerType: refs.header,
+                    paramsType: refs.params,
+                    hasBody: Boolean(operation.requestBody),
+                    bodyRequired: operation.requestBody?.required ?? false,
+                    pathParams: this.createSdkParameterManifest(operation.parameters, 'path'),
+                    queryParams: this.createSdkParameterManifest(operation.parameters, 'query'),
+                    headerParams: this.createSdkParameterManifest(operation.parameters, 'header'),
+                })
+            }
+
+            groups.set(propertyName, group)
+        }
+
+        return {
+            groups: Array.from(groups.values())
+                .map((group) => ({
+                    ...group,
+                    operations: this.ensureUniqueSdkMethodNames(group.operations),
+                }))
+                .sort((left, right) => left.propertyName.localeCompare(right.propertyName)),
+        }
     }
 
     /**
@@ -275,6 +335,29 @@ export class TypeScriptTypeBuilder {
 
     private getOperationPriority (operation: OpenApiOperationLike): number {
         return Number(Boolean(operation.requestBody)) * 10
+    }
+
+    private resolveSdkResponseType (responses: Record<string, OpenApiResponse>, fallbackType: string): string {
+        const successResponse = Object.entries(responses)
+            .filter(([statusCode]) => /^2\d\d$/.test(statusCode))
+            .sort(([left], [right]) => left.localeCompare(right))[0]?.[1]
+
+        if (!successResponse) {
+            return fallbackType
+        }
+
+        const mediaType = this.getPreferredMediaType(successResponse.content)
+
+        if (!mediaType) {
+            return fallbackType
+        }
+
+        const payload = this.resolveResponsePayloadSchema(mediaType.schema, mediaType.example)
+        const responseSchema = payload.schema ?? mediaType.schema
+
+        return responseSchema && this.resolveSchemaType(responseSchema) === 'array'
+            ? `${fallbackType}[]`
+            : fallbackType
     }
 
     private getSuccessResponseShape (responses: Record<string, OpenApiResponse>): ShapeNode {
@@ -870,11 +953,7 @@ export class TypeScriptTypeBuilder {
     }
 
     private deriveOperationNaming (path: string): { baseName: string, collisionSuffix: string } {
-        const pathSegments = path
-            .split('/')
-            .map((segment) => segment.trim())
-            .filter(Boolean)
-            .filter((segment) => !/^v\d+$/i.test(segment))
+        const pathSegments = this.getNormalizedPathSegments(path)
         const staticSegments = pathSegments.filter((segment) => !this.isPathParam(segment)).map((segment) => this.singularize(segment))
         const paramSegments = pathSegments.filter((segment) => this.isPathParam(segment)).map((segment) => this.singularize(this.stripPathParam(segment)))
         const tailSegment = staticSegments[staticSegments.length - 1] ?? 'resource'
@@ -901,11 +980,7 @@ export class TypeScriptTypeBuilder {
     }
 
     private fallbackCollisionSuffix (method: string, path: string, baseName: string): string {
-        const pathSegments = path
-            .split('/')
-            .map((segment) => segment.trim())
-            .filter(Boolean)
-            .filter((segment) => !/^v\d+$/i.test(segment))
+        const pathSegments = this.getNormalizedPathSegments(path)
         const staticSegments = pathSegments.filter((segment) => !this.isPathParam(segment))
         const tailSegment = staticSegments[staticSegments.length - 1] ?? ''
         const hasParams = pathSegments.some((segment) => this.isPathParam(segment))
@@ -943,6 +1018,76 @@ export class TypeScriptTypeBuilder {
         return `${baseName}${collisionName}`
     }
 
+    private deriveSdkGroupNamesBySignature (document: OpenApiDocumentLike): Map<string, string> {
+        const entries = Array.from(new Set(Object.keys(document.paths).map((path) => this.getStaticPathSignature(path))))
+            .map((signature) => {
+                const staticSegments = signature.split('/').filter(Boolean)
+
+                return {
+                    signature,
+                    staticSegments,
+                    candidates: this.buildSdkGroupNameCandidates(signature),
+                }
+            })
+            .sort((left, right) => {
+                return left.staticSegments.length - right.staticSegments.length
+                    || left.signature.localeCompare(right.signature)
+            })
+
+        const groupNamesBySignature = new Map<string, string>()
+        const usedNames = new Set<string>()
+
+        for (const entry of entries) {
+            const className = entry.candidates.find((candidate) => !usedNames.has(candidate))
+                ?? this.createUniqueSdkGroupName(entry.candidates[entry.candidates.length - 1] ?? 'Resource', usedNames)
+
+            usedNames.add(className)
+            groupNamesBySignature.set(entry.signature, className)
+        }
+
+        return groupNamesBySignature
+    }
+
+    private buildSdkGroupNameCandidates (staticSignature: string): string[] {
+        const staticSegments = staticSignature.split('/').filter(Boolean)
+        const defaultName = this.deriveOperationNaming(`/${staticSegments.join('/')}`).baseName
+        const contextualNames = staticSegments
+            .map((_, index, segments) => this.sanitizeTypeName(segments.slice(index).join(' ')))
+            .reverse()
+
+        return Array.from(new Set([defaultName, ...contextualNames].filter(Boolean)))
+    }
+
+    private createUniqueSdkGroupName (baseName: string, usedNames: Set<string>): string {
+        let suffix = 2
+        let candidate = baseName
+
+        while (usedNames.has(candidate)) {
+            candidate = `${baseName}${suffix}`
+            suffix += 1
+        }
+
+        return candidate
+    }
+
+    private getNormalizedPathSegments (path: string): string[] {
+        return path
+            .split('/')
+            .map((segment) => segment.trim())
+            .filter(Boolean)
+            .filter((segment) => !/^v\d+$/i.test(segment))
+    }
+
+    private getStaticPathSegments (path: string): string[] {
+        return this.getNormalizedPathSegments(path)
+            .filter((segment) => !this.isPathParam(segment))
+            .map((segment) => this.singularize(segment))
+    }
+
+    private getStaticPathSignature (path: string): string {
+        return this.getStaticPathSegments(path).join('/')
+    }
+
     private isPathParam (segment: string): boolean {
         return segment.startsWith('{') && segment.endsWith('}')
     }
@@ -965,6 +1110,103 @@ export class TypeScriptTypeBuilder {
         }
 
         return value
+    }
+
+    private pluralize (value: string): string {
+        if (/y$/i.test(value)) {
+            return `${value.slice(0, -1)}ies`
+        }
+
+        if (/s$/i.test(value)) {
+            return value
+        }
+
+        return `${value}s`
+    }
+
+    private toCamelCase (value: string): string {
+        const typeName = this.sanitizeTypeName(value)
+
+        return typeName.charAt(0).toLowerCase() + typeName.slice(1)
+    }
+
+    private deriveSdkMethodName (method: string, path: string): string {
+        const hasPathParams = path.split('/').some((segment) => this.isPathParam(segment))
+
+        if (method === 'get') {
+            return hasPathParams ? 'get' : 'list'
+        }
+
+        if (method === 'post') {
+            return 'create'
+        }
+
+        if (method === 'patch' || method === 'put') {
+            return 'update'
+        }
+
+        if (method === 'delete') {
+            return 'delete'
+        }
+
+        return this.toCamelCase(this.sanitizeTypeName(method))
+    }
+
+    private ensureUniqueSdkMethodNames (operations: SdkOperationManifest[]): SdkOperationManifest[] {
+        const counts = new Map<string, number>()
+
+        return operations.map((operation) => {
+            const count = counts.get(operation.methodName) ?? 0
+
+            counts.set(operation.methodName, count + 1)
+
+            if (count === 0) {
+                return operation
+            }
+
+            const suffix = this.sanitizeTypeName(this.fallbackCollisionSuffix(operation.method.toLowerCase(), operation.path, 'Operation'))
+
+            return {
+                ...operation,
+                methodName: `${operation.methodName}${suffix}`,
+            }
+        })
+    }
+
+    private createSdkParameterManifest (
+        parameters: OpenApiParameterLike[] | undefined,
+        location: 'query' | 'header' | 'path'
+    ): SdkParameterManifest[] {
+        return (parameters ?? [])
+            .filter((parameter) => parameter.in === location)
+            .sort((left, right) => left.name.localeCompare(right.name))
+            .map((parameter) => ({
+                name: parameter.name,
+                accessor: this.toParameterAccessor(parameter.name),
+                in: location,
+                required: parameter.required ?? false,
+            }))
+    }
+
+    private toParameterAccessor (value: string): string {
+        const normalized = value
+            .replace(/[^A-Za-z0-9]+/g, ' ')
+            .trim()
+
+        if (!normalized) {
+            return 'value'
+        }
+
+        const [first, ...rest] = normalized
+            .split(/\s+/)
+            .filter(Boolean)
+
+        const camelValue = [
+            first.toLowerCase(),
+            ...rest.map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase()),
+        ].join('')
+
+        return /^[A-Za-z_$]/.test(camelValue) ? camelValue : `value${camelValue}`
     }
 
     private isRecord (value: unknown): value is Record<string, unknown> {

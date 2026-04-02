@@ -2,9 +2,9 @@ import { AttributeQueryNode, AttributedNode, QueryableNode, ReadmeCodeSnippet, R
 import { OpenApiMediaType, OpenApiOperationLike, OpenApiResponse, OpenApiSchema } from './types/open-api'
 
 import type { Element as HappyDomElement } from 'happy-dom'
+import { JsonRepair } from './JsonRepair'
 import { Window } from 'happy-dom'
 import { isRecord } from './Core'
-import { parsePossiblyTruncatedJson } from './JsonRepair'
 
 export const extractReadmeOperationFromHtml = (html: string): ReadmeOperation => {
     const window = new Window()
@@ -626,7 +626,7 @@ export const normalizeResponseBody = (
     const trimmed = body.trim()
 
     if (contentType?.toLowerCase().includes('json') || /^(?:\{|\[)/.test(trimmed)) {
-        const parsedBody = parsePossiblyTruncatedJson(trimmed)
+        const parsedBody = JsonRepair.parsePossiblyTruncated(trimmed)
 
         if (parsedBody !== null) {
             return {
@@ -1038,7 +1038,7 @@ const stripLineCommentsOutsideStrings = (value: string): string => {
 }
 
 const removeLooseBareTokensBeforeKeys = (value: string): string => {
-    return value.replace(/([\[{]\s*)([A-Za-z_$][\w$-]*)(\s+)(?=")/g, '$1')
+    return value.replace(/([[{]\s*)([A-Za-z_$][\w$-]*)(\s+)(?=")/g, '$1')
 }
 
 const repairAnonymousDataEnvelope = (value: string): string => {

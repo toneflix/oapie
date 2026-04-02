@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { Application } from '../src/Application'
 import axios from 'axios'
-import { createOpenApiDocumentFromReadmeOperations } from '../src/OpenApiTransform'
 import { extractReadmeOperationFromHtml } from '../src/ReadmeExtractor'
 import { readFile } from 'node:fs/promises'
+import { transformer } from '../src/OpenApiTransform'
 
 vi.mock('axios', () => {
     return {
@@ -61,7 +61,7 @@ describe('Application', () => {
             maxRedirects: 5,
         }))
 
-        const document = createOpenApiDocumentFromReadmeOperations(crawlResult.operations, 'Crawled API', '1.0.0')
+        const document = transformer.createDocument(crawlResult.operations, 'Crawled API', '1.0.0')
 
         expect(document.paths).toEqual({
             '/customers': {

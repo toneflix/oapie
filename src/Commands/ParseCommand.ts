@@ -5,10 +5,10 @@ import { Command } from '@h3ravel/musket'
 import { Logger } from '@h3ravel/shared'
 import { OutputGenerator } from '../generator/OutputGenerator'
 import { UserConfig } from 'src/types/app'
-import { createOpenApiDocumentFromReadmeOperations } from '../OpenApiTransform'
 import { extractReadmeOperationFromHtml } from '../ReadmeExtractor'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { transformer } from '../OpenApiTransform'
 
 export class ParseCommand extends Command<Application> {
     protected signature = `parse
@@ -103,10 +103,10 @@ export class ParseCommand extends Command<Application> {
         payload: Awaited<ReturnType<Application['crawlReadmeOperations']>> | ReturnType<typeof extractReadmeOperationFromHtml>
     ) => {
         if ('operations' in payload) {
-            return createOpenApiDocumentFromReadmeOperations(payload.operations, 'Extracted API', '0.0.0')
+            return transformer.createDocument(payload.operations, 'Extracted API', '0.0.0')
         }
 
-        return createOpenApiDocumentFromReadmeOperations([payload], 'Extracted API', '0.0.0')
+        return transformer.createDocument([payload], 'Extracted API', '0.0.0')
     }
 
     saveOutputToFile = async (

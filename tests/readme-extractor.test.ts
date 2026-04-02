@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { extractReadmeOperationFromHtml, normalizeResponseBody } from '../src/ReadmeExtractor'
 
-import { createOpenApiDocumentFromReadmeOperations } from '../src/OpenApiTransform'
 import { readFile } from 'node:fs/promises'
 import { resolveReadmeSidebarUrls } from '../src/ReadmeCrawler'
+import { transformer } from '../src/OpenApiTransform'
 
 describe('normalizeResponseBody', () => {
     it('parses loose JSON response bodies instead of leaving them as strings', () => {
@@ -498,7 +498,7 @@ describe('extractReadmeOperationFromHtml', () => {
     it('repairs dedicated malformed response snippets without relying on Anchor-specific markup', async () => {
         const html = await readFile(new URL('./fixtures/readme-truncated-json-response-example.html', import.meta.url), 'utf8')
         const operation = extractReadmeOperationFromHtml(html)
-        const document = createOpenApiDocumentFromReadmeOperations([operation], 'Repair API', '1.0.0')
+        const document = transformer.createDocument([operation], 'Repair API', '1.0.0')
 
         expect(operation.responseBodies).toEqual([
             {
@@ -532,7 +532,7 @@ describe('extractReadmeOperationFromHtml', () => {
     it('falls back to embedded ssr props when the readme dom is sparse', async () => {
         const html = await readFile(new URL('./fixtures/readme-ssr-props-example.html', import.meta.url), 'utf8')
         const operation = extractReadmeOperationFromHtml(html)
-        const document = createOpenApiDocumentFromReadmeOperations([operation], 'SSR API', '1.0.0')
+        const document = transformer.createDocument([operation], 'SSR API', '1.0.0')
 
         expect(operation.method).toBe('POST')
         expect(operation.url).toBe('https://api.example.com/v1/customers')
@@ -614,7 +614,7 @@ describe('extractReadmeOperationFromHtml', () => {
     it('extracts query and header parameters from embedded ssr props', async () => {
         const html = await readFile(new URL('./fixtures/readme-ssr-props-parameters-example.html', import.meta.url), 'utf8')
         const operation = extractReadmeOperationFromHtml(html)
-        const document = createOpenApiDocumentFromReadmeOperations([operation], 'SSR Params API', '1.0.0')
+        const document = transformer.createDocument([operation], 'SSR Params API', '1.0.0')
 
         expect(operation.method).toBe('GET')
         expect(operation.url).toBe('https://api.example.com/v1/customers')
@@ -731,7 +731,7 @@ describe('extractReadmeOperationFromHtml', () => {
     it('transforms extracted operations into an OpenAPI-like document', async () => {
         const html = await readFile(new URL('./fixtures/example.html', import.meta.url), 'utf8')
         const operation = extractReadmeOperationFromHtml(html)
-        const document = createOpenApiDocumentFromReadmeOperations([operation], 'Maplerad', '1.0.0')
+        const document = transformer.createDocument([operation], 'Maplerad', '1.0.0')
 
         expect(document).toEqual({
             openapi: '3.1.0',
@@ -805,7 +805,7 @@ describe('extractReadmeOperationFromHtml', () => {
     it('builds one OpenAPI-like document from multiple extracted operations', async () => {
         const customerHtml = await readFile(new URL('./fixtures/example.html', import.meta.url), 'utf8')
         const textHtml = await readFile(new URL('./fixtures/readme-text-response-example.html', import.meta.url), 'utf8')
-        const document = createOpenApiDocumentFromReadmeOperations([
+        const document = transformer.createDocument([
             extractReadmeOperationFromHtml(customerHtml),
             extractReadmeOperationFromHtml(textHtml),
         ], 'Combined API', '2.0.0')
@@ -905,7 +905,7 @@ describe('extractReadmeOperationFromHtml', () => {
     it('builds nested request body schemas from nested body params', async () => {
         const html = await readFile(new URL('./fixtures/readme-nested-body-example.html', import.meta.url), 'utf8')
         const operation = extractReadmeOperationFromHtml(html)
-        const document = createOpenApiDocumentFromReadmeOperations([operation], 'Nested API', '1.0.0')
+        const document = transformer.createDocument([operation], 'Nested API', '1.0.0')
 
         expect(document.paths['/v1/customers/nested']?.post?.requestBody).toEqual({
             required: true,

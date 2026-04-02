@@ -110,7 +110,7 @@ Convert extracted data into an OpenAPI-like document:
 ```ts
 import {
   Application,
-  createOpenApiDocumentFromReadmeOperations,
+  transformer,
   extractReadmeOperationFromHtml,
 } from 'oapiex';
 
@@ -121,7 +121,7 @@ const html = await app.loadHtmlSource(
 );
 const operation = extractReadmeOperationFromHtml(html);
 
-const document = createOpenApiDocumentFromReadmeOperations(
+const document = transformer.createDocument(
   [operation],
   'Extracted API',
   '0.0.0',

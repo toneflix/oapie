@@ -28,7 +28,7 @@ The core programmatic pieces are:
 
 - `Application`: load local or remote HTML and crawl linked pages
 - `extractReadmeOperationFromHtml`: extract a normalized operation from HTML
-- `createOpenApiDocumentFromReadmeOperations`: convert extracted operations into an OpenAPI-like document
+- `transformer.createDocument`: convert extracted operations into an OpenAPI-like document
 - `defineConfig`: merge config with defaults
 - `startBrowserSession` and `endBrowserSession`: control shared browser sessions for advanced workflows
 
@@ -61,7 +61,7 @@ console.log(operation.responseSchemas);
 ```ts
 import {
   Application,
-  createOpenApiDocumentFromReadmeOperations,
+  transformer,
   extractReadmeOperationFromHtml,
 } from 'oapiex';
 
@@ -76,7 +76,7 @@ const html = await app.loadHtmlSource(
 
 const operation = extractReadmeOperationFromHtml(html);
 
-const document = createOpenApiDocumentFromReadmeOperations(
+const document = transformer.createDocument(
   [operation],
   'Extracted API',
   '0.0.0',
@@ -90,7 +90,7 @@ console.log(JSON.stringify(document, null, 2));
 ```ts
 import {
   Application,
-  createOpenApiDocumentFromReadmeOperations,
+  transformer,
   extractReadmeOperationFromHtml,
 } from 'oapiex';
 
@@ -105,7 +105,7 @@ const rootOperation = extractReadmeOperationFromHtml(html);
 
 const crawled = await app.crawlReadmeOperations(source, rootOperation, null);
 
-const document = createOpenApiDocumentFromReadmeOperations(
+const document = transformer.createDocument(
   crawled.operations,
   'Extracted API',
   '0.0.0',

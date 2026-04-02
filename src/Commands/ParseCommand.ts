@@ -1,3 +1,4 @@
+import { buildOutputFilePath, getRootTypeNameForShape, serializeOutput } from '../generator/OutputGenerator'
 import { endBrowserSession, isSupportedBrowser, startBrowserSession } from '../Manager'
 
 import { Application } from 'src/Application'
@@ -8,7 +9,6 @@ import { createOpenApiDocumentFromReadmeOperations } from '../OpenApiTransform'
 import { extractReadmeOperationFromHtml } from '../ReadmeExtractor'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { buildOutputFilePath, getRootTypeNameForShape, serializeOutput } from '../generator/OutputGenerator'
 
 export class ParseCommand extends Command<Application> {
     protected signature = `parse
@@ -16,6 +16,7 @@ export class ParseCommand extends Command<Application> {
         {--O|output=pretty : Output format [pretty,json,js,ts]}
         {--S|shape=raw : Result shape [raw,openapi]}
         {--B|browser? : Remote loader [axios,happy-dom,jsdom,puppeteer]}
+        {--t|timeout? : Request/browser timeout in milliseconds}
         {--c|crawl : Crawl sidebar links and parse every discovered operation}
         {--b|base-url? : Base URL used to resolve sidebar links when crawling from a local file}
     `
@@ -29,6 +30,7 @@ export class ParseCommand extends Command<Application> {
         const output = String(this.option('output', conf.outputFormat)).trim().toLowerCase() as UserConfig['outputFormat']
         const shape = String(this.option('shape', conf.outputShape)).trim().toLowerCase()
         const browser = String(this.option('browser', conf.browser)).trim().toLowerCase()
+        const timeoutOption = String(this.option('timeout', '')).trim()
         const crawl = this.option('crawl')
         const baseUrl = String(this.option('baseUrl', '')).trim() || null
         const spinner = this.spinner(`${crawl ? 'Crawling and p' : 'P'}arsing source...`).start()
@@ -40,7 +42,9 @@ export class ParseCommand extends Command<Application> {
                 throw new Error(`Unsupported browser: ${browser}`)
             }
 
-            this.app.configure({ browser })
+            const requestTimeout = this.resolveTimeoutOverride(timeoutOption, conf.requestTimeout)
+
+            this.app.configure({ browser, requestTimeout })
 
             if (crawl) {
                 await startBrowserSession(this.app.getConfig())
@@ -84,6 +88,15 @@ export class ParseCommand extends Command<Application> {
                 await endBrowserSession()
             }
         }
+    }
+
+    resolveTimeoutOverride = (value: string, fallback: number): number => {
+        if (!value) return fallback
+        const parsed = Number(value)
+        if (!Number.isFinite(parsed) || parsed <= 0)
+            throw new Error(`Invalid timeout override: ${value}`)
+
+        return parsed
     }
 
     buildOpenApiPayload = (

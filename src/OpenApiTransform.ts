@@ -2,6 +2,7 @@ import { OpenApiDocumentLike, OpenApiMediaType, OpenApiOperationLike, OpenApiPar
 import type { ReadmeOperation, ReadmeParameter, ReadmeResponseBody } from './types/base'
 
 import { isRecord } from './Core'
+import { parseLooseStructuredValue } from './ReadmeExtractor'
 import { parsePossiblyTruncatedJson } from './JsonRepair'
 
 export const createOpenApiDocumentFromReadmeOperations = (
@@ -315,10 +316,11 @@ export const createResponseContent = (
 
     for (const body of bodies) {
         const contentType = body.contentType ?? (body.format === 'json' ? 'application/json' : 'text/plain')
+        const normalizedExample = normalizeResponseExampleValue(body.body, body.format)
 
         content[contentType] = {
-            schema: inferSchemaFromBody(body.body, body.format),
-            example: body.body,
+            schema: inferSchemaFromBody(normalizedExample, body.format),
+            example: normalizedExample,
         }
     }
 
@@ -341,6 +343,17 @@ export const inferSchemaFromBody = (
     }
 
     return undefined
+}
+
+export const normalizeResponseExampleValue = (
+    body: unknown,
+    format: ReadmeResponseBody['format']
+): unknown => {
+    if (format !== 'json' || typeof body !== 'string') {
+        return body
+    }
+
+    return parsePossiblyTruncatedJson(body) ?? parseLooseStructuredValue(body) ?? body
 }
 
 export const resolveFallbackRequestBodyExample = (operation: ReadmeOperation): unknown | null => {

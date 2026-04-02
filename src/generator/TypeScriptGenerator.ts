@@ -54,10 +54,26 @@ interface GeneratorContext {
 }
 
 interface SemanticModel {
+    path: string
+    method: string
     name: string
-    role: 'response' | 'input' | 'query' | 'header' | 'params'
+    role: 'response' | 'responseExample' | 'input' | 'query' | 'header' | 'params'
     shape: ShapeNode
     collisionSuffix: string
+}
+
+interface OperationTypeRefs {
+    response: string
+    responseExample: string
+    input: string
+    query: string
+    header: string
+    params: string
+}
+
+interface PayloadSchemaCandidate {
+    schema?: OpenApiSchema
+    example?: unknown
 }
 
 const emptyObjectShape = createObjectShape([])
@@ -84,8 +100,22 @@ const generateOpenApiTypeScriptModule = (
         usedNames: new Set(),
     }
 
+    const operationTypeRefs = new Map<string, OperationTypeRefs>()
+
     for (const model of collectSemanticModels(document)) {
-        registerNamedShape(namespaceTopLevelShape(model.shape, model.role), model.name, context, model.collisionSuffix)
+        const operationKey = `${model.path}::${model.method}`
+        const resolvedName = registerNamedShape(namespaceTopLevelShape(model.shape, model.role), model.name, context, model.collisionSuffix)
+        const existingRefs = operationTypeRefs.get(operationKey) ?? {
+            response: 'Record<string, never>',
+            responseExample: 'unknown',
+            input: 'Record<string, never>',
+            query: 'Record<string, never>',
+            header: 'Record<string, never>',
+            params: 'Record<string, never>',
+        }
+
+        existingRefs[model.role] = resolvedName
+        operationTypeRefs.set(operationKey, existingRefs)
     }
 
     const declarations = context.declarations
@@ -95,7 +125,7 @@ const generateOpenApiTypeScriptModule = (
 
     return [
         declarations,
-        renderOpenApiDocumentDefinitions(rootTypeName),
+        renderOpenApiDocumentDefinitions(rootTypeName, document, operationTypeRefs),
         `export const ${variableName}: ${rootTypeName} = ${JSON.stringify(document, null, 2)}`,
         '',
         `export default ${variableName}`,
@@ -106,20 +136,29 @@ const collectSemanticModels = (document: OpenApiDocumentLike): SemanticModel[] =
     const models: SemanticModel[] = []
 
     for (const [path, operations] of Object.entries(document.paths)) {
-        const baseName = deriveBaseTypeNameFromPath(path)
+        const naming = deriveOperationNaming(path)
+        const baseName = naming.baseName
+        const sortedOperations = Object.entries(operations).sort(([, leftOperation], [, rightOperation]) => {
+            return getOperationPriority(rightOperation) - getOperationPriority(leftOperation)
+        })
 
-        for (const [method, operation] of Object.entries(operations)) {
-            const collisionSuffix = `${sanitizeTypeName(method)}${baseName}`
+        for (const [method, operation] of sortedOperations) {
+            const collisionSuffix = naming.collisionSuffix || fallbackCollisionSuffix(method, path, baseName)
 
-            models.push({ name: baseName, role: 'response', shape: getSuccessResponseShape(operation.responses), collisionSuffix })
-            models.push({ name: `${baseName}Input`, role: 'input', shape: getRequestInputShape(operation.requestBody), collisionSuffix })
-            models.push({ name: `${baseName}Query`, role: 'query', shape: createParameterGroupShape(operation.parameters, 'query'), collisionSuffix })
-            models.push({ name: `${baseName}Header`, role: 'header', shape: createParameterGroupShape(operation.parameters, 'header'), collisionSuffix })
-            models.push({ name: `${baseName}Params`, role: 'params', shape: createParameterGroupShape(operation.parameters, 'path'), collisionSuffix })
+            models.push({ path, method, name: baseName, role: 'response', shape: getSuccessResponseShape(operation.responses), collisionSuffix })
+            models.push({ path, method, name: `${baseName}ResponseExample`, role: 'responseExample', shape: getResponseExampleShape(operation.responses), collisionSuffix })
+            models.push({ path, method, name: `${baseName}Input`, role: 'input', shape: getRequestInputShape(operation.requestBody), collisionSuffix })
+            models.push({ path, method, name: `${baseName}Query`, role: 'query', shape: createParameterGroupShape(operation.parameters, 'query'), collisionSuffix })
+            models.push({ path, method, name: `${baseName}Header`, role: 'header', shape: createParameterGroupShape(operation.parameters, 'header'), collisionSuffix })
+            models.push({ path, method, name: `${baseName}Params`, role: 'params', shape: createParameterGroupShape(operation.parameters, 'path'), collisionSuffix })
         }
     }
 
     return models
+}
+
+const getOperationPriority = (operation: OpenApiOperationLike): number => {
+    return Number(Boolean(operation.requestBody)) * 10
 }
 
 const getSuccessResponseShape = (responses: Record<string, OpenApiResponse>): ShapeNode => {
@@ -137,17 +176,17 @@ const getSuccessResponseShape = (responses: Record<string, OpenApiResponse>): Sh
         return emptyObjectShape
     }
 
-    const dataSchema = getDataSchema(mediaType.schema, mediaType.example)
+    const payload = resolveResponsePayloadSchema(mediaType.schema, mediaType.example)
 
-    if (!dataSchema) {
+    if (!payload.schema) {
         return schemaToShape(mediaType.schema, 'Response', mediaType.example)
     }
 
-    if (resolveSchemaType(dataSchema) === 'array') {
-        return schemaToShape(dataSchema.items, 'Item', extractExampleArrayItem(dataSchema.example))
+    if (resolveSchemaType(payload.schema) === 'array') {
+        return schemaToShape(payload.schema.items, 'Item', extractExampleArrayItem(payload.example))
     }
 
-    return schemaToShape(dataSchema, 'Response', mediaType.example)
+    return schemaToShape(payload.schema, 'Response', payload.example)
 }
 
 const getRequestInputShape = (requestBody: OpenApiOperationLike['requestBody']): ShapeNode => {
@@ -162,6 +201,37 @@ const getRequestInputShape = (requestBody: OpenApiOperationLike['requestBody']):
     }
 
     return schemaToShape(mediaType.schema, 'Input', mediaType.example)
+}
+
+const getResponseExampleShape = (responses: Record<string, OpenApiResponse>): ShapeNode => {
+    const shapes = Object.entries(responses)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .flatMap(([, response]) => {
+            const mediaType = getPreferredMediaType(response.content)
+
+            if (!mediaType) {
+                return []
+            }
+
+            const fullExample = mediaType.example ?? mediaType.schema?.example
+
+            if (mediaType.schema) {
+                return [schemaToShape(mediaType.schema, 'ResponseExample', fullExample)]
+            }
+
+            if (fullExample !== undefined) {
+                return [inferShapeFromExample(fullExample, 'ResponseExample')]
+            }
+
+            return []
+        })
+    const uniqueShapes = dedupeShapes(shapes)
+
+    if (uniqueShapes.length === 0) {
+        return { kind: 'primitive', type: 'unknown' }
+    }
+
+    return uniqueShapes.length === 1 ? uniqueShapes[0] : { kind: 'union', types: uniqueShapes }
 }
 
 const createParameterGroupShape = (
@@ -578,12 +648,17 @@ const schemaToShape = (
     }
 
     if (schemaType === 'object') {
+        const propertyExamples = isRecord(schema.example)
+            ? schema.example
+            : isRecord(fallbackExample)
+                ? fallbackExample
+                : undefined
         const properties = Object.entries(schema.properties ?? {})
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([key, entry]) => ({
                 key,
                 optional: !(schema.required ?? []).includes(key),
-                shape: schemaToShape(entry, key, isRecord(schema.example) ? schema.example[key] : undefined),
+                shape: schemaToShape(entry, key, propertyExamples?.[key]),
             }))
 
         if (properties.length > 0) {
@@ -712,26 +787,85 @@ const getPreferredMediaType = (content: Record<string, OpenApiMediaType> | undef
         ?? Object.values(content)[0]
 }
 
-const getDataSchema = (schema: OpenApiSchema | undefined, example: unknown): OpenApiSchema | undefined => {
-    if (schema?.properties?.data) {
-        return schema.properties.data
-    }
+const resolveResponsePayloadSchema = (schema: OpenApiSchema | undefined, example: unknown): PayloadSchemaCandidate => {
+    for (const path of [['data'], ['meta', 'data']]) {
+        const candidate = getSchemaCandidateAtPath(schema, example, path)
 
-    if (isRecord(example) && 'data' in example) {
-        return {
-            example: example.data,
-            ...inferSchemaTypeFromExample(example.data),
+        if (candidate) {
+            return candidate
         }
     }
 
-    return undefined
+    return {}
+}
+
+const getSchemaCandidateAtPath = (
+    schema: OpenApiSchema | undefined,
+    example: unknown,
+    path: string[]
+): PayloadSchemaCandidate | undefined => {
+    const schemaAtPath = getSchemaAtPath(schema, path)
+    const exampleAtPath = getExampleAtPath(example, path)
+
+    if (!schemaAtPath && exampleAtPath === undefined) {
+        return undefined
+    }
+
+    if (schemaAtPath) {
+        return {
+            schema: schemaAtPath.example === undefined && exampleAtPath !== undefined
+                ? { ...schemaAtPath, example: exampleAtPath }
+                : schemaAtPath,
+            example: exampleAtPath ?? schemaAtPath.example,
+        }
+    }
+
+    return {
+        schema: {
+            ...inferSchemaTypeFromExample(exampleAtPath),
+            example: exampleAtPath,
+        },
+        example: exampleAtPath,
+    }
+}
+
+const getSchemaAtPath = (schema: OpenApiSchema | undefined, path: string[]): OpenApiSchema | undefined => {
+    let currentSchema = schema
+
+    for (const segment of path) {
+        if (!currentSchema?.properties?.[segment]) {
+            return undefined
+        }
+
+        currentSchema = currentSchema.properties[segment]
+    }
+
+    return currentSchema
+}
+
+const getExampleAtPath = (example: unknown, path: string[]): unknown => {
+    let currentValue = example
+
+    for (const segment of path) {
+        if (!isRecord(currentValue) || !(segment in currentValue)) {
+            return undefined
+        }
+
+        currentValue = currentValue[segment]
+    }
+
+    return currentValue
 }
 
 const inferSchemaTypeFromExample = (value: unknown): OpenApiSchema => {
     if (Array.isArray(value)) {
+        const itemSchema = value
+            .map((entry) => inferSchemaTypeFromExample(entry))
+            .find((entry) => hasSchemaDetails(entry))
+
         return {
             type: 'array',
-            items: inferSchemaTypeFromExample(value[0]),
+            items: itemSchema ?? {},
         }
     }
 
@@ -757,6 +891,15 @@ const inferSchemaTypeFromExample = (value: unknown): OpenApiSchema => {
     return {}
 }
 
+const hasSchemaDetails = (schema: OpenApiSchema | undefined): boolean => {
+    return Boolean(
+        schema?.type
+        || schema?.properties
+        || schema?.items
+        || schema?.example !== undefined
+    )
+}
+
 const resolveSchemaType = (schema: OpenApiSchema): string | undefined => {
     return schema.type ?? (schema.properties ? 'object' : undefined)
 }
@@ -765,17 +908,66 @@ const extractExampleArrayItem = (value: unknown): unknown => {
     return Array.isArray(value) ? value[0] : undefined
 }
 
-const renderOpenApiDocumentDefinitions = (rootTypeName: string): string => {
+const renderOpenApiDocumentDefinitions = (
+    rootTypeName: string,
+    document: OpenApiDocumentLike,
+    operationTypeRefs: Map<string, OperationTypeRefs>
+): string => {
+    const pathDeclarations = Object.entries(document.paths).map(([path, operations]) => {
+        const pathTypeName = derivePathTypeName(path)
+        const operationDeclarations = Object.keys(operations).map((method) => {
+            const operationTypeName = deriveOperationInterfaceName(path, method)
+            const refs = operationTypeRefs.get(`${path}::${method}`) ?? {
+                response: 'Record<string, never>',
+                responseExample: 'unknown',
+                input: 'Record<string, never>',
+                query: 'Record<string, never>',
+                header: 'Record<string, never>',
+                params: 'Record<string, never>',
+            }
+
+            return `export interface ${operationTypeName} extends OpenApiOperationDefinition<${refs.response}, ${refs.responseExample}, ${refs.input}, ${refs.query}, ${refs.header}, ${refs.params}> {}`
+        }).join('\n\n')
+        const pathBody = Object.keys(operations)
+            .map((method) => `  ${method}: ${deriveOperationInterfaceName(path, method)}`)
+            .join('\n')
+
+        return [
+            operationDeclarations,
+            `export interface ${pathTypeName} {\n${pathBody}\n}`,
+        ].join('\n\n')
+    }).join('\n\n')
+    const pathsBody = Object.keys(document.paths)
+        .map((path) => `  ${formatPropertyKey(path)}: ${derivePathTypeName(path)}`)
+        .join('\n')
+
     return [
         'export interface OpenApiInfo {\n  title: string\n  version: string\n}',
         'export interface OpenApiSchemaDefinition {\n  type?: string\n  description?: string\n  default?: unknown\n  properties?: Record<string, OpenApiSchemaDefinition>\n  items?: OpenApiSchemaDefinition\n  required?: string[]\n  example?: unknown\n}',
         'export interface OpenApiParameterDefinition {\n  name: string\n  in: \'query\' | \'header\' | \'path\' | \'cookie\'\n  required?: boolean\n  description?: string\n  schema?: OpenApiSchemaDefinition\n  example?: unknown\n}',
-        'export interface OpenApiMediaTypeDefinition {\n  schema?: OpenApiSchemaDefinition\n  example?: unknown\n}',
-        'export interface OpenApiResponseDefinition {\n  description: string\n  content?: Record<string, OpenApiMediaTypeDefinition>\n}',
-        'export interface OpenApiRequestBodyDefinition {\n  required: boolean\n  content: Record<string, OpenApiMediaTypeDefinition>\n}',
-        'export interface OpenApiOperationDefinition {\n  summary?: string\n  description?: string\n  operationId?: string\n  parameters?: OpenApiParameterDefinition[]\n  requestBody?: OpenApiRequestBodyDefinition\n  responses: Record<string, OpenApiResponseDefinition>\n}',
-        `export interface ${rootTypeName} {\n  openapi: '3.1.0'\n  info: OpenApiInfo\n  paths: Record<string, Record<string, OpenApiOperationDefinition>>\n}`,
+        'export interface OpenApiMediaTypeDefinition<TExample = unknown> {\n  schema?: OpenApiSchemaDefinition\n  example?: TExample\n}',
+        'export interface OpenApiResponseDefinition<TResponse = unknown, TExample = unknown> {\n  description: string\n  content?: Record<string, OpenApiMediaTypeDefinition<TExample>>\n}',
+        'export interface OpenApiRequestBodyDefinition<TInput = unknown> {\n  required: boolean\n  content: Record<string, OpenApiMediaTypeDefinition<TInput>>\n}',
+        'export interface OpenApiOperationDefinition<TResponse = unknown, TResponseExample = unknown, TInput = Record<string, never>, TQuery = Record<string, never>, THeader = Record<string, never>, TParams = Record<string, never>> {\n  summary?: string\n  description?: string\n  operationId?: string\n  parameters?: OpenApiParameterDefinition[]\n  requestBody?: OpenApiRequestBodyDefinition<TInput>\n  responses: Record<string, OpenApiResponseDefinition<TResponse, TResponseExample>>\n}',
+        pathDeclarations,
+        `export interface Paths {\n${pathsBody}\n}`,
+        `export interface ${rootTypeName} {\n  openapi: '3.1.0'\n  info: OpenApiInfo\n  paths: Paths\n}`,
     ].join('\n\n')
+}
+
+const derivePathTypeName = (path: string): string => {
+    const segments = path
+        .split('/')
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+        .filter((segment) => !/^v\d+$/i.test(segment))
+        .map((segment) => isPathParam(segment) ? `by ${stripPathParam(segment)}` : segment)
+
+    return `${sanitizeTypeName(segments.join(' '))}Path`
+}
+
+const deriveOperationInterfaceName = (path: string, method: string): string => {
+    return `${derivePathTypeName(path)}${sanitizeTypeName(method)}Operation`
 }
 
 const generateGenericTypeScriptModule = (value: JsonLike, rootTypeName: string): string => {
@@ -826,7 +1018,7 @@ const createUniqueTypeName = (preferredName: string, context: GeneratorContext, 
         return candidate
     }
 
-    candidate = `${baseName}${collisionName}`
+    candidate = insertCollisionSuffix(baseName, collisionName)
 
     if (!context.usedNames.has(candidate)) {
         context.usedNames.add(candidate)
@@ -844,17 +1036,108 @@ const createUniqueTypeName = (preferredName: string, context: GeneratorContext, 
     return candidate
 }
 
-const deriveBaseTypeNameFromPath = (path: string): string => {
-    const segments = path
+const deriveOperationNaming = (path: string): { baseName: string, collisionSuffix: string } => {
+    const pathSegments = path
         .split('/')
         .map((segment) => segment.trim())
         .filter(Boolean)
         .filter((segment) => !/^v\d+$/i.test(segment))
-        .filter((segment) => !segment.startsWith('{') && !segment.endsWith('}'))
-    const baseSegment = segments[segments.length - 1] ?? 'resource'
+    const staticSegments = pathSegments.filter((segment) => !isPathParam(segment)).map((segment) => singularize(segment))
+    const paramSegments = pathSegments.filter((segment) => isPathParam(segment)).map((segment) => singularize(stripPathParam(segment)))
+    const tailSegment = staticSegments[staticSegments.length - 1] ?? 'resource'
+    const parentSegment = staticSegments[staticSegments.length - 2] ?? null
+    const hasPathParamBeforeTail = pathSegments.slice(0, -1).some((segment) => isPathParam(segment))
+    const shouldPrefixParent = Boolean(
+        parentSegment
+        && (
+            contextualTailSegments.has(tailSegment.toLowerCase())
+            || (hasPathParamBeforeTail && nestedContextSegments.has(tailSegment.toLowerCase()))
+        )
+    )
+    const baseName = sanitizeTypeName(shouldPrefixParent ? `${parentSegment} ${tailSegment}` : tailSegment)
+    const collisionSuffix = paramSegments.length > 0
+        ? `By ${paramSegments.map((segment) => sanitizeTypeName(segment)).join(' And ')}`
+        : parentSegment && !shouldPrefixParent
+            ? sanitizeTypeName(parentSegment)
+            : ''
 
-    return sanitizeTypeName(singularize(baseSegment))
+    return {
+        baseName,
+        collisionSuffix,
+    }
 }
+
+const fallbackCollisionSuffix = (method: string, path: string, baseName: string): string => {
+    const pathSegments = path
+        .split('/')
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+        .filter((segment) => !/^v\d+$/i.test(segment))
+    const staticSegments = pathSegments.filter((segment) => !isPathParam(segment))
+    const tailSegment = staticSegments[staticSegments.length - 1] ?? ''
+    const hasParams = pathSegments.some((segment) => isPathParam(segment))
+
+    if (method === 'get' && !hasParams && /s$/i.test(tailSegment)) {
+        return 'List'
+    }
+
+    if (method === 'post' && !hasParams) {
+        return 'Create'
+    }
+
+    if ((method === 'put' || method === 'patch') && hasParams) {
+        return 'Update'
+    }
+
+    if (method === 'delete') {
+        return 'Delete'
+    }
+
+    return `${sanitizeTypeName(method)}${baseName}`
+}
+
+const insertCollisionSuffix = (baseName: string, collisionName: string): string => {
+    if (!collisionName) {
+        return baseName
+    }
+
+    for (const roleSuffix of roleSuffixes) {
+        if (baseName.endsWith(roleSuffix) && baseName.length > roleSuffix.length) {
+            return `${baseName.slice(0, -roleSuffix.length)}${collisionName}${roleSuffix}`
+        }
+    }
+
+    return `${baseName}${collisionName}`
+}
+
+const isPathParam = (segment: string): boolean => {
+    return segment.startsWith('{') && segment.endsWith('}')
+}
+
+const stripPathParam = (segment: string): string => {
+    return segment.replace(/^\{/, '').replace(/\}$/, '')
+}
+
+const contextualTailSegments = new Set([
+    'history',
+    'status',
+    'detail',
+    'details',
+])
+
+const nestedContextSegments = new Set([
+    'account',
+    'accounts',
+    'transaction',
+    'transactions',
+    'wallet',
+    'wallets',
+    'virtual-account',
+    'virtual-accounts',
+    'history',
+])
+
+const roleSuffixes = ['Input', 'Query', 'Header', 'Params']
 
 const singularize = (value: string): string => {
     if (/ies$/i.test(value)) {
@@ -889,7 +1172,9 @@ const sanitizeTypeName = (value: string): string => {
 }
 
 const formatPropertyKey = (key: string): string => {
-    return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : JSON.stringify(key)
+    return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
+        ? key
+        : `'${key.replace(/\\/g, String.raw`\\`).replace(/'/g, String.raw`\'`)}'`
 }
 
 const toCamelCase = (value: string): string => {

@@ -19,9 +19,14 @@ export const parsePossiblyTruncatedJson = (value: string): unknown | null => {
 }
 
 const repairCommonJsonIssues = (value: string): string => {
-    const withMissingCommasInserted = insertMissingCommas(value)
+    const withUnexpectedTokensRemoved = removeUnexpectedObjectTokens(value)
+    const withMissingCommasInserted = insertMissingCommas(withUnexpectedTokensRemoved)
 
     return `${withMissingCommasInserted}${buildMissingJsonClosers(withMissingCommasInserted)}`
+}
+
+const removeUnexpectedObjectTokens = (value: string): string => {
+    return value.replace(/([\[{,]\s*)([A-Za-z_$][\w$-]*)(?=\s*"(?:\\.|[^"\\])*"\s*:)/g, '$1')
 }
 
 const insertMissingCommas = (value: string): string => {

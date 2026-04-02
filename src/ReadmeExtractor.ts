@@ -635,6 +635,15 @@ export const normalizeResponseBody = (
             }
         }
 
+        const looseParsedBody = parseLooseStructuredValue(trimmed)
+
+        if (looseParsedBody !== null) {
+            return {
+                format: 'json',
+                body: looseParsedBody,
+            }
+        }
+
         return {
             format: 'text',
             body,
@@ -882,22 +891,174 @@ export const extractStringLiteralValue = (source: string, startIndex: number): s
 }
 
 export const parseLooseStructuredValue = (value: string): unknown | null => {
-    const trimmed = value.trim()
+    const trimmed = preprocessLooseStructuredValue(value).trim()
 
     if (!/^[[{]/.test(trimmed)) {
         return null
     }
 
-    const normalized = trimmed
+    const normalized = replaceSingleQuotedStringsOutsideDoubleQuotes(trimmed
         .replace(/([{,]\s*)([A-Za-z_$][\w$-]*)(\s*:)/g, '$1"$2"$3')
-        .replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, (_match, inner: string) => JSON.stringify(inner.replace(/\\'/g, '\'')))
-        .replace(/,\s*([}\]])/g, '$1')
+        .replace(/,\s*([}\]])/g, '$1'))
 
     try {
         return JSON.parse(normalized)
     } catch {
         return null
     }
+}
+
+const replaceSingleQuotedStringsOutsideDoubleQuotes = (value: string): string => {
+    let result = ''
+    let inDoubleString = false
+    let inSingleString = false
+    let isEscaped = false
+    let singleQuotedContent = ''
+
+    for (const character of value) {
+        if (inSingleString) {
+            if (isEscaped) {
+                singleQuotedContent += character
+                isEscaped = false
+                continue
+            }
+
+            if (character === '\\') {
+                isEscaped = true
+                continue
+            }
+
+            if (character === '\'') {
+                result += JSON.stringify(singleQuotedContent)
+                singleQuotedContent = ''
+                inSingleString = false
+                continue
+            }
+
+            singleQuotedContent += character
+            continue
+        }
+
+        if (inDoubleString) {
+            result += character
+
+            if (isEscaped) {
+                isEscaped = false
+                continue
+            }
+
+            if (character === '\\') {
+                isEscaped = true
+                continue
+            }
+
+            if (character === '"') {
+                inDoubleString = false
+            }
+
+            continue
+        }
+
+        if (character === '\'') {
+            inSingleString = true
+            singleQuotedContent = ''
+            continue
+        }
+
+        if (character === '"') {
+            inDoubleString = true
+        }
+
+        result += character
+    }
+
+    return result
+}
+
+const preprocessLooseStructuredValue = (value: string): string => {
+    let normalized = stripLineCommentsOutsideStrings(value)
+
+    normalized = removeLooseBareTokensBeforeKeys(normalized)
+    normalized = repairAnonymousDataEnvelope(normalized)
+
+    return normalized
+}
+
+const stripLineCommentsOutsideStrings = (value: string): string => {
+    let result = ''
+    let inString = false
+    let isEscaped = false
+
+    for (let index = 0; index < value.length; index += 1) {
+        const character = value[index]
+        const nextCharacter = value[index + 1]
+
+        if (inString) {
+            result += character
+
+            if (isEscaped) {
+                isEscaped = false
+                continue
+            }
+
+            if (character === '\\') {
+                isEscaped = true
+                continue
+            }
+
+            if (character === '"') {
+                inString = false
+            }
+
+            continue
+        }
+
+        if (character === '"') {
+            inString = true
+            result += character
+            continue
+        }
+
+        if (character === '/' && nextCharacter === '/') {
+            while (index < value.length && value[index] !== '\n') {
+                index += 1
+            }
+
+            if (index < value.length) {
+                result += value[index]
+            }
+
+            continue
+        }
+
+        result += character
+    }
+
+    return result
+}
+
+const removeLooseBareTokensBeforeKeys = (value: string): string => {
+    return value.replace(/([\[{]\s*)([A-Za-z_$][\w$-]*)(\s+)(?=")/g, '$1')
+}
+
+const repairAnonymousDataEnvelope = (value: string): string => {
+    const trimmed = value.trimStart()
+
+    if (!trimmed.startsWith('{') || /"data"\s*:\s*\[/.test(trimmed)) {
+        return value
+    }
+
+    if (!/^\{\s*"[^"]+"\s*:/.test(trimmed)) {
+        return value
+    }
+
+    if (!/\]\s*,\s*"meta"\s*:/.test(trimmed)) {
+        return value
+    }
+
+    const leadingWhitespace = value.slice(0, value.indexOf('{'))
+
+    return `${leadingWhitespace}{"data": [{${trimmed.slice(1)}`
 }
 
 export const escapeSelector = (value: string): string => {

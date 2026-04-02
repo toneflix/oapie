@@ -170,6 +170,53 @@ describe('parse command', () => {
         }
     }, 30000)
 
+    it('supports overriding the CLI timeout for slow remote responses', async () => {
+        const workspaceRoot = path.resolve(import.meta.dirname, '..')
+        const source = 'http://127.0.0.1:0/reference/slow-customers'
+        const fixtureHtml = await readFile(new URL('./fixtures/readme-ssr-props-parameters-example.html', import.meta.url), 'utf8')
+        const server = createServer((request, response) => {
+            if (request.url !== '/reference/slow-customers') {
+                response.writeHead(404)
+                response.end('Not found')
+
+                return
+            }
+
+            setTimeout(() => {
+                response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+                response.end(fixtureHtml)
+            }, 50)
+        })
+
+        await new Promise<void>((resolve) => {
+            server.listen(0, '127.0.0.1', () => resolve())
+        })
+
+        const address = server.address()
+
+        if (!address || typeof address === 'string') {
+            await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+            throw new Error('Failed to determine slow test server address')
+        }
+
+        const slowUrl = source.replace(':0', `:${address.port}`)
+
+        try {
+            const document = await runParseAndReadJson(workspaceRoot, [
+                'parse',
+                slowUrl,
+                '--shape=openapi',
+                '--output=json',
+                '--browser=axios',
+                '--timeout=500',
+            ], slowUrl, 'openapi')
+
+            expect(document.paths['/v1/customers']?.get?.parameters).toHaveLength(2)
+        } finally {
+            await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+        }
+    }, 30000)
+
     it('infers full nested request body depth from collapsed body examples', async () => {
         const workspaceRoot = path.resolve(import.meta.dirname, '..')
         const source = 'tests/fixtures/anchor-example.html'
@@ -282,6 +329,11 @@ describe('parse command', () => {
         expect(content).toContain('export interface CustomerHeader')
         expect(content).toContain('export interface CustomerParams')
         expect(content).toContain('export interface Address')
+        expect(content).toContain('\'X-Trace-Id\'?: string')
+        expect(content).toContain('export interface Paths')
+        expect(content).toContain('paths: Paths')
+        expect(content).toContain('extends OpenApiOperationDefinition<')
+        expect(content).toContain('ResponseExample')
         expect(content).not.toContain('export interface AddressAddress')
         expect(content).toContain('export interface ExtractedApiDocument')
         expect(content).not.toContain('extends CustomerQuery {}')

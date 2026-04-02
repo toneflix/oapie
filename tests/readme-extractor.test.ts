@@ -1,9 +1,196 @@
 import { describe, expect, it } from 'vitest'
+import { extractReadmeOperationFromHtml, normalizeResponseBody } from '../src/ReadmeExtractor'
 
 import { createOpenApiDocumentFromReadmeOperations } from '../src/OpenApiTransform'
-import { extractReadmeOperationFromHtml } from '../src/ReadmeExtractor'
 import { readFile } from 'node:fs/promises'
 import { resolveReadmeSidebarUrls } from '../src/ReadmeCrawler'
+
+describe('normalizeResponseBody', () => {
+    it('parses loose JSON response bodies instead of leaving them as strings', () => {
+        const rawBody = `{
+    "status": true,
+    "message": "Successfully fetched transactions",
+    "data": [
+        {
+            "id": "265bg3f2a4e267cc872579ced8c25b39",
+            "amount": 4000,
+            "currency": "USD",
+            "merchant": {
+             "name": "Maplerad Technologies Inc.",
+              "city": "Delaware",
+              "country": "US",
+            },
+            "created_at": "2022-08-28 18:45:16"
+        },
+    ],
+    "meta": {
+        "page": 1,
+        "page_size": 1,
+        "total": 3
+    }
+}`
+
+        const normalized = normalizeResponseBody(rawBody, 'application/json')
+
+        expect(normalized.format).toBe('json')
+        expect(normalized.body).toEqual({
+            status: true,
+            message: 'Successfully fetched transactions',
+            data: [
+                {
+                    id: '265bg3f2a4e267cc872579ced8c25b39',
+                    amount: 4000,
+                    currency: 'USD',
+                    merchant: {
+                        name: 'Maplerad Technologies Inc.',
+                        city: 'Delaware',
+                        country: 'US',
+                    },
+                    created_at: '2022-08-28 18:45:16',
+                },
+            ],
+            meta: {
+                page: 1,
+                page_size: 1,
+                total: 3,
+            },
+        })
+    })
+
+    it('parses JSON response bodies with inline comments', () => {
+        const rawBody = `{
+  "status": true,
+  "message": "successfully",
+  "data": {
+    "id": "47342baa-9d9c-42fc-9112-56816198539b",
+    "payment_rail": ["SWIFT"], // FEDWIRE, SWIFT, null
+    "active": false
+  }
+}`
+
+        const normalized = normalizeResponseBody(rawBody, 'application/json')
+
+        expect(normalized.format).toBe('json')
+        expect(normalized.body).toEqual({
+            status: true,
+            message: 'successfully',
+            data: {
+                id: '47342baa-9d9c-42fc-9112-56816198539b',
+                payment_rail: ['SWIFT'],
+                active: false,
+            },
+        })
+    })
+
+    it('parses JSON response bodies with stray tokens before keys', () => {
+        const rawBody = `{
+  "status": true,
+  "message": "Successful",
+  "data": { bb
+    "reference": "8cdb5a6c-e5c8-494a-b430-47c30ad4988e",
+        "account_id": "301977d2-a013-41ad-abe3-809b667e1101",
+        "status": "APPROVED",
+        "message": [
+            "The proof of address submitted does not include the customer's name. Please submit a proof of address with the customer's name, issued within the last 90 days."
+        ],
+    "currency": "USD",
+    "kyc_link": "https://maplerad.com"
+  }
+}`
+
+        const normalized = normalizeResponseBody(rawBody, 'application/json')
+
+        expect(normalized.format).toBe('json')
+        expect(normalized.body).toEqual({
+            status: true,
+            message: 'Successful',
+            data: {
+                reference: '8cdb5a6c-e5c8-494a-b430-47c30ad4988e',
+                account_id: '301977d2-a013-41ad-abe3-809b667e1101',
+                status: 'APPROVED',
+                message: [
+                    "The proof of address submitted does not include the customer's name. Please submit a proof of address with the customer's name, issued within the last 90 days.",
+                ],
+                currency: 'USD',
+                kyc_link: 'https://maplerad.com',
+            },
+        })
+    })
+
+    it('parses response bodies missing the data array wrapper', () => {
+        const rawBody = `{
+  "id": "6cff670c-da42-4fad-ba92-e422450caa77",
+  "name": "Customer Test"
+},
+{
+  "id": "da24107d-a685-4b60-bc13-7dde10aee274",
+  "name": "Customer Test 2"
+}
+],
+"meta": {
+  "page": 1,
+  "page_size": 10,
+  "total": 2
+}
+}`
+
+        const normalized = normalizeResponseBody(rawBody, 'application/json')
+
+        expect(normalized.format).toBe('json')
+        expect(normalized.body).toEqual({
+            data: [
+                {
+                    id: '6cff670c-da42-4fad-ba92-e422450caa77',
+                    name: 'Customer Test',
+                },
+                {
+                    id: 'da24107d-a685-4b60-bc13-7dde10aee274',
+                    name: 'Customer Test 2',
+                },
+            ],
+            meta: {
+                page: 1,
+                page_size: 10,
+                total: 2,
+            },
+        })
+    })
+
+    it('repairs malformed JSON bodies with stray bareword tokens before object keys', () => {
+        const rawBody = `{
+  "status": true,
+  "message": "Successful",
+  "data": { bb
+    "reference": "8cdb5a6c-e5c8-494a-b430-47c30ad4988e",
+    "account_id": "301977d2-a013-41ad-abe3-809b667e1101",
+    "status": "APPROVED",
+    "message": [
+      "The proof of address submitted does not include the customer's name. Please submit a proof of address with the customer's name, issued within the last 90 days."
+    ],
+  "currency": "USD",
+  "kyc_link": "https://maplerad.com"
+  }
+}`
+
+        const normalized = normalizeResponseBody(rawBody, 'application/json')
+
+        expect(normalized.format).toBe('json')
+        expect(normalized.body).toEqual({
+            status: true,
+            message: 'Successful',
+            data: {
+                reference: '8cdb5a6c-e5c8-494a-b430-47c30ad4988e',
+                account_id: '301977d2-a013-41ad-abe3-809b667e1101',
+                status: 'APPROVED',
+                message: [
+                    "The proof of address submitted does not include the customer's name. Please submit a proof of address with the customer's name, issued within the last 90 days.",
+                ],
+                currency: 'USD',
+                kyc_link: 'https://maplerad.com',
+            },
+        })
+    })
+})
 
 describe('extractReadmeOperationFromHtml', () => {
     it('extracts the main operation data from a saved ReadMe reference page', async () => {

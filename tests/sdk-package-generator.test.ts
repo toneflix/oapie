@@ -93,6 +93,7 @@ describe('SdkPackageGenerator', () => {
         expect(files['src/Apis/BaseApi.ts']).toContain('exampleApps!: ExampleApp')
         expect(files['src/Apis/ExampleApp.ts']).toContain('async list (query: ExampleAppQuery, headers?: ExampleHeader): Promise<Example[]>')
         expect(files['src/Apis/ExampleApp.ts']).toContain('async create (body: ExampleInput, headers?: ExampleHeader): Promise<Example>')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('((headers ? { ...headers } : {}) as Record<string, string | undefined>)')
         expect(files['src/Core.ts']).toContain('static override apiClass = BaseApi')
         expect(files['src/index.ts']).toContain('export * from \'./Schema\'')
         expect(files['src/index.ts']).toContain('export { BaseApi } from \'./Apis/BaseApi\'')
@@ -114,6 +115,7 @@ describe('SdkPackageGenerator', () => {
         expect(runtimeFiles['src/index.ts']).toContain('createBoundSdk(extractedApiDocumentSdk, options) as KitCore & { api: KitBaseApi & ExtractedApiDocumentApi }')
         expect(classFiles['src/Apis/ExampleApp.ts']).toContain('async list (code: ExampleAppQuery["code"], xKey1?: ExampleHeader["X-Key-1"]): Promise<Example[]>')
         expect(classFiles['src/Apis/ExampleApp.ts']).toContain('async create (body: ExampleInput, xKey1?: ExampleHeader["X-Key-1"]): Promise<Example>')
+        expect(classFiles['src/Apis/ExampleApp.ts']).toContain('({ "X-Key-1": xKey1 } as Record<string, string | undefined>)')
     })
 
     it('uses scoped class names when nested resources would otherwise collide', () => {

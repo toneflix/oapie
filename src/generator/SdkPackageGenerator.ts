@@ -439,10 +439,10 @@ export class SdkPackageGenerator {
         }
 
         lines.push('')
-    lines.push('export const createClient = (')
-    lines.push('    options: InitOptions')
-    lines.push(`): KitCore & { api: KitBaseApi & ${rootTypeName}Api } =>`)
-    lines.push(`    createBoundSdk(${rootExportName}Sdk, options) as KitCore & { api: KitBaseApi & ${rootTypeName}Api }`)
+        lines.push('export const createClient = (')
+        lines.push('    options: InitOptions')
+        lines.push(`): KitCore & { api: KitBaseApi & ${rootTypeName}Api } =>`)
+        lines.push(`    createBoundSdk(${rootExportName}Sdk, options) as KitCore & { api: KitBaseApi & ${rootTypeName}Api }`)
         lines.push('')
         lines.push('export {')
         lines.push('    BadRequestException,')

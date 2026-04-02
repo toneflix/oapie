@@ -1,6 +1,7 @@
-import type { BaseApi as KitBaseApi, Core as KitCore, InitOptions } from '@oapiex/sdk-kit'
-import { createSdk as createBoundSdk } from '@oapiex/sdk-kit'
+import type { InitOptions, BaseApi as KitBaseApi, Core as KitCore } from '@oapiex/sdk-kit'
+
 import type { ExampleDocumentApi } from './Schema'
+import { createSdk as createBoundSdk } from '@oapiex/sdk-kit'
 import { exampleDocumentSdk } from './Schema'
 
 export * from './Schema'

@@ -1,12 +1,18 @@
+import { OperationTypeRefs, SdkNamingStrategyOptions } from './types'
+
 import type { OpenApiDocumentLike } from '../types/open-api'
-import { OperationTypeRefs } from './types'
 import { TypeScriptGenerator } from './TypeScriptGenerator'
 import { TypeScriptTypeBuilder } from './TypeScriptTypeBuilder'
 
-export interface SdkPackageGeneratorOptions {
+export interface SdkPackageGeneratorOptions extends SdkNamingStrategyOptions {
     outputMode?: 'runtime' | 'classes' | 'both'
     signatureStyle?: 'flat' | 'grouped'
     rootTypeName?: string
+    schemaModule?: string
+    packageName?: string
+    packageVersion?: string
+    packageDescription?: string
+    sdkKitPackageName?: string
 }
 
 export class SdkPackageGenerator {
@@ -20,11 +26,19 @@ export class SdkPackageGenerator {
         const outputMode = options.outputMode ?? 'both'
         const signatureStyle = options.signatureStyle ?? 'grouped'
         const rootTypeName = options.rootTypeName ?? 'ExtractedApiDocument'
-        const schemaModule = this.typeScriptGenerator.generateModule(document, rootTypeName)
+        const schemaModule = options.schemaModule
+            ?? this.typeScriptGenerator.generateModule(document, rootTypeName, options)
         const operationTypeRefs = this.createOperationTypeRefs(document)
-        const manifest = this.typeBuilder.buildSdkManifest(document, operationTypeRefs)
+        const manifest = this.typeBuilder.buildSdkManifest(document, operationTypeRefs, options)
+        const classNames = manifest.groups.map((group) => group.className)
         const files: Record<string, string> = {
+            'package.json': this.renderPackageJson(options),
             'src/Schema.ts': schemaModule,
+            'src/index.ts': this.renderIndexFile(classNames, outputMode, rootTypeName),
+            'tsconfig.json': this.renderTsconfig(),
+            'tsdown.config.ts': this.renderTsdownConfig(),
+            'vitest.config.ts': this.renderVitestConfig(),
+            'tests/exports.test.ts': this.renderExportsTest(rootTypeName, outputMode),
         }
 
         if (outputMode !== 'runtime') {
@@ -36,8 +50,6 @@ export class SdkPackageGenerator {
 
             files['src/Core.ts'] = this.renderCoreFile()
         }
-
-        files['src/index.ts'] = this.renderIndexFile(manifest.groups.map((group) => group.className), outputMode)
 
         return files
     }
@@ -90,23 +102,15 @@ export class SdkPackageGenerator {
         group: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number],
         signatureStyle: 'flat' | 'grouped'
     ): string {
-        const typeImports = new Set<string>()
-
-        for (const operation of group.operations) {
-            for (const typeRef of [operation.responseType, operation.inputType, operation.queryType, operation.headerType, operation.paramsType]) {
-                for (const identifier of this.collectTypeIdentifiers(typeRef)) {
-                    typeImports.add(identifier)
-                }
-            }
-        }
+        const typeImportContext = this.createTypeImportContext(group, signatureStyle)
 
         const imports = [
             "import type { Core as KitCore } from '@oapiex/sdk-kit'",
             "import { Http } from '@oapiex/sdk-kit'",
         ]
 
-        if (typeImports.size > 0) {
-            imports.splice(1, 0, `import type { ${Array.from(typeImports).sort().join(', ')} } from '../Schema'`)
+        if (typeImportContext.specifiers.length > 0) {
+            imports.splice(1, 0, `import type { ${typeImportContext.specifiers.join(', ')} } from '../Schema'`)
         }
 
         return [
@@ -115,12 +119,12 @@ export class SdkPackageGenerator {
             `export class ${group.className} {`,
             '    #core: KitCore',
             '',
-            '    constructor(coreInstance: KitCore) {',
-            '        this.#core = coreInstance',
+            '    constructor(core: KitCore) {',
+            '        this.#core = core',
             '    }',
             '',
             ...group.operations.flatMap((operation) => [
-                this.renderApiMethod(operation, signatureStyle),
+                this.renderApiMethod(operation, signatureStyle, typeImportContext.aliasMap),
                 '',
             ]).slice(0, -1),
             '}',
@@ -129,11 +133,12 @@ export class SdkPackageGenerator {
 
     private renderApiMethod (
         operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
-        signatureStyle: 'flat' | 'grouped'
+        signatureStyle: 'flat' | 'grouped',
+        aliasMap: Map<string, string>
     ): string {
         const signature = signatureStyle === 'flat'
-            ? this.renderFlatSignature(operation)
-            : this.renderGroupedSignature(operation)
+            ? this.renderFlatSignature(operation, aliasMap)
+            : this.renderGroupedSignature(operation, aliasMap)
         const urlPathArgs = signatureStyle === 'flat'
             ? this.renderFlatObjectLiteral(operation.paramsType, operation.pathParams)
             : operation.pathParams.length > 0 ? 'params' : '{}'
@@ -142,16 +147,18 @@ export class SdkPackageGenerator {
             : operation.queryParams.length > 0 ? 'query' : '{}'
         const headerArgs = signatureStyle === 'flat'
             ? this.renderFlatHeaders(operation)
-            : operation.headerParams.length > 0 ? 'headers ?? {}' : '{}'
+            : operation.headerParams.length > 0
+                ? '((headers ? { ...headers } : {}) as Record<string, string | undefined>)'
+                : '{}'
         const bodyArg = signatureStyle === 'flat'
             ? (operation.hasBody ? 'body' : '{}')
             : (operation.hasBody ? 'body ?? {}' : '{}')
 
         return [
-            `    async ${operation.methodName} ${signature}: Promise<${operation.responseType}> {`,
+            `    async ${operation.methodName} ${signature}: Promise<${this.rewriteTypeReference(operation.responseType, aliasMap)}> {`,
             '        await this.#core.validateAccess()',
             '',
-            `        const { data } = await Http.send<${operation.responseType}>(`,
+            `        const { data } = await Http.send<${this.rewriteTypeReference(operation.responseType, aliasMap)}>(`,
             `            this.#core.builder.buildTargetUrl('${operation.path}', ${urlPathArgs}, ${urlQueryArgs}),`,
             `            '${operation.method}',`,
             `            ${bodyArg},`,
@@ -164,40 +171,102 @@ export class SdkPackageGenerator {
     }
 
     private renderGroupedSignature (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        aliasMap: Map<string, string>
     ): string {
         const args: string[] = []
 
         if (operation.pathParams.length > 0) {
-            args.push(`params: ${operation.paramsType}`)
+            args.push(`params: ${this.rewriteTypeReference(operation.paramsType, aliasMap)}`)
         }
 
         if (operation.queryParams.length > 0) {
-            args.push(`query: ${operation.queryType}`)
+            args.push(`query: ${this.rewriteTypeReference(operation.queryType, aliasMap)}`)
         }
 
         if (operation.hasBody) {
-            args.push(`body${operation.bodyRequired ? '' : '?'}: ${operation.inputType}`)
+            args.push(`body${operation.bodyRequired ? '' : '?'}: ${this.rewriteTypeReference(operation.inputType, aliasMap)}`)
         }
 
         if (operation.headerParams.length > 0) {
-            args.push(`headers?: ${operation.headerType}`)
+            args.push(`headers?: ${this.rewriteTypeReference(operation.headerType, aliasMap)}`)
         }
 
         return `(${args.join(', ')})`
     }
 
     private renderFlatSignature (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        aliasMap: Map<string, string>
     ): string {
         const args = [
-            ...operation.pathParams.map((parameter) => `${parameter.accessor}${parameter.required ? '' : '?'}: ${operation.paramsType}[${JSON.stringify(parameter.name)}]`),
-            ...operation.queryParams.map((parameter) => `${parameter.accessor}${parameter.required ? '' : '?'}: ${operation.queryType}[${JSON.stringify(parameter.name)}]`),
-            ...(operation.hasBody ? [`body${operation.bodyRequired ? '' : '?'}: ${operation.inputType}`] : []),
-            ...operation.headerParams.map((parameter) => `${parameter.accessor}${parameter.required ? '' : '?'}: ${operation.headerType}[${JSON.stringify(parameter.name)}]`),
+            ...operation.pathParams.map((parameter) => `${parameter.accessor}${parameter.required ? '' : '?'}: ${this.rewriteTypeReference(operation.paramsType, aliasMap)}[${JSON.stringify(parameter.name)}]`),
+            ...operation.queryParams.map((parameter) => `${parameter.accessor}${parameter.required ? '' : '?'}: ${this.rewriteTypeReference(operation.queryType, aliasMap)}[${JSON.stringify(parameter.name)}]`),
+            ...(operation.hasBody ? [`body${operation.bodyRequired ? '' : '?'}: ${this.rewriteTypeReference(operation.inputType, aliasMap)}`] : []),
+            ...operation.headerParams.map((parameter) => `${parameter.accessor}${parameter.required ? '' : '?'}: ${this.rewriteTypeReference(operation.headerType, aliasMap)}[${JSON.stringify(parameter.name)}]`),
         ]
 
         return `(${args.join(', ')})`
+    }
+
+    private createTypeImportContext (
+        group: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number],
+        signatureStyle: 'flat' | 'grouped'
+    ): { specifiers: string[], aliasMap: Map<string, string> } {
+        const requiredTypeRefs = new Set<string>()
+
+        for (const operation of group.operations) {
+            requiredTypeRefs.add(operation.responseType)
+
+            if (operation.hasBody) {
+                requiredTypeRefs.add(operation.inputType)
+            }
+
+            if (operation.queryParams.length > 0) {
+                requiredTypeRefs.add(operation.queryType)
+            }
+
+            if (operation.headerParams.length > 0) {
+                requiredTypeRefs.add(operation.headerType)
+            }
+
+            if (operation.pathParams.length > 0) {
+                requiredTypeRefs.add(operation.paramsType)
+            }
+
+            if (signatureStyle === 'flat') {
+                continue
+            }
+        }
+
+        const identifiers = Array.from(new Set(Array.from(requiredTypeRefs).flatMap((typeRef) => this.collectTypeIdentifiers(typeRef)))).sort()
+        const aliasMap = new Map<string, string>()
+        const specifiers = identifiers.map((identifier) => {
+            if (identifier === group.className) {
+                const aliasedName = `${identifier}Model`
+
+                aliasMap.set(identifier, aliasedName)
+
+                return `${identifier} as ${aliasedName}`
+            }
+
+            return identifier
+        })
+
+        return {
+            specifiers,
+            aliasMap,
+        }
+    }
+
+    private rewriteTypeReference (typeRef: string, aliasMap: Map<string, string>): string {
+        let rewritten = typeRef
+
+        for (const [identifier, alias] of aliasMap.entries()) {
+            rewritten = rewritten.replace(new RegExp(`\\b${identifier}\\b`, 'g'), alias)
+        }
+
+        return rewritten
     }
 
     private renderFlatObjectLiteral (_typeName: string, parameters: Array<{ name: string, accessor: string }>): string {
@@ -215,7 +284,7 @@ export class SdkPackageGenerator {
             return '{}'
         }
 
-        return `{ ${operation.headerParams.map((parameter) => `${JSON.stringify(parameter.name)}: ${parameter.accessor}`).join(', ')} }`
+        return `({ ${operation.headerParams.map((parameter) => `${JSON.stringify(parameter.name)}: ${parameter.accessor}`).join(', ')} } as Record<string, string | undefined>)`
     }
 
     private renderCoreFile (): string {
@@ -232,15 +301,148 @@ export class SdkPackageGenerator {
         ].join('\n')
     }
 
-    private renderIndexFile (classNames: string[], outputMode: 'runtime' | 'classes' | 'both'): string {
-        const lines = ["export * from './Schema'"]
+    private renderPackageJson (options: SdkPackageGeneratorOptions): string {
+        return JSON.stringify({
+            name: options.packageName ?? 'generated-sdk',
+            type: 'module',
+            version: options.packageVersion ?? '0.1.0',
+            private: true,
+            description: options.packageDescription ?? 'Generated SDK scaffold emitted by oapiex.',
+            main: './dist/index.cjs',
+            module: './dist/index.js',
+            types: './dist/index.d.ts',
+            exports: {
+                '.': {
+                    import: './dist/index.js',
+                    require: './dist/index.cjs',
+                },
+                './package.json': './package.json',
+            },
+            files: [
+                'dist',
+            ],
+            scripts: {
+                test: 'pnpm vitest --run',
+                'test:watch': 'pnpm vitest',
+                build: 'tsdown',
+            },
+            dependencies: {
+                [options.sdkKitPackageName ?? '@oapiex/sdk-kit']: '^0.1.1',
+            },
+            devDependencies: {
+                '@types/node': '^20.14.5',
+                tsdown: '^0.20.1',
+                typescript: '^5.4.5',
+                vitest: '^3.2.4',
+            },
+        }, null, 2)
+    }
+
+    private renderTsconfig (): string {
+        return JSON.stringify({
+            compilerOptions: {
+                rootDir: '.',
+                outDir: './dist',
+                target: 'esnext',
+                module: 'es2022',
+                moduleResolution: 'bundler',
+                esModuleInterop: true,
+                strict: true,
+                allowJs: true,
+                skipLibCheck: true,
+                resolveJsonModule: true,
+            },
+            include: ['./src/**/*', './tests/**/*'],
+            exclude: ['./dist', './node_modules'],
+        }, null, 2)
+    }
+
+    private renderTsdownConfig (): string {
+        return [
+            "import { defineConfig } from 'tsdown'",
+            '',
+            'export default defineConfig({',
+            '    entry: {',
+            "        index: 'src/index.ts',",
+            '    },',
+            '    exports: true,',
+            "    format: ['esm', 'cjs'],",
+            "    outDir: 'dist',",
+            '    dts: true,',
+            '    sourcemap: false,',
+            "    external: ['@oapiex/sdk-kit'],",
+            '    clean: true,',
+            '})',
+        ].join('\n')
+    }
+
+    private renderVitestConfig (): string {
+        return [
+            "import { defineConfig } from 'vitest/config'",
+            '',
+            'export default defineConfig({',
+            '    test: {',
+            "        name: 'generated-sdk',",
+            "        environment: 'node',",
+            "        include: ['tests/*.{test,spec}.?(c|m)[jt]s?(x)'],",
+            '    },',
+            '})',
+        ].join('\n')
+    }
+
+    private renderExportsTest (rootTypeName: string, outputMode: 'runtime' | 'classes' | 'both'): string {
+        const rootExportName = `${rootTypeName.charAt(0).toLowerCase()}${rootTypeName.slice(1)}`
+        const assertions = [
+            "        expect(sdk.createClient).toBeTypeOf('function')",
+            "        expect(sdk.createSdk).toBeTypeOf('function')",
+            `        expect(sdk.${rootExportName}Sdk).toBeDefined()`,
+            `        expect(sdk.${rootExportName}Manifest).toBeDefined()`,
+        ]
 
         if (outputMode !== 'runtime') {
-            lines.push("export * from './Apis/BaseApi'")
-            lines.push(...classNames.map((className) => `export * from './Apis/${className}'`))
-            lines.push("export * from './Core'")
+            assertions.unshift("        expect(sdk.Core).toBeTypeOf('function')")
+            assertions.unshift("        expect(sdk.BaseApi).toBeTypeOf('function')")
         }
 
+        return [
+            "import { describe, expect, it } from 'vitest'",
+            '',
+            "import * as sdk from '../src/index'",
+            '',
+            "describe('generated sdk exports', () => {",
+            "    it('exposes the generated schema and runtime helpers', () => {",
+            ...assertions,
+            '    })',
+            '})',
+        ].join('\n')
+    }
+
+    private renderIndexFile (
+        classNames: string[],
+        outputMode: 'runtime' | 'classes' | 'both',
+        rootTypeName: string
+    ): string {
+        const rootExportName = `${rootTypeName.charAt(0).toLowerCase()}${rootTypeName.slice(1)}`
+        const lines = [
+            `import type { ${rootTypeName}Api } from './Schema'`,
+            `import { ${rootExportName}Sdk } from './Schema'`,
+            "import { createSdk as createBoundSdk } from '@oapiex/sdk-kit'",
+            "import type { BaseApi as KitBaseApi, Core as KitCore, InitOptions } from '@oapiex/sdk-kit'",
+            '',
+            "export * from './Schema'",
+        ]
+
+        if (outputMode !== 'runtime') {
+            lines.push("export { BaseApi } from './Apis/BaseApi'")
+            lines.push(...classNames.map((className) => `export { ${className} as ${className}Api } from './Apis/${className}'`))
+            lines.push("export { Core } from './Core'")
+        }
+
+        lines.push('')
+    lines.push('export const createClient = (')
+    lines.push('    options: InitOptions')
+    lines.push(`): KitCore & { api: KitBaseApi & ${rootTypeName}Api } =>`)
+    lines.push(`    createBoundSdk(${rootExportName}Sdk, options) as KitCore & { api: KitBaseApi & ${rootTypeName}Api }`)
         lines.push('')
         lines.push('export {')
         lines.push('    BadRequestException,')

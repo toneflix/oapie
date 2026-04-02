@@ -1,0 +1,43 @@
+{
+    "name": "@oapiex/example-both-sdk",
+    "type": "module",
+    "version": "0.1.0",
+    "description": "Example both-mode SDK scaffold built on top of @oapiex/sdk-kit.",
+    "main": "./dist/index.cjs",
+    "private": false,
+    "homepage": "https://toneflix.github.io/oapiex",
+    "repository": {
+        "url": "https://github.com/toneflix/oapi-extractor.git",
+        "type": "git",
+        "directory": "examples/both-sdk"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.cts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        },
+        "./package.json": "./package.json"
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "test": "pnpm vitest --run",
+        "test:watch": "pnpm vitest",
+        "build": "tsdown"
+    },
+    "dependencies": {
+        "@oapiex/sdk-kit": "file:../../packages/sdk-kit"
+    },
+    "devDependencies": {
+        "@types/node": "^20.14.5",
+        "tsdown": "^0.20.1",
+        "typescript": "^5.4.5",
+        "vitest": "^3.2.4"
+    }
+}

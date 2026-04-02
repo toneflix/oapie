@@ -1,4 +1,4 @@
-import { JsonLike, OperationTypeRefs, ShapeAliasDeclaration } from './types'
+import { JsonLike, OperationTypeRefs, SdkNamingStrategyOptions, ShapeAliasDeclaration } from './types'
 
 import type { OpenApiDocumentLike } from '../types/open-api'
 import { TypeScriptModuleRenderer } from './TypeScriptModuleRenderer'
@@ -19,9 +19,10 @@ export class TypeScriptGenerator {
      */
     static generateModule = (
         value: JsonLike,
-        rootTypeName = 'GeneratedOutput'
+        rootTypeName = 'GeneratedOutput',
+        options: SdkNamingStrategyOptions = {}
     ): string => {
-        return new TypeScriptGenerator().generate(value, rootTypeName)
+        return new TypeScriptGenerator().generate(value, rootTypeName, options)
     }
 
     /**
@@ -32,9 +33,9 @@ export class TypeScriptGenerator {
      * @param rootTypeName 
      * @returns 
      */
-    generate (value: JsonLike, rootTypeName = 'GeneratedOutput'): string {
+    generate (value: JsonLike, rootTypeName = 'GeneratedOutput', options: SdkNamingStrategyOptions = {}): string {
         if (this.isOpenApiDocumentLike(value)) {
-            return this.generateModule(value, rootTypeName)
+            return this.generateModule(value, rootTypeName, options)
         }
 
         return this.generateGenericModule(value, rootTypeName)
@@ -47,7 +48,7 @@ export class TypeScriptGenerator {
      * @param rootTypeName 
      * @returns 
      */
-    generateModule (document: OpenApiDocumentLike, rootTypeName: string): string {
+    generateModule (document: OpenApiDocumentLike, rootTypeName: string, options: SdkNamingStrategyOptions = {}): string {
         const context = this.typeBuilder.createContext()
         const operationTypeRefs = new Map<string, OperationTypeRefs>()
 
@@ -76,7 +77,7 @@ export class TypeScriptGenerator {
             .map((declaration) => this.moduleRenderer.renderDeclaration(declaration))
             .join('\n\n')
         const variableName = this.moduleRenderer.toCamelCase(rootTypeName)
-        const sdkManifest = this.typeBuilder.buildSdkManifest(document, operationTypeRefs)
+        const sdkManifest = this.typeBuilder.buildSdkManifest(document, operationTypeRefs, options)
 
         return [
             declarations,

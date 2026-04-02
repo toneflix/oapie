@@ -666,6 +666,59 @@ describe('generateTypeScriptModule', () => {
         expect(content).toContain('export interface IssuingByIdPathGetOperation extends OpenApiOperationDefinition<Issuing, IssuingResponseExample, IssuingInput, IssuingQuery, IssuingHeader, IssuingParams> {}')
     })
 
+    it('uses stable variant names for response-example unions', () => {
+        const content = TypeScriptGenerator.generateModule({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {
+                '/v1/customers/{id}': {
+                    get: {
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        example: {
+                                            status: true,
+                                            data: {
+                                                id: 'cus_123',
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                            '202': {
+                                description: 'Accepted',
+                                content: {
+                                    'application/json': {
+                                        example: {
+                                            status: true,
+                                            data: {
+                                                id: 'cus_123',
+                                                review: {
+                                                    state: 'pending',
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        } as never, 'ExtractedApiDocument')
+
+        expect(content).toContain('export type CustomerResponseExample = CustomerResponseExampleVariant1 | CustomerResponseExampleVariant2')
+        expect(content).toContain('export interface CustomerResponseExampleVariant1')
+        expect(content).toContain('export interface CustomerResponseExampleVariant2')
+        expect(content).not.toContain('CustomerResponseExampleCustomerResponseExample')
+        expect(content).not.toContain('CustomerResponseExampleVariant1 | CustomerResponseExampleVariant1')
+    })
+
     it('emits an SDK manifest and typed runtime bundle helpers', () => {
         const content = TypeScriptGenerator.generateModule({
             openapi: '3.1.0',
@@ -749,12 +802,13 @@ describe('generateTypeScriptModule', () => {
 
         expect(content).toContain('export interface OpenApiSdkManifest')
         expect(content).toContain('export interface ExtractedApiDocumentApi')
-        expect(content).toContain('examples: {')
+        expect(content).toContain('exampleApps: {')
         expect(content).toContain('list(query: ExampleAppQuery, headers?: ExampleHeader): Promise<Example[]>')
         expect(content).toContain('create(body: ExampleInput, headers?: ExampleHeader): Promise<Example>')
         expect(content).toContain('export const extractedApiDocumentManifest = {')
         expect(content).toContain("methodName: 'list'")
-        expect(content).toContain("propertyName: 'examples'")
+        expect(content).toContain("className: 'ExampleApp'")
+        expect(content).toContain("propertyName: 'exampleApps'")
         expect(content).toContain('export const extractedApiDocumentSdk: OpenApiRuntimeBundle<ExtractedApiDocumentApi> = {')
     })
 
@@ -831,6 +885,57 @@ describe('generateTypeScriptModule', () => {
         expect(content).toContain("className: 'CryptoWallet'")
         expect(content).toContain("propertyName: 'cryptoWallets'")
         expect(content).toContain('cryptoWallets: {')
+    })
+
+    it('supports configurable namespace and method naming strategies in the SDK manifest', () => {
+        const content = TypeScriptGenerator.generateModule({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {
+                '/v1/crypto/wallets/{customer_id}': {
+                    get: {
+                        operationId: 'getCustomerCryptoWallets',
+                        parameters: [
+                            { name: 'customer_id', in: 'path', required: true, schema: { type: 'string' } },
+                        ],
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                data: {
+                                                    type: 'array',
+                                                    items: {
+                                                        type: 'object',
+                                                        properties: {
+                                                            id: { type: 'string' },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        } as never, 'ExtractedApiDocument', {
+            namespaceStrategy: 'scoped',
+            methodStrategy: 'operation-id',
+        })
+
+        expect(content).toContain("className: 'CryptoWallet'")
+        expect(content).toContain("propertyName: 'cryptoWallets'")
+        expect(content).toContain("methodName: 'getCustomerCryptoWallets'")
+        expect(content).toContain('getCustomerCryptoWallets(params: WalletParams): Promise<Wallet[]>')
     })
 
     it('escapes multiline string examples in emitted TS literals', () => {

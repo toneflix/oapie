@@ -71,6 +71,15 @@ export interface OperationTypeRefs {
     params: string
 }
 
+export type SdkNamespaceNamingStrategy = 'smart' | 'scoped'
+
+export type SdkMethodNamingStrategy = 'smart' | 'operation-id'
+
+export interface SdkNamingStrategyOptions {
+    namespaceStrategy?: SdkNamespaceNamingStrategy
+    methodStrategy?: SdkMethodNamingStrategy
+}
+
 export interface SdkParameterManifest {
     name: string
     accessor: string

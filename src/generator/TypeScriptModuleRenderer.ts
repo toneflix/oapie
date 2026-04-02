@@ -288,10 +288,14 @@ export class TypeScriptModuleRenderer {
     }
 
     private isPathParam (segment: string): boolean {
-        return segment.startsWith('{') && segment.endsWith('}')
+        return (segment.startsWith('{') && segment.endsWith('}'))
+            || /^:[A-Za-z0-9_]+$/.test(segment)
     }
 
     private stripPathParam (segment: string): string {
-        return segment.replace(/^\{/, '').replace(/\}$/, '')
+        return segment
+            .replace(/^\{/, '')
+            .replace(/\}$/, '')
+            .replace(/^:/, '')
     }
 }

@@ -1,3 +1,4 @@
+import { SdkNamingStrategyOptions } from './types'
 import { TypeScriptGenerator } from './TypeScriptGenerator'
 import { UserConfig } from 'src/types/app'
 import path from 'node:path'
@@ -17,7 +18,8 @@ export class OutputGenerator {
     static serializeOutput = async (
         payload: unknown,
         outputFormat: UserConfig['outputFormat'],
-        rootTypeName = 'ExtractedApiDocument'
+        rootTypeName = 'ExtractedApiDocument',
+        typeScriptOptions: SdkNamingStrategyOptions = {}
     ): Promise<string> => {
         if (outputFormat === 'js') {
             return prettier.format(`export default ${JSON.stringify(payload, null, 2)}`, {
@@ -28,7 +30,7 @@ export class OutputGenerator {
         }
 
         if (outputFormat === 'ts') {
-            return prettier.format(TypeScriptGenerator.generateModule(payload as never, rootTypeName), {
+            return prettier.format(TypeScriptGenerator.generateModule(payload as never, rootTypeName, typeScriptOptions), {
                 parser: 'typescript',
                 semi: false,
                 singleQuote: true,
@@ -60,10 +62,24 @@ export class OutputGenerator {
             js: 'js',
             ts: 'ts',
         }[outputFormat]
-        const safeSource = source.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '')
+        const safeSource = this.toSafeSourceName(source)
         const shapeSuffix = shape === 'openapi' ? '.openapi' : ''
 
         return path.join(workspaceRoot, 'output', `${safeSource || 'output'}${shapeSuffix}.${ext}`)
+    }
+
+    static buildArtifactDirectory = (
+        workspaceRoot: string,
+        source: string,
+        artifact: string
+    ): string => {
+        const safeSource = this.toSafeSourceName(source)
+
+        return path.join(workspaceRoot, 'output', `${safeSource || artifact}.${artifact}`)
+    }
+
+    static toSafeSourceName (source: string): string {
+        return source.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '')
     }
 
     /**

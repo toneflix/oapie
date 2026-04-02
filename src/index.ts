@@ -1,4 +1,5 @@
 export * from './Application'
+export * from './Commands/GenerateCommand'
 export * from './Commands/InitCommand'
 export * from './Commands/ParseCommand'
 export * from './ConfigLoader'

@@ -6,8 +6,8 @@ import { Http } from '@oapiex/sdk-kit'
 export class Example {
     #core: KitCore
 
-    constructor(coreInstance: KitCore) {
-        this.#core = coreInstance
+    constructor(core: KitCore) {
+        this.#core = core
     }
 
     async list (code: CountryCode, key1?: string): Promise<ExampleApiResponse[]> {

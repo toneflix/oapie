@@ -1,4 +1,5 @@
 import { Application } from './Application'
+import { GenerateCommand } from './Commands/GenerateCommand'
 import { InitCommand } from './Commands/InitCommand'
 import { Kernel } from '@h3ravel/musket'
 import { ParseCommand } from './Commands/ParseCommand'
@@ -18,6 +19,11 @@ await Kernel.init(app, {
     ],
     baseCommands: [
         InitCommand,
+        GenerateCommand,
         ParseCommand
     ],
+    exceptionHandler (exception) {
+        console.error('An unexpected error occurred:', exception)
+        process.exit(1)
+    },
 })

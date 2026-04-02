@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { generateTypeScriptModule } from '../src/generator/TypeScriptGenerator'
+import { TypeScriptGenerator } from '../src/generator/TypeScriptGenerator'
 
 describe('generateTypeScriptModule', () => {
     it('reuses semantic interfaces across OpenAPI paths when shapes match', () => {
-        const content = generateTypeScriptModule({
+        const content = TypeScriptGenerator.generateModule({
             openapi: '3.1.0',
             info: {
                 title: 'Test API',
@@ -159,7 +159,7 @@ describe('generateTypeScriptModule', () => {
     })
 
     it('reuses nested interfaces when differences are only nullable fields', () => {
-        const content = generateTypeScriptModule({
+        const content = TypeScriptGenerator.generateModule({
             openapi: '3.1.0',
             info: {
                 title: 'Test API',
@@ -246,7 +246,7 @@ describe('generateTypeScriptModule', () => {
     })
 
     it('uses contextual resource names and by-param suffixes for collisions', () => {
-        const content = generateTypeScriptModule({
+        const content = TypeScriptGenerator.generateModule({
             openapi: '3.1.0',
             info: {
                 title: 'Test API',
@@ -463,7 +463,7 @@ describe('generateTypeScriptModule', () => {
     })
 
     it('unwraps response payloads nested inside meta.data', () => {
-        const content = generateTypeScriptModule({
+        const content = TypeScriptGenerator.generateModule({
             openapi: '3.1.0',
             info: {
                 title: 'Test API',
@@ -521,7 +521,7 @@ describe('generateTypeScriptModule', () => {
     })
 
     it('infers property types from parent object examples when property schemas are underspecified', () => {
-        const content = generateTypeScriptModule({
+        const content = TypeScriptGenerator.generateModule({
             openapi: '3.1.0',
             info: {
                 title: 'Test API',
@@ -565,7 +565,7 @@ describe('generateTypeScriptModule', () => {
     })
 
     it('does not type full response examples as the unwrapped payload type', () => {
-        const content = generateTypeScriptModule({
+        const content = TypeScriptGenerator.generateModule({
             openapi: '3.1.0',
             info: {
                 title: 'Test API',
@@ -616,7 +616,7 @@ describe('generateTypeScriptModule', () => {
     })
 
     it('generates typed response envelope examples per operation', () => {
-        const content = generateTypeScriptModule({
+        const content = TypeScriptGenerator.generateModule({
             openapi: '3.1.0',
             info: {
                 title: 'Test API',

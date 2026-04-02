@@ -1,9 +1,9 @@
-import { buildOutputFilePath, getRootTypeNameForShape, serializeOutput } from '../generator/OutputGenerator'
 import { endBrowserSession, isSupportedBrowser, startBrowserSession } from '../Manager'
 
 import { Application } from 'src/Application'
 import { Command } from '@h3ravel/musket'
 import { Logger } from '@h3ravel/shared'
+import { OutputGenerator } from '../generator/OutputGenerator'
 import { UserConfig } from 'src/types/app'
 import { createOpenApiDocumentFromReadmeOperations } from '../OpenApiTransform'
 import { extractReadmeOperationFromHtml } from '../ReadmeExtractor'
@@ -59,10 +59,10 @@ export class ParseCommand extends Command<Application> {
             const normalizedPayload = shape === 'openapi'
                 ? this.buildOpenApiPayload(payload)
                 : payload
-            const serialized = await serializeOutput(
+            const serialized = await OutputGenerator.serializeOutput(
                 normalizedPayload,
                 output,
-                getRootTypeNameForShape(shape)
+                OutputGenerator.getRootTypeName(shape)
             )
 
             const filePath = await this.saveOutputToFile(
@@ -115,7 +115,7 @@ export class ParseCommand extends Command<Application> {
         shape: string,
         outputFormat: UserConfig['outputFormat']
     ): Promise<string> => {
-        const outputDir = buildOutputFilePath(process.cwd(), source, shape, outputFormat)
+        const outputDir = OutputGenerator.buildFilePath(process.cwd(), source, shape, outputFormat)
         const outputDirname = path.dirname(outputDir)
         await fs.mkdir(outputDirname, { recursive: true })
         await fs.writeFile(outputDir, content, 'utf8')

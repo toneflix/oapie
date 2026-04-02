@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 
-import { buildOutputFilePath } from '../src/generator/OutputGenerator'
+import { OutputGenerator } from '../src/generator/OutputGenerator'
 import { createServer } from 'node:http'
 import { execFile } from 'node:child_process'
 import { mergeSsrPropsIntoRenderedHtml } from '../src/Manager'
@@ -17,7 +17,7 @@ const runParseAndReadJson = async (
     source: string,
     shape: 'raw' | 'openapi' = 'raw'
 ) => {
-    const outputFilePath = buildOutputFilePath(workspaceRoot, source, shape, 'json')
+    const outputFilePath = OutputGenerator.buildFilePath(workspaceRoot, source, shape, 'json')
 
     await rm(outputFilePath, { force: true })
     await execFileAsync(process.execPath, [
@@ -39,7 +39,7 @@ const runParseAndReadText = async (
     shape: 'raw' | 'openapi',
     output: 'js' | 'pretty' | 'ts'
 ) => {
-    const outputFilePath = buildOutputFilePath(workspaceRoot, source, shape, output)
+    const outputFilePath = OutputGenerator.buildFilePath(workspaceRoot, source, shape, output)
 
     await rm(outputFilePath, { force: true })
     await execFileAsync(process.execPath, [

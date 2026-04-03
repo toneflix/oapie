@@ -48,13 +48,51 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Check and bump version if needed
-        id: version_check
-        if: ${{ github.event.inputs.version == '' }}
+      - name: Resolve publish version
+        id: publish_version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ github.event.inputs.version || '' }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
         run: |
+          normalize_version() {
+            echo "$1" | sed 's/^v//'
+          }
+
           # Get current version from package.json
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "Current package.json version: $CURRENT_VERSION"
+
+          REQUESTED_VERSION=""
+          VERSION_SOURCE="auto"
+
+          if [ -n "$INPUT_VERSION" ]; then
+            REQUESTED_VERSION=$(normalize_version "$INPUT_VERSION")
+            VERSION_SOURCE="workflow input"
+          elif [ "$EVENT_NAME" = "release" ] && [ -n "$RELEASE_TAG" ]; then
+            REQUESTED_VERSION=$(normalize_version "$RELEASE_TAG")
+            VERSION_SOURCE="release tag"
+          elif [ "$REF_TYPE" = "tag" ] && [ -n "$REF_NAME" ]; then
+            REQUESTED_VERSION=$(normalize_version "$REF_NAME")
+            VERSION_SOURCE="git tag"
+          fi
+
+          if [ -n "$REQUESTED_VERSION" ]; then
+            echo "Using version from $VERSION_SOURCE: $REQUESTED_VERSION"
+
+            if [ "$CURRENT_VERSION" != "$REQUESTED_VERSION" ]; then
+              pnpm version "$REQUESTED_VERSION" --no-git-tag-version
+              echo "version_bumped=true" >> $GITHUB_OUTPUT
+            else
+              echo "version_bumped=false" >> $GITHUB_OUTPUT
+            fi
+
+            echo "new_version=$REQUESTED_VERSION" >> $GITHUB_OUTPUT
+            echo "version_source=$VERSION_SOURCE" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
           # Get published version from npm (suppress errors if package doesn't exist)
           PUBLISHED_VERSION=$(pnpm view oapiex version 2>/dev/null || echo "0.0.0")
@@ -95,28 +133,19 @@ jobs:
             
             echo "version_bumped=true" >> $GITHUB_OUTPUT
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "version_source=auto bump" >> $GITHUB_OUTPUT
           else
             echo "Version is valid. Proceeding with current version."
             echo "version_bumped=false" >> $GITHUB_OUTPUT
             echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            echo "version_source=package.json" >> $GITHUB_OUTPUT
           fi
 
       - name: Commit and push version bump
-        if: steps.version_check.outputs.version_bumped == 'true'
+        if: steps.publish_version.outputs.version_bumped == 'true'
         run: |
           git add package.json
-          git commit -m "chore: bump version to ${{ steps.version_check.outputs.new_version }} [skip ci]"
-          git push origin HEAD:main
-
-      - name: Set version from input
-        if: ${{ github.event.inputs.version != '' }}
-        run: |
-          echo "Setting version to ${{ github.event.inputs.version }}"
-          pnpm version "${{ github.event.inputs.version }}" --no-git-tag-version
-          echo "version_bumped=true" >> $GITHUB_OUTPUT
-          echo "new_version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          git add package.json
-          git commit -m "chore: set version to ${{ github.event.inputs.version }} [skip ci]"
+          git commit -m "chore: set version to ${{ steps.publish_version.outputs.new_version }} [skip ci]"
           git push origin HEAD:main
 
       - name: Run linter
@@ -133,8 +162,82 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Create release notes
-        if: steps.version_check.outputs.version_bumped == 'true'
+      - name: Bump workspace package versions
+        id: workspace_packages
         run: |
-          echo "Published version ${{ steps.version_check.outputs.new_version }} to npm" >> $GITHUB_STEP_SUMMARY
-          echo "Auto-bumped from published version" >> $GITHUB_STEP_SUMMARY
+          CHANGED=false
+          PUBLISHED_PACKAGES=()
+
+          for package_json in packages/*/package.json; do
+            if [ ! -f "$package_json" ]; then
+              continue
+            fi
+
+            PACKAGE_DIR=$(dirname "$package_json")
+            PACKAGE_NAME=$(node -p "require('./$package_json').name")
+            PACKAGE_PRIVATE=$(node -p "String(Boolean(require('./$package_json').private))")
+
+            if [ "$PACKAGE_PRIVATE" = "true" ]; then
+              continue
+            fi
+
+            pnpm --dir "$PACKAGE_DIR" version patch --no-git-tag-version
+            NEW_PACKAGE_VERSION=$(node -p "require('./$package_json').version")
+            PUBLISHED_PACKAGES+=("${PACKAGE_NAME}@${NEW_PACKAGE_VERSION}")
+            CHANGED=true
+          done
+
+          if [ "$CHANGED" = "true" ]; then
+            git add packages/*/package.json
+            git commit -m "chore: bump workspace package versions [skip ci]"
+            git push origin HEAD:main
+          fi
+
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+          {
+            echo 'packages<<EOF'
+            printf '%s\n' "${PUBLISHED_PACKAGES[@]}"
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+
+      - name: Publish workspace packages
+        if: steps.workspace_packages.outputs.changed == 'true'
+        run: pnpm -r --filter "@oapiex/*" publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub release
+        if: ${{ github.event_name != 'release' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: v${{ steps.publish_version.outputs.new_version }}
+          WORKSPACE_PACKAGES: ${{ steps.workspace_packages.outputs.packages }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists"
+            exit 0
+          fi
+
+          NOTES=$(mktemp)
+          {
+            echo "Published version ${{ steps.publish_version.outputs.new_version }} to npm."
+            echo
+            echo "Version source: ${{ steps.publish_version.outputs.version_source }}"
+            if [ -n "$WORKSPACE_PACKAGES" ]; then
+              echo
+              echo "Workspace packages published:"
+              echo "$WORKSPACE_PACKAGES" | sed 's/^/- /'
+            fi
+          } > "$NOTES"
+
+          gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file "$NOTES"
+
+      - name: Create release notes
+        if: always()
+        run: |
+          echo "Published version ${{ steps.publish_version.outputs.new_version }} to npm" >> $GITHUB_STEP_SUMMARY
+          echo "Version source: ${{ steps.publish_version.outputs.version_source }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.workspace_packages.outputs.changed }}" = "true" ]; then
+            echo "Workspace packages published:" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.workspace_packages.outputs.packages }}" | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+          fi

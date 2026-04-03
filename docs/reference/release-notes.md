@@ -1,5 +1,82 @@
 # Release Notes
 
+## oapiex 0.3.0
+
+`0.3.0` expands the generated SDK runtime beyond route scaffolding into real-world client setup, authentication, and security-aware SDK output. This release adds configurable runtime clients, generated auth helpers from OpenAPI security schemes, validator-driven auth refresh, and stronger docs around using `@oapiex/sdk-kit` directly or through generated SDK packages.
+
+### Highlights
+
+- Generated SDKs now preserve OpenAPI security schemes and emit auth helper functions such as `createBearerAuth()`, `createBasicAuth()`, `createPartnerKeyAuth()`, and `createOauthAuth()` when the source document includes `components.securitySchemes`.
+- Added first-class SDK runtime configuration for custom URLs, default headers, timeouts, encryption key overrides, and pluggable auth strategies.
+- Added validator-driven auth replacement so `setAccessValidator()` can mint or replace auth before guarded requests are sent.
+- Added `createAccessTokenCache()` and `createAuthCache()` to support cached token refresh flows for APIs that issue short-lived bearer tokens.
+- Expanded the docs to cover sdk-kit configuration, auth strategies, generated security helpers, and a recommended cached-token refresh pattern.
+
+### Runtime Configuration And Auth
+
+- `InitOptions` now supports:
+  - `urls`
+  - `headers`
+  - `timeout`
+  - `encryptionKey`
+  - `auth`
+- Added support for multiple drop-in auth shapes across the shared transport layer:
+  - bearer
+  - OAuth2-style access tokens
+  - basic auth
+  - API keys in headers, query params, or cookies
+  - custom request mutators
+- Added shared config merging for runtime SDK setup so auth and request defaults are applied consistently across both generated class-based SDKs and manifest-driven runtime SDKs.
+
+### Security-Aware SDK Generation
+
+- Generated schema modules now carry security metadata from the extracted OpenAPI document.
+- Generated SDK manifests now include:
+  - `securitySchemes`
+  - document-level `security`
+  - operation-level security requirements
+- Generated package entrypoints now export security metadata and generated auth helper factories alongside `createClient()` and `Core`.
+- Generated README output now includes auth-aware quick-start snippets when the source API defines security schemes.
+
+### Access Validation And Token Refresh
+
+- `setAccessValidator()` can now:
+  - allow requests unchanged
+  - fail requests with a custom error message
+  - return replacement auth config
+  - return partial runtime config updates
+- `Core` now exposes the runtime state needed for auth bootstrapping flows, including client credentials and current config accessors.
+- Added cached access-token helpers so SDKs can exchange client credentials for bearer tokens and reuse them until expiry instead of re-authenticating on every request.
+
+### Documentation And Examples
+
+- Added a dedicated `@oapiex/sdk-kit` reference covering:
+  - runtime configuration
+  - auth strategies
+  - handwritten SDK construction
+  - validator-driven auth refresh
+  - cached token refresh helpers
+- Expanded the SDK generation guide with:
+  - generated security helper behavior
+  - recommended auth refresh patterns for generated SDKs
+- Updated example SDK documentation to show validator-based cached token refresh in a combined-mode SDK package.
+
+### Testing And Internal Changes
+
+- Expanded sdk-kit tests to cover:
+  - runtime configuration merging
+  - auth strategy application
+  - validator-driven auth replacement
+  - cached token reuse until expiry
+- Extended generator tests to validate security scheme emission, generated auth helpers, and auth-aware README output.
+- Added new sdk-kit utility exports for auth caching and strengthened the runtime manifest typing surface to include security metadata.
+
+### Potentially Breaking Or Notable Output Changes
+
+- Generated SDK packages may now expose additional exports for auth helpers and security metadata when the source API includes security schemes.
+- Consumers with custom wrapper code around generated SDK entrypoints may need to account for the richer generated runtime manifest shape.
+- Access validation is now capable of mutating auth and shared runtime config, which is more powerful than the earlier boolean-or-error gate behavior.
+
 ## oapiex 0.2.0
 
 `0.2.0` is a substantial SDK-generation release focused on turning extracted OpenAPI documents into usable TypeScript SDK packages with better structure, better docs, better examples, and stronger test coverage.

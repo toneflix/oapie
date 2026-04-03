@@ -35,6 +35,7 @@ export default defineConfig(
             'tmp/**',
             'bin/**',
             'dist/**',
+            '**/dist/**',
             'build/**',
             'node_modules/**',
         ])

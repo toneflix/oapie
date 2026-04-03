@@ -868,7 +868,7 @@ describe('generateTypeScriptModule', () => {
         } as never, 'ExtractedApiDocument')
 
         expect(content).toContain("amount: '10000'")
-        expect(content).not.toContain("amount: 10000")
+        expect(content).not.toContain('amount: 10000')
     })
 
     it('omits schema examples that are missing required properties', () => {
@@ -924,7 +924,7 @@ describe('generateTypeScriptModule', () => {
             },
         } as never, 'ExtractedApiDocument')
 
-        expect(content).not.toContain("example: {\n                  amount: 10000")
+        expect(content).not.toContain('example: {\n                  amount: 10000')
         expect(content).not.toContain("example: {\n                  amount: '10000'")
     })
 

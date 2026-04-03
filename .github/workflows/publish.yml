@@ -167,6 +167,7 @@ jobs:
         run: |
           CHANGED=false
           PUBLISHED_PACKAGES=()
+          PUBLISHED_PACKAGE_DIRS=()
 
           for package_json in packages/*/package.json; do
             if [ ! -f "$package_json" ]; then
@@ -181,9 +182,13 @@ jobs:
               continue
             fi
 
-            pnpm --dir "$PACKAGE_DIR" version patch --no-git-tag-version
+            (
+              cd "$PACKAGE_DIR"
+              pnpm version patch --no-git-tag-version
+            )
             NEW_PACKAGE_VERSION=$(node -p "require('./$package_json').version")
             PUBLISHED_PACKAGES+=("${PACKAGE_NAME}@${NEW_PACKAGE_VERSION}")
+            PUBLISHED_PACKAGE_DIRS+=("$PACKAGE_DIR")
             CHANGED=true
           done
 
@@ -198,13 +203,27 @@ jobs:
             echo 'packages<<EOF'
             printf '%s\n' "${PUBLISHED_PACKAGES[@]}"
             echo 'EOF'
+            echo 'package_dirs<<EOF'
+            printf '%s\n' "${PUBLISHED_PACKAGE_DIRS[@]}"
+            echo 'EOF'
           } >> $GITHUB_OUTPUT
 
       - name: Publish workspace packages
         if: steps.workspace_packages.outputs.changed == 'true'
-        run: pnpm -r --filter "@oapiex/*" publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PACKAGE_DIRS: ${{ steps.workspace_packages.outputs.package_dirs }}
+        run: |
+          while IFS= read -r package_dir; do
+            if [ -z "$package_dir" ]; then
+              continue
+            fi
+
+            (
+              cd "$package_dir"
+              pnpm publish --access public --no-git-checks
+            )
+          done <<< "$PACKAGE_DIRS"
 
       - name: Create GitHub release
         if: ${{ github.event_name != 'release' }}

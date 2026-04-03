@@ -51,6 +51,9 @@ importers:
       '@types/node':
         specifier: ^20.14.5
         version: 20.19.37
+      '@vitest/coverage-v8':
+        specifier: 3.2.4
+        version: 3.2.4(vitest@3.2.4(@types/debug@4.1.13)(@types/node@20.19.37)(happy-dom@20.8.9)(jiti@2.6.1)(jsdom@29.0.1)(tsx@4.21.0))
       barrelize:
         specifier: ^1.7.4
         version: 1.7.4

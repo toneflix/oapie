@@ -121,6 +121,13 @@ export class GenerateCommand extends Command<Application> {
         }
     }
 
+    /**
+     * Resolves the SDK source by either loading a pre-generated TypeScript artifact or 
+     * crawling/parsing HTML documentation based on the provided options and source string.
+     * 
+     * @param options The options for resolving the SDK source.
+     * @returns An object containing the OpenAPI document and the generated schema module as a string.
+     */
     private async resolveSdkSource (options: {
         source: string
         crawl: boolean
@@ -199,6 +206,12 @@ export class GenerateCommand extends Command<Application> {
         return parsed
     }
 
+    /**
+     * Resolves the output directory for the generated SDK package.
+     * 
+     * @param source The source string used to determine the output directory.
+     * @returns The resolved output directory path.
+     */
     private resolveOutputDirectory (source: string): string {
         const explicitDir = String(this.option('dir', '')).trim()
 
@@ -259,10 +272,24 @@ export class GenerateCommand extends Command<Application> {
         throw new Error(`Unsupported method strategy: ${normalized}`)
     }
 
+    /**
+     * Checks if the provided source string points to a TypeScript or JavaScript file, which is 
+     * used to determine if the source should be loaded as a pre-generated artifact instead 
+     * of crawling/parsing HTML documentation.
+     * 
+     * @param source The source string to check.
+     * @returns True if the source is a TypeScript or JavaScript file, false otherwise.
+     */
     private isTypeScriptArtifactSource (source: string): boolean {
         return /\.(?:[cm]?ts|[cm]?js)$/i.test(source)
     }
 
+    /**
+     * Type guard to check if a value conforms to the OpenApiDocumentLike interface. 
+     * 
+     * @param value 
+     * @returns 
+     */
     private isOpenApiDocumentLike (value: unknown): value is OpenApiDocumentLike {
         if (typeof value !== 'object' || value === null || Array.isArray(value)) {
             return false
@@ -282,7 +309,16 @@ export class GenerateCommand extends Command<Application> {
             && !Array.isArray(candidate.paths)
     }
 
-    private async writePackageFiles (packageDir: string, files: Record<string, string>): Promise<void> {
+    /**
+     * Writes the generated files to the output directory, creating any necessary subdirectories. 
+     * 
+     * @param packageDir 
+     * @param files 
+     */
+    private async writePackageFiles (
+        packageDir: string,
+        files: Record<string, string>
+    ): Promise<void> {
         await Promise.all(Object.entries(files).map(async ([relativePath, content]) => {
             const filePath = path.join(packageDir, relativePath)
 

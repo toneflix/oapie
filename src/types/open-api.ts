@@ -33,6 +33,7 @@ export interface OpenApiOperationLike {
     operationId?: string
     parameters?: OpenApiParameterLike[]
     requestBody?: {
+        description?: string
         required: boolean
         content: Record<string, OpenApiMediaType>
     }

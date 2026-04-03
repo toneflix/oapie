@@ -157,8 +157,10 @@ export class SdkPackageGenerator {
         const bodyArg = signatureStyle === 'flat'
             ? (operation.hasBody ? 'body' : '{}')
             : (operation.hasBody ? 'body ?? {}' : '{}')
+        const docComment = this.renderMethodDocComment(operation, signatureStyle, aliasMap)
 
         return [
+            ...(docComment ? [docComment] : []),
             `    async ${operation.methodName} ${signature}: Promise<${this.rewriteTypeReference(operation.responseType, aliasMap)}> {`,
             '        await this.core.validateAccess()',
             '',
@@ -172,6 +174,131 @@ export class SdkPackageGenerator {
             '        return data',
             '    }',
         ].join('\n')
+    }
+
+    private renderMethodDocComment (
+        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        signatureStyle: 'flat' | 'grouped',
+        aliasMap: Map<string, string>
+    ): string {
+        const lines: string[] = []
+        const summary = operation.summary?.trim()
+        const description = operation.description?.trim()
+        const operationId = operation.operationId?.trim()
+        const responseType = this.rewriteTypeReference(operation.responseType, aliasMap)
+        const responseDescription = operation.responseDescription?.trim()
+
+        if (summary) {
+            lines.push(summary)
+        }
+
+        if (description && description !== summary) {
+            if (lines.length > 0) {
+                lines.push('')
+            }
+
+            lines.push(...this.wrapDocText(description))
+        }
+
+        const metadataLines = [
+            `HTTP ${operation.method} ${operation.path}`,
+            ...(operationId ? [`Operation ID: ${operationId}`] : []),
+        ]
+
+        if (metadataLines.length > 0) {
+            if (lines.length > 0) {
+                lines.push('')
+            }
+
+            lines.push(...metadataLines)
+        }
+
+        const parameterDocs = signatureStyle === 'flat'
+            ? this.renderFlatParameterDocs(operation, aliasMap)
+            : this.renderGroupedParameterDocs(operation, aliasMap)
+
+        if (parameterDocs.length > 0) {
+            if (lines.length > 0) {
+                lines.push('')
+            }
+
+            lines.push(...parameterDocs)
+        }
+
+        lines.push(`@returns ${responseDescription ? `${responseDescription} ` : ''}${responseType}`.trim())
+
+        return [
+            '    /**',
+            ...lines.map((line) => line ? `     * ${line}` : '     *'),
+            '     */',
+        ].join('\n')
+    }
+
+    private renderGroupedParameterDocs (
+        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        aliasMap: Map<string, string>
+    ): string[] {
+        const docs: string[] = []
+
+        if (operation.pathParams.length > 0) {
+            docs.push(this.renderParamDoc('params', operation.paramsType, aliasMap, this.describeParameterGroup(operation.pathParams, 'path parameters')))
+        }
+
+        if (operation.queryParams.length > 0) {
+            docs.push(this.renderParamDoc('query', operation.queryType, aliasMap, this.describeParameterGroup(operation.queryParams, 'query parameters')))
+        }
+
+        if (operation.hasBody) {
+            docs.push(this.renderParamDoc('body', operation.inputType, aliasMap, operation.requestBodyDescription?.trim() || 'Request body'))
+        }
+
+        if (operation.headerParams.length > 0) {
+            docs.push(this.renderParamDoc('headers', operation.headerType, aliasMap, this.describeParameterGroup(operation.headerParams, 'request headers')))
+        }
+
+        return docs
+    }
+
+    private renderFlatParameterDocs (
+        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        aliasMap: Map<string, string>
+    ): string[] {
+        const docs = [
+            ...operation.pathParams.map((parameter) => this.renderParamDoc(parameter.accessor, `${operation.paramsType}[${JSON.stringify(parameter.name)}]`, aliasMap, parameter.description?.trim() || `Path parameter ${parameter.name}`)),
+            ...operation.queryParams.map((parameter) => this.renderParamDoc(parameter.accessor, `${operation.queryType}[${JSON.stringify(parameter.name)}]`, aliasMap, parameter.description?.trim() || `Query parameter ${parameter.name}`)),
+            ...(operation.hasBody ? [this.renderParamDoc('body', operation.inputType, aliasMap, operation.requestBodyDescription?.trim() || 'Request body')] : []),
+            ...operation.headerParams.map((parameter) => this.renderParamDoc(parameter.accessor, `${operation.headerType}[${JSON.stringify(parameter.name)}]`, aliasMap, parameter.description?.trim() || `Header ${parameter.name}`)),
+        ]
+
+        return docs
+    }
+
+    private renderParamDoc (name: string, typeRef: string, aliasMap: Map<string, string>, description: string): string {
+        const renderedType = this.rewriteTypeReference(typeRef, aliasMap)
+
+        return `@param ${name} ${description} Type: ${renderedType}`
+    }
+
+    private describeParameterGroup (
+        parameters: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]['pathParams'],
+        fallback: string
+    ): string {
+        const described = parameters
+            .map((parameter) => parameter.description?.trim() ? `${parameter.name}: ${parameter.description.trim()}` : parameter.name)
+            .filter(Boolean)
+
+        if (described.length === 0) {
+            return fallback
+        }
+
+        return described.join('; ')
+    }
+
+    private wrapDocText (text: string): string[] {
+        return text
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
     }
 
     private renderGroupedSignature (

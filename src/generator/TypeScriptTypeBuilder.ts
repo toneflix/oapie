@@ -72,7 +72,10 @@ export class TypeScriptTypeBuilder {
                     method: method.toUpperCase(),
                     methodName: this.naming.deriveSdkMethodName(method, path, operation, options.methodStrategy ?? 'smart'),
                     summary: operation.summary,
+                    description: operation.description,
                     operationId: operation.operationId,
+                    requestBodyDescription: operation.requestBody?.description,
+                    responseDescription: this.resolveSuccessResponseDescription(operation.responses),
                     responseType: this.shapes.resolveSdkResponseType(operation.responses, refs.response),
                     inputType: refs.input,
                     queryType: refs.query,
@@ -132,5 +135,27 @@ export class TypeScriptTypeBuilder {
 
     private getOperationPriority (operation: { requestBody?: unknown }): number {
         return Number(Boolean(operation.requestBody)) * 10
+    }
+
+    private resolveSuccessResponseDescription (responses: Record<string, { description: string }>): string | undefined {
+        const preferredStatusCodes = ['200', '201', '202', '204']
+
+        for (const statusCode of preferredStatusCodes) {
+            const description = responses[statusCode]?.description?.trim()
+
+            if (description) {
+                return description
+            }
+        }
+
+        for (const response of Object.values(responses)) {
+            const description = response.description?.trim()
+
+            if (description) {
+                return description
+            }
+        }
+
+        return undefined
     }
 }

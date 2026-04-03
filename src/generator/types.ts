@@ -85,6 +85,7 @@ export interface SdkParameterManifest {
     accessor: string
     in: 'query' | 'header' | 'path'
     required: boolean
+    description?: string
 }
 
 export interface SdkOperationManifest {
@@ -92,7 +93,10 @@ export interface SdkOperationManifest {
     method: string
     methodName: string
     summary?: string
+    description?: string
     operationId?: string
+    requestBodyDescription?: string
+    responseDescription?: string
     responseType: string
     inputType: string
     queryType: string

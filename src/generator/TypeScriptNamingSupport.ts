@@ -274,6 +274,7 @@ export class TypeScriptNamingSupport {
                 accessor: this.toParameterAccessor(parameter.name),
                 in: location,
                 required: parameter.required ?? false,
+                description: parameter.description,
             }))
     }
 

@@ -12,13 +12,16 @@ describe('SdkPackageGenerator', () => {
         paths: {
             '/app/example': {
                 get: {
+                    summary: 'List examples',
+                    description: 'Returns the list of example resources for the provided code.',
+                    operationId: 'listExamples',
                     parameters: [
-                        { name: 'code', in: 'query', required: true, schema: { type: 'string' } },
-                        { name: 'X-Key-1', in: 'header', required: false, schema: { type: 'string' } },
+                        { name: 'code', in: 'query', required: true, description: 'Country code filter.', schema: { type: 'string' } },
+                        { name: 'X-Key-1', in: 'header', required: false, description: 'Optional tenant header.', schema: { type: 'string' } },
                     ],
                     responses: {
                         '200': {
-                            description: 'OK',
+                            description: 'Example collection response.',
                             content: {
                                 'application/json': {
                                     schema: {
@@ -42,10 +45,14 @@ describe('SdkPackageGenerator', () => {
                     },
                 },
                 post: {
+                    summary: 'Create example',
+                    description: 'Creates a new example resource.',
+                    operationId: 'createExample',
                     parameters: [
-                        { name: 'X-Key-1', in: 'header', required: false, schema: { type: 'string' } },
+                        { name: 'X-Key-1', in: 'header', required: false, description: 'Optional tenant header.', schema: { type: 'string' } },
                     ],
                     requestBody: {
+                        description: 'Example payload used to create the resource.',
                         required: true,
                         content: {
                             'application/json': {
@@ -61,7 +68,7 @@ describe('SdkPackageGenerator', () => {
                     },
                     responses: {
                         '200': {
-                            description: 'OK',
+                            description: 'Created example resource.',
                             content: {
                                 'application/json': {
                                     schema: {
@@ -96,6 +103,13 @@ describe('SdkPackageGenerator', () => {
         expect(files['src/Apis/ExampleApp.ts']).toContain('async create (body: ExampleInput, headers?: ExampleHeader): Promise<Example>')
         expect(files['src/Apis/ExampleApp.ts']).toContain('export class ExampleApp extends BaseApi {')
         expect(files['src/Apis/ExampleApp.ts']).not.toContain('constructor(core:')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('List examples')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('Returns the list of example resources for the provided code.')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('@param query code: Country code filter. Type: ExampleAppQuery')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('@param headers X-Key-1: Optional tenant header. Type: ExampleHeader')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('@returns Example collection response. Example[]')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('@param body Example payload used to create the resource. Type: ExampleInput')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('@returns Created example resource. Example')
         expect(files['src/Apis/ExampleApp.ts']).toContain('((headers ? { ...headers } : {}) as Record<string, string | undefined>)')
         expect(files['src/Core.ts']).toContain('static override apiClass = ApiBinder')
         expect(files['src/index.ts']).toContain('export * from \'./Schema\'')
@@ -117,6 +131,9 @@ describe('SdkPackageGenerator', () => {
         expect(runtimeFiles['src/Schema.ts']).toContain('OpenApiRuntimeBundle')
         expect(runtimeFiles['src/Core.ts']).toBeUndefined()
         expect(runtimeFiles['src/index.ts']).toContain('createBoundSdk(extractedApiDocumentSdk, options) as KitCore & { api: KitBaseApi & ExtractedApiDocumentApi }')
+        expect(classFiles['src/Apis/ExampleApp.ts']).toContain('@param code Country code filter. Type: ExampleAppQuery["code"]')
+        expect(classFiles['src/Apis/ExampleApp.ts']).toContain('@param xKey1 Optional tenant header. Type: ExampleHeader["X-Key-1"]')
+        expect(classFiles['src/Apis/ExampleApp.ts']).toContain('@param body Example payload used to create the resource. Type: ExampleInput')
         expect(classFiles['src/Apis/ExampleApp.ts']).toContain('async list (code: ExampleAppQuery["code"], xKey1?: ExampleHeader["X-Key-1"]): Promise<Example[]>')
         expect(classFiles['src/Apis/ExampleApp.ts']).toContain('async create (body: ExampleInput, xKey1?: ExampleHeader["X-Key-1"]): Promise<Example>')
         expect(classFiles['src/Apis/ExampleApp.ts']).toContain('({ "X-Key-1": xKey1 } as Record<string, string | undefined>)')

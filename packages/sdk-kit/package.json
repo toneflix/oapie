@@ -1,7 +1,7 @@
 {
   "name": "@oapiex/sdk-kit",
   "type": "module",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "A TypeScript Base for building SDKs using OpenAPI specifications extracted by OAPIEX.",
   "main": "./dist/index.cjs",
   "private": false,
@@ -48,8 +48,9 @@
     "coverage": "pnpm vitest --coverage",
     "lint": "eslint . --ext .ts --ext .js",
     "build": "tsdown",
-    "version": "pnpm run build",
-    "barrel": "barrelize"
+    "version:patch": "pnpm version patch",
+    "barrel": "barrelize",
+    "prepublishOnly": "pnpm build && pnpm test"
   },
   "dependencies": {
     "axios": "^1.13.2",

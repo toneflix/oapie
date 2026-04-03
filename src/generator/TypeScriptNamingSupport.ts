@@ -313,14 +313,17 @@ export class TypeScriptNamingSupport {
 
         if (namespaceStrategy === 'scoped') {
             return Array.from(new Set([
-                preferredName,
+                preferredName ?? '',
                 this.sanitizeTypeName(staticSegments.join(' ')),
                 ...contextualNames,
                 defaultName,
             ].filter(Boolean)))
         }
 
-        return Array.from(new Set([preferredName, defaultName, ...contextualNames].filter(Boolean)))
+        return Array.from(new Set([
+            preferredName ?? '',
+            defaultName, ...contextualNames
+        ].filter(Boolean)))
     }
 
     private getPreferredSdkGroupName (

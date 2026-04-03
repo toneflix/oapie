@@ -14,6 +14,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import prettier from 'prettier'
 import { transformer } from '../OpenApiTransform'
+import { existsSync, readdirSync } from 'node:fs'
 
 export class GenerateCommand extends Command<Application> {
     protected signature = `generate
@@ -42,6 +43,7 @@ export class GenerateCommand extends Command<Application> {
         const timeoutOption = String(this.option('timeout', '')).trim()
         const crawl = this.option('crawl')
         const baseUrl = String(this.option('baseUrl', '')).trim() || null
+        const packageDir = await this.resolveOutputDirectory(source)
         const spinner = this.spinner(`Generating ${artifact} artifact...`).start()
         let startedBrowserSession = false
 
@@ -87,7 +89,6 @@ export class GenerateCommand extends Command<Application> {
                 methodStrategy,
             })
 
-            const packageDir = this.resolveOutputDirectory(source)
             const packageName = this.resolvePackageName(packageDir)
             const files = new SdkPackageGenerator().generate(sdkSource.document, {
                 outputMode,
@@ -164,6 +165,12 @@ export class GenerateCommand extends Command<Application> {
         }
     }
 
+    /**
+     * Loads the SDK source from a pre-generated TypeScript artifact.
+     * 
+     * @param source 
+     * @returns 
+     */
     private async loadSdkSourceFromTypeScriptArtifact (
         source: string
     ): Promise<{ document: OpenApiDocumentLike, schemaModule: string }> {
@@ -183,6 +190,12 @@ export class GenerateCommand extends Command<Application> {
         }
     }
 
+    /**
+     * Builds an OpenAPI document from the extracted operations.
+     * 
+     * @param payload 
+     * @returns 
+     */
     private buildOpenApiPayload (
         payload: Awaited<
             ReturnType<Application['crawlReadmeOperations']>
@@ -212,14 +225,45 @@ export class GenerateCommand extends Command<Application> {
      * @param source The source string used to determine the output directory.
      * @returns The resolved output directory path.
      */
-    private resolveOutputDirectory (source: string): string {
-        const explicitDir = String(this.option('dir', '')).trim()
+    private async resolveOutputDirectory (source: string, explicitDir?: string): Promise<string> {
+        explicitDir ??= String(this.option('dir', '')).trim()
 
-        if (explicitDir) {
-            return path.resolve(process.cwd(), explicitDir)
+        const dir = explicitDir
+            ? path.resolve(process.cwd(), explicitDir)
+            : OutputGenerator.buildArtifactDirectory(process.cwd(), source, 'sdk')
+
+        // Check if the directory already exists and is not empty, and throw an error to prevent accidental overwrites
+        if (existsSync(dir)) {
+            const files = readdirSync(dir)
+
+            if (files.length > 0) {
+                const action = await this.choice(`Output directory (${explicitDir}) already exists and is not empty, what would you like to do?`, [
+                    { name: 'Overwrite', value: 'overwrite' },
+                    { name: 'Try to merge', value: 'merge' },
+                    { name: 'Choose a different directory', value: 'choose' },
+                    { name: 'Cancel', value: 'cancel' },
+                ])
+
+                switch (action) {
+                    case 'overwrite':
+                        await fs.rm(dir, { recursive: true, force: true })
+                        break
+                    case 'choose': {
+                        const newDir = await this.ask('Please enter a new output directory (relative to current directory):', explicitDir)
+
+                        return this.resolveOutputDirectory(source, newDir)
+                    }
+                    case 'cancel':
+                        this.info('Operation cancelled by user')
+
+                        return process.exit(0)
+                    default:
+                        break
+                }
+            }
         }
 
-        return OutputGenerator.buildArtifactDirectory(process.cwd(), source, 'sdk')
+        return dir
     }
 
     private resolvePackageName (packageDir: string): string {

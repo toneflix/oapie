@@ -33,6 +33,7 @@ export class SdkPackageGenerator {
         const classNames = manifest.groups.map((group) => group.className)
         const files: Record<string, string> = {
             'package.json': this.renderPackageJson(options),
+            'README.md': this.renderReadme(manifest, options, outputMode, signatureStyle),
             'src/Schema.ts': schemaModule,
             'src/index.ts': this.renderIndexFile(classNames, outputMode, rootTypeName),
             'tsconfig.json': this.renderTsconfig(),
@@ -467,6 +468,247 @@ export class SdkPackageGenerator {
                 vitest: '^3.2.4',
             },
         }, null, 2)
+    }
+
+    private renderReadme (
+        manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>,
+        options: SdkPackageGeneratorOptions,
+        outputMode: 'runtime' | 'classes' | 'both',
+        signatureStyle: 'flat' | 'grouped'
+    ): string {
+        const packageName = options.packageName ?? 'generated-sdk'
+        const title = `# ${packageName}`
+        const description = this.renderReadmeDescription(outputMode)
+        const usage = this.renderReadmeUsage(manifest, packageName, outputMode, signatureStyle)
+        const exports = this.renderReadmeExports(outputMode)
+
+        return [
+            title,
+            '',
+            description,
+            '',
+            '## Install',
+            '',
+            '```bash',
+            `pnpm add ${packageName}`,
+            '```',
+            '',
+            '## Quick Start',
+            '',
+            '```ts',
+            usage,
+            '```',
+            '',
+            '## Main Exports',
+            '',
+            ...exports.map((line) => `- ${line}`),
+            '',
+            '## Commands',
+            '',
+            '```bash',
+            'pnpm test',
+            'pnpm build',
+            '```',
+        ].join('\n')
+    }
+
+    private renderReadmeDescription (outputMode: 'runtime' | 'classes' | 'both'): string {
+        if (outputMode === 'runtime') {
+            return 'Generated runtime-first TypeScript SDK emitted by oapiex.'
+        }
+
+        if (outputMode === 'classes') {
+            return 'Generated class-based TypeScript SDK emitted by oapiex.'
+        }
+
+        return 'Generated TypeScript SDK emitted by oapiex with both class-based and runtime-first entrypoints.'
+    }
+
+    private renderReadmeUsage (
+        manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>,
+        packageName: string,
+        outputMode: 'runtime' | 'classes' | 'both',
+        signatureStyle: 'flat' | 'grouped'
+    ): string {
+        const exampleOperation = this.pickExampleOperation(manifest)
+        const runtimeSnippet = this.renderReadmeClientSnippet(packageName, 'runtime', signatureStyle, exampleOperation)
+
+        if (outputMode === 'runtime') {
+            return runtimeSnippet
+        }
+
+        const classSnippet = this.renderReadmeClientSnippet(packageName, 'classes', signatureStyle, exampleOperation)
+
+        if (outputMode === 'classes') {
+            return classSnippet
+        }
+
+        const typeImports = exampleOperation ? this.collectReadmeTypeImports(exampleOperation.operation) : []
+        const importLine = typeImports.length > 0
+            ? `import { Core, createClient, type ${typeImports.join(', type ')} } from '${packageName}'`
+            : `import { Core, createClient } from '${packageName}'`
+
+        return [
+            importLine,
+            '',
+            ...this.renderReadmeClientBody('sdk', 'classes', signatureStyle, exampleOperation),
+            '',
+            '// --- OR ---',
+            '',
+            ...this.renderReadmeClientBody('runtimeSdk', 'runtime', signatureStyle, exampleOperation),
+        ].join('\n')
+    }
+
+    private renderReadmeClientSnippet (
+        packageName: string,
+        mode: 'runtime' | 'classes',
+        signatureStyle: 'flat' | 'grouped',
+        exampleOperation: ReturnType<SdkPackageGenerator['pickExampleOperation']>
+    ): string {
+        const importNames = mode === 'runtime' ? ['createClient'] : ['Core']
+        const typeImports = exampleOperation ? this.collectReadmeTypeImports(exampleOperation.operation) : []
+        const importLine = typeImports.length > 0
+            ? `import { ${importNames.join(', ')}, type ${typeImports.join(', type ')} } from '${packageName}'`
+            : `import { ${importNames.join(', ')} } from '${packageName}'`
+        const sdkVariable = mode === 'runtime' ? 'runtimeSdk' : 'sdk'
+
+        return [
+            importLine,
+            '',
+            ...this.renderReadmeClientBody(sdkVariable, mode, signatureStyle, exampleOperation),
+        ].join('\n')
+    }
+
+    private renderReadmeClientBody (
+        sdkVariable: string,
+        mode: 'runtime' | 'classes',
+        signatureStyle: 'flat' | 'grouped',
+        exampleOperation: ReturnType<SdkPackageGenerator['pickExampleOperation']>
+    ): string[] {
+        const initLine = mode === 'runtime'
+            ? `const ${sdkVariable} = createClient({`
+            : `const ${sdkVariable} = new Core({`
+        const callLines = exampleOperation
+            ? this.renderReadmeOperationCall(sdkVariable, exampleOperation, mode === 'runtime' ? 'grouped' : signatureStyle)
+            : []
+
+        return [
+            initLine,
+            '  clientId: process.env.CLIENT_ID!,',
+            '  clientSecret: process.env.CLIENT_SECRET!,',
+            "  environment: 'sandbox',",
+            '})',
+            ...(callLines.length > 0 ? ['', ...callLines] : []),
+        ]
+    }
+
+    private renderReadmeExports (outputMode: 'runtime' | 'classes' | 'both'): string[] {
+        if (outputMode === 'runtime') {
+            return [
+                '`createClient()` for a typed runtime SDK instance',
+                '`Schema` exports for request, response, params, query, and header types',
+            ]
+        }
+
+        if (outputMode === 'classes') {
+            return [
+                '`Core` as the class-based SDK entrypoint',
+                'generated API classes plus `Schema` type exports',
+            ]
+        }
+
+        return [
+            '`Core` for class-based usage',
+            '`createClient()` for runtime-first usage',
+            '`Schema` exports for generated request, response, params, query, and header types',
+        ]
+    }
+
+    private pickExampleOperation (manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>) {
+        const group = manifest.groups[0]
+        const operation = group?.operations[0]
+
+        if (!group || !operation) {
+            return null
+        }
+
+        return { group, operation }
+    }
+
+    private collectReadmeTypeImports (
+        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+    ): string[] {
+        const types = new Set<string>()
+
+        if (operation.pathParams.length > 0) {
+            types.add(operation.paramsType)
+        }
+
+        if (operation.queryParams.length > 0) {
+            types.add(operation.queryType)
+        }
+
+        if (operation.hasBody) {
+            types.add(operation.inputType)
+        }
+
+        if (operation.headerParams.length > 0) {
+            types.add(operation.headerType)
+        }
+
+        return Array.from(types).sort()
+    }
+
+    private renderReadmeOperationCall (
+        sdkVariable: string,
+        exampleOperation: NonNullable<ReturnType<SdkPackageGenerator['pickExampleOperation']>>,
+        signatureStyle: 'flat' | 'grouped'
+    ): string[] {
+        const { group, operation } = exampleOperation
+        const args = signatureStyle === 'flat'
+            ? this.renderReadmeFlatArgs(operation)
+            : this.renderReadmeGroupedArgs(operation)
+
+        return [
+            `await ${sdkVariable}.api.${group.propertyName}.${operation.methodName}(`,
+            ...args.map((arg) => `  ${arg},`),
+            ')',
+        ]
+    }
+
+    private renderReadmeGroupedArgs (
+        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+    ): string[] {
+        const args: string[] = []
+
+        if (operation.pathParams.length > 0) {
+            args.push(`{} as ${operation.paramsType}`)
+        }
+
+        if (operation.queryParams.length > 0) {
+            args.push(`{} as ${operation.queryType}`)
+        }
+
+        if (operation.hasBody) {
+            args.push(`{} as ${operation.inputType}`)
+        }
+
+        if (operation.headerParams.length > 0) {
+            args.push(`{} as ${operation.headerType}`)
+        }
+
+        return args
+    }
+
+    private renderReadmeFlatArgs (
+        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+    ): string[] {
+        return [
+            ...operation.pathParams.map((parameter) => `{} as ${operation.paramsType}[${JSON.stringify(parameter.name)}]`),
+            ...operation.queryParams.map((parameter) => `{} as ${operation.queryType}[${JSON.stringify(parameter.name)}]`),
+            ...(operation.hasBody ? [`{} as ${operation.inputType}`] : []),
+            ...operation.headerParams.map((parameter) => `{} as ${operation.headerType}[${JSON.stringify(parameter.name)}]`),
+        ]
     }
 
     private renderTsconfig (): string {

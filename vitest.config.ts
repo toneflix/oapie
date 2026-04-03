@@ -1,8 +1,15 @@
 import { defineConfig } from 'vitest/config'
+import path from 'node:path'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
     plugins: [tsconfigPaths()],
+    resolve: {
+        alias: {
+            '@oapiex/sdk-kit': path.resolve(import.meta.dirname, 'packages/sdk-kit/src/index.ts'),
+            '@oapiex/sdk-kit/contracts': path.resolve(import.meta.dirname, 'packages/sdk-kit/src/Contracts/index.ts'),
+        },
+    },
     test: {
         passWithNoTests: true,
         pool: process.platform === 'win32' ? 'forks' : 'threads',
@@ -12,12 +19,15 @@ export default defineConfig({
         include: [
             'tests/*.{test,spec}.?(c|m)[jt]s?(x)',
             'packages/*/tests/*.{test,spec}.?(c|m)[jt]s?(x)',
-        ],
-        exclude: [
-            'examples/**',
+            'examples/*/tests/*.{test,spec}.?(c|m)[jt]s?(x)',
         ],
         coverage: {
             reporter: ['text', 'json', 'html', 'lcov'],
+            include: [
+                'src/**/*.{ts,js}',
+                'packages/*/src/**/*.{ts,js}',
+                'examples/*/src/**/*.{ts,js}',
+            ],
             exclude: ['**/node_modules/**', '**/dist/**', '**/cypress/**', '**/.{idea,git,cache,output,temp}/**', '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*', '**/.h3ravel/**'],
         }
     }

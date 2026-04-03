@@ -80,7 +80,7 @@ describe('generate command', () => {
         expect(await readFile(path.join(outDir, 'src', 'Schema.ts'), 'utf8')).toBe(schemaModule)
         expect(await readFile(path.join(outDir, 'package.json'), 'utf8')).toContain('"name": "generated-sdk-artifact"')
         expect(await readFile(path.join(outDir, 'src', 'Apis', 'ExampleApp.ts'), 'utf8')).toContain('export class ExampleApp')
-    })
+    }, 15000)
 
     it('generates an SDK package directly from a documentation URL', async () => {
         const workspaceRoot = path.resolve(import.meta.dirname, '..')

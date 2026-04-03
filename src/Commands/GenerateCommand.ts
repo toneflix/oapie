@@ -42,7 +42,7 @@ export class GenerateCommand extends Command<Application> {
         const timeoutOption = String(this.option('timeout', '')).trim()
         const crawl = this.option('crawl')
         const baseUrl = String(this.option('baseUrl', '')).trim() || null
-        const spinner = this.spinner('Generating artifact...').start()
+        const spinner = this.spinner(`Generating ${artifact} artifact...`).start()
         let startedBrowserSession = false
 
         try {

@@ -84,7 +84,7 @@ export class TypeScriptGenerator {
             this.moduleRenderer.renderOpenApiDocumentDefinitions(rootTypeName, document, operationTypeRefs),
             this.moduleRenderer.renderSdkApiInterface(rootTypeName, sdkManifest),
             this.moduleRenderer.renderSdkManifest(variableName, sdkManifest),
-            `export const ${variableName}: ${rootTypeName} = ${this.moduleRenderer.renderValue(document)}`,
+            `export const ${variableName}: ${rootTypeName} = ${this.moduleRenderer.renderOpenApiDocumentValue(document)}`,
             this.moduleRenderer.renderSdkBundle(variableName, rootTypeName),
             '',
             `export default ${variableName}`,

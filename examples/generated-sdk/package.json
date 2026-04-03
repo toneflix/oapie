@@ -1,0 +1,34 @@
+{
+  "name": "generated-sdk",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generated SDK scaffold emitted by oapiex.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "pnpm vitest --run",
+    "test:watch": "pnpm vitest",
+    "build": "tsdown"
+  },
+  "dependencies": {
+    "@oapiex/sdk-kit": "^0.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.5",
+    "tsdown": "^0.20.1",
+    "typescript": "^5.4.5",
+    "vitest": "^3.2.4"
+  }
+}

@@ -71,11 +71,11 @@ export class TypeScriptModuleRenderer {
             'export interface OpenApiSchemaDefinition {\n  type?: string\n  description?: string\n  default?: unknown\n  properties?: Record<string, OpenApiSchemaDefinition>\n  items?: OpenApiSchemaDefinition\n  required?: string[]\n  example?: unknown\n}',
             'export interface OpenApiParameterDefinition {\n  name: string\n  in: \'query\' | \'header\' | \'path\' | \'cookie\'\n  required?: boolean\n  description?: string\n  schema?: OpenApiSchemaDefinition\n  example?: unknown\n}',
             'export interface OpenApiMediaTypeDefinition<TExample = unknown> {\n  schema?: OpenApiSchemaDefinition\n  example?: TExample\n}',
-            'export interface OpenApiResponseDefinition<TResponse = unknown, TExample = unknown> {\n  description: string\n  content?: Record<string, OpenApiMediaTypeDefinition<TExample>>\n}',
+            'export interface OpenApiResponseDefinition<_TResponse = unknown, TExample = unknown> {\n  description: string\n  content?: Record<string, OpenApiMediaTypeDefinition<TExample>>\n}',
             'export interface OpenApiRequestBodyDefinition<TInput = unknown> {\n  required: boolean\n  content: Record<string, OpenApiMediaTypeDefinition<TInput>>\n}',
-            'export interface OpenApiOperationDefinition<TResponse = unknown, TResponseExample = unknown, TInput = Record<string, never>, TQuery = Record<string, never>, THeader = Record<string, never>, TParams = Record<string, never>> {\n  summary?: string\n  description?: string\n  operationId?: string\n  parameters?: OpenApiParameterDefinition[]\n  requestBody?: OpenApiRequestBodyDefinition<TInput>\n  responses: Record<string, OpenApiResponseDefinition<TResponse, TResponseExample>>\n}',
+            'export interface OpenApiOperationDefinition<_TResponse = unknown, TResponseExample = unknown, TInput = Record<string, never>, _TQuery = Record<string, never>, _THeader = Record<string, never>, _TParams = Record<string, never>> {\n  summary?: string\n  description?: string\n  operationId?: string\n  parameters?: OpenApiParameterDefinition[]\n  requestBody?: OpenApiRequestBodyDefinition<TInput>\n  responses: Record<string, OpenApiResponseDefinition<_TResponse, TResponseExample>>\n}',
             'export interface OpenApiSdkParameterManifest {\n  name: string\n  accessor: string\n  in: \'query\' | \'header\' | \'path\'\n  required: boolean\n}',
-            'export interface OpenApiSdkOperationManifest {\n  path: string\n  method: string\n  methodName: string\n  summary?: string\n  operationId?: string\n  responseType: string\n  inputType: string\n  queryType: string\n  headerType: string\n  paramsType: string\n  hasBody: boolean\n  bodyRequired: boolean\n  pathParams: OpenApiSdkParameterManifest[]\n  queryParams: OpenApiSdkParameterManifest[]\n  headerParams: OpenApiSdkParameterManifest[]\n}',
+            'export interface OpenApiSdkOperationManifest {\n  path: string\n  method: \'GET\' | \'POST\' | \'PUT\' | \'PATCH\' | \'DELETE\'\n  methodName: string\n  summary?: string\n  operationId?: string\n  responseType: string\n  inputType: string\n  queryType: string\n  headerType: string\n  paramsType: string\n  hasBody: boolean\n  bodyRequired: boolean\n  pathParams: OpenApiSdkParameterManifest[]\n  queryParams: OpenApiSdkParameterManifest[]\n  headerParams: OpenApiSdkParameterManifest[]\n}',
             'export interface OpenApiSdkGroupManifest {\n  className: string\n  propertyName: string\n  operations: OpenApiSdkOperationManifest[]\n}',
             'export interface OpenApiSdkManifest {\n  groups: OpenApiSdkGroupManifest[]\n}',
             'export interface OpenApiRuntimeBundle<TApi = unknown> {\n  document: unknown\n  manifest: OpenApiSdkManifest\n  __api?: TApi\n}',
@@ -119,6 +119,10 @@ export class TypeScriptModuleRenderer {
      */
     renderValue (value: unknown): string {
         return this.renderLiteral(value, 0)
+    }
+
+    renderOpenApiDocumentValue (document: OpenApiDocumentLike): string {
+        return this.renderLiteral(this.normalizeOpenApiDocument(document), 0)
     }
 
     /**
@@ -267,6 +271,165 @@ export class TypeScriptModuleRenderer {
         }
 
         return 'undefined'
+    }
+
+    private normalizeOpenApiDocument (document: OpenApiDocumentLike): OpenApiDocumentLike {
+        return this.normalizeObject(document, (key, value, parent) => {
+            if (key === 'example' && parent && typeof parent === 'object' && !Array.isArray(parent)) {
+                const owner = parent as Record<string, unknown>
+
+                if (owner.schema && this.isPlainObject(owner.schema)) {
+                    return this.normalizeExample(value, owner.schema as Record<string, unknown>)
+                }
+
+                if (this.isSchemaLike(owner)) {
+                    return this.normalizeExample(value, owner)
+                }
+            }
+
+            return value
+        }) as OpenApiDocumentLike
+    }
+
+    private normalizeObject (
+        value: unknown,
+        transform: (key: string, value: unknown, parent: unknown) => unknown
+    ): unknown {
+        if (Array.isArray(value)) {
+            return value
+                .map((entry) => this.normalizeObject(entry, transform))
+                .filter((entry) => entry !== undefined)
+        }
+
+        if (!this.isPlainObject(value)) {
+            return value
+        }
+
+        const output: Record<string, unknown> = {}
+
+        for (const [key, entry] of Object.entries(value)) {
+            const transformed = transform(key, entry, value)
+            const normalized = this.normalizeObject(transformed, transform)
+
+            if (normalized !== undefined) {
+                output[key] = normalized
+            }
+        }
+
+        return output
+    }
+
+    private normalizeExample (example: unknown, schema: Record<string, unknown>): unknown {
+        if (example === undefined) {
+            return undefined
+        }
+
+        const type = typeof schema.type === 'string' ? schema.type : undefined
+
+        if (type === 'string') {
+            if (typeof example === 'string') return example
+            if (typeof example === 'number' || typeof example === 'boolean') return String(example)
+
+            return undefined
+        }
+
+        if (type === 'number' || type === 'integer') {
+            if (typeof example === 'number') return example
+            if (typeof example === 'string' && example.trim() !== '' && Number.isFinite(Number(example))) {
+                return Number(example)
+            }
+
+            return undefined
+        }
+
+        if (type === 'boolean') {
+            if (typeof example === 'boolean') return example
+            if (example === 'true') return true
+            if (example === 'false') return false
+
+            return undefined
+        }
+
+        if (type === 'array') {
+            if (!Array.isArray(example)) {
+                return undefined
+            }
+
+            const itemSchema = this.isPlainObject(schema.items) ? schema.items as Record<string, unknown> : undefined
+
+            if (!itemSchema) {
+                return example
+            }
+
+            return example
+                .map((entry) => this.normalizeExample(entry, itemSchema))
+                .filter((entry) => entry !== undefined)
+        }
+
+        if (type === 'object') {
+            if (!this.isPlainObject(example)) {
+                return undefined
+            }
+
+            const properties = this.isPlainObject(schema.properties)
+                ? schema.properties as Record<string, Record<string, unknown>>
+                : {}
+            const required = Array.isArray(schema.required)
+                ? schema.required.filter((entry): entry is string => typeof entry === 'string')
+                : []
+            const normalized: Record<string, unknown> = {}
+
+            for (const [key, entry] of Object.entries(example)) {
+                const propertySchema = properties[key]
+                const normalizedEntry = propertySchema
+                    ? this.normalizeExample(entry, propertySchema)
+                    : entry
+
+                if (normalizedEntry !== undefined) {
+                    normalized[key] = normalizedEntry
+                }
+            }
+
+            for (const requiredKey of required) {
+                if (requiredKey in normalized) {
+                    continue
+                }
+
+                const propertySchema = properties[requiredKey]
+
+                if (!propertySchema) {
+                    return undefined
+                }
+
+                const fallback = propertySchema.default !== undefined
+                    ? this.normalizeExample(propertySchema.default, propertySchema)
+                    : propertySchema.example !== undefined
+                        ? this.normalizeExample(propertySchema.example, propertySchema)
+                        : undefined
+
+                if (fallback === undefined) {
+                    return undefined
+                }
+
+                normalized[requiredKey] = fallback
+            }
+
+            return normalized
+        }
+
+        return example
+    }
+
+    private isPlainObject (value: unknown): value is Record<string, unknown> {
+        return typeof value === 'object' && value !== null && !Array.isArray(value)
+    }
+
+    private isSchemaLike (value: Record<string, unknown>): boolean {
+        return 'type' in value
+            || 'properties' in value
+            || 'items' in value
+            || 'required' in value
+            || 'default' in value
     }
 
     private indent (level: number): string {

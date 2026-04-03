@@ -610,9 +610,9 @@ describe('generateTypeScriptModule', () => {
             },
         } as never, 'ExtractedApiDocument')
 
-        expect(content).toContain('export interface OpenApiResponseDefinition<TResponse = unknown, TExample = unknown> {')
+        expect(content).toContain('export interface OpenApiResponseDefinition<_TResponse = unknown, TExample = unknown> {')
         expect(content).toContain('content?: Record<string, OpenApiMediaTypeDefinition<TExample>>')
-        expect(content).toContain('responses: Record<string, OpenApiResponseDefinition<TResponse, TResponseExample>>')
+        expect(content).toContain('responses: Record<string, OpenApiResponseDefinition<_TResponse, TResponseExample>>')
     })
 
     it('generates typed response envelope examples per operation', () => {
@@ -810,6 +810,136 @@ describe('generateTypeScriptModule', () => {
         expect(content).toContain("className: 'ExampleApp'")
         expect(content).toContain("propertyName: 'exampleApps'")
         expect(content).toContain('export const extractedApiDocumentSdk: OpenApiRuntimeBundle<ExtractedApiDocumentApi> = {')
+    })
+
+    it('coerces scalar example values to match declared schema types', () => {
+        const content = TypeScriptGenerator.generateModule({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {
+                '/app/example': {
+                    post: {
+                        requestBody: {
+                            required: true,
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            amount: { type: 'string' },
+                                        },
+                                        example: {
+                                            amount: 10000,
+                                        },
+                                        required: ['amount'],
+                                    },
+                                    example: {
+                                        amount: 10000,
+                                    },
+                                },
+                            },
+                        },
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                data: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        id: { type: 'string' },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        } as never, 'ExtractedApiDocument')
+
+        expect(content).toContain("amount: '10000'")
+        expect(content).not.toContain("amount: 10000")
+    })
+
+    it('omits schema examples that are missing required properties', () => {
+        const content = TypeScriptGenerator.generateModule({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {
+                '/app/example': {
+                    post: {
+                        requestBody: {
+                            required: true,
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            amount: { type: 'string' },
+                                            customer_id: { type: 'string' },
+                                        },
+                                        example: {
+                                            amount: 10000,
+                                        },
+                                        required: ['amount', 'customer_id'],
+                                    },
+                                },
+                            },
+                        },
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                data: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        id: { type: 'string' },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        } as never, 'ExtractedApiDocument')
+
+        expect(content).not.toContain("example: {\n                  amount: 10000")
+        expect(content).not.toContain("example: {\n                  amount: '10000'")
+    })
+
+    it('prefixes unused OpenAPI helper generic parameters to satisfy lint rules', () => {
+        const content = TypeScriptGenerator.generateModule({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {},
+        } as never, 'ExtractedApiDocument')
+
+        expect(content).toContain('export interface OpenApiResponseDefinition<_TResponse = unknown, TExample = unknown>')
+        expect(content).toContain('export interface OpenApiOperationDefinition<_TResponse = unknown, TResponseExample = unknown, TInput = Record<string, never>, _TQuery = Record<string, never>, _THeader = Record<string, never>, _TParams = Record<string, never>>')
     })
 
     it('uses descriptive scoped manifest group names when a nested resource would otherwise collide', () => {

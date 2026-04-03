@@ -48,7 +48,8 @@ export default defineConfig({
         items: [
           { text: 'Roadmap', link: '/project/roadmap' },
           { text: 'Development', link: '/project/development' },
-          { text: 'CI/CD', link: '/project/ci-cd' }
+          { text: 'CI/CD', link: '/project/ci-cd' },
+          { text: 'Release Notes', link: '/reference/release-notes' },
         ]
       }
     ],

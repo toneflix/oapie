@@ -10,9 +10,21 @@ Most users will install a generated SDK package instead of consuming the core ki
 
 ## Install
 
-```bash
+::: code-group
+
+```bash [pnpm]
 pnpm add @oapiex/sdk-kit
 ```
+
+```bash [npm]
+npm i @oapiex/sdk-kit
+```
+
+```bash [yarn]
+yarn add @oapiex/sdk-kit
+```
+
+:::
 
 ## Build An SDK From Scratch
 

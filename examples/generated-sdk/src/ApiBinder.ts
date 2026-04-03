@@ -38,7 +38,7 @@ import { MomoCollection } from './Apis/MomoCollection'
 import { QuoteFx } from './Apis/QuoteFx'
 import { ResolveAccount } from './Apis/ResolveAccount'
 import { ResolveInstitution } from './Apis/ResolveInstitution'
-import { Statu } from './Apis/Statu'
+import { VirtualAccountStatus } from './Apis/VirtualAccountStatus'
 import { Subscription } from './Apis/Subscription'
 import { TerminateIssuing } from './Apis/TerminateIssuing'
 import { Tier1 } from './Apis/Tier1'
@@ -98,7 +98,7 @@ export class ApiBinder extends BaseApi {
     quoteFxs!: QuoteFx
     resolveAccounts!: ResolveAccount
     resolveInstitutions!: ResolveInstitution
-    status!: Statu
+    virtualAccountStatus!: VirtualAccountStatus
     subscriptions!: Subscription
     terminateIssuings!: TerminateIssuing
     tier1s!: Tier1
@@ -158,7 +158,7 @@ export class ApiBinder extends BaseApi {
         this.quoteFxs = new QuoteFx(this.core)
         this.resolveAccounts = new ResolveAccount(this.core)
         this.resolveInstitutions = new ResolveInstitution(this.core)
-        this.status = new Statu(this.core)
+        this.virtualAccountStatus = new VirtualAccountStatus(this.core)
         this.subscriptions = new Subscription(this.core)
         this.terminateIssuings = new TerminateIssuing(this.core)
         this.tier1s = new Tier1(this.core)

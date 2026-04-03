@@ -2,11 +2,11 @@ import { OperationTypeRefs, SdkManifest, SdkNamingStrategyOptions, SdkSecurityRe
 
 import type { GeneratorContext } from './types'
 import type { OpenApiDocumentLike, OpenApiSecurityRequirementLike, OpenApiSecuritySchemeLike } from '../types/open-api'
-import { TypeScriptNamingSupport } from './TypeScriptNamingSupport'
+import { NamingSupport } from './NamingSupport'
 import { TypeScriptShapeBuilder } from './TypeScriptShapeBuilder'
 
-export class TypeScriptTypeBuilder {
-    private naming = new TypeScriptNamingSupport()
+export class TypeBuilder {
+    private naming = new NamingSupport()
     private shapes = new TypeScriptShapeBuilder(this.naming)
 
     /**

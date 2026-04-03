@@ -591,6 +591,55 @@ describe('SdkPackageGenerator', () => {
         expect(files['src/index.ts']).toContain('export { VirtualAccountRail as VirtualAccountRailApi } from \'./Apis/VirtualAccountRail\'')
     })
 
+    it('preserves singular status segments in generated schema and API names', () => {
+        const files = new SdkPackageGenerator().generate({
+            openapi: '3.1.0',
+            info: {
+                title: 'Test API',
+                version: '1.0.0',
+            },
+            paths: {
+                '/v1/collections/virtual-account/status/{reference}': {
+                    get: {
+                        parameters: [
+                            { name: 'reference', in: 'path', required: true, schema: { type: 'string' } },
+                        ],
+                        responses: {
+                            '200': {
+                                description: 'OK',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                data: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        reference: { type: 'string' },
+                                                        status: { type: 'string' },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        } as never)
+
+        expect(files['src/Schema.ts']).toContain('export interface VirtualAccountStatus')
+        expect(files['src/Schema.ts']).toContain('export interface VirtualAccountStatusParams')
+        expect(files['src/Schema.ts']).not.toContain('export interface Statu')
+        expect(files['src/Apis/VirtualAccountStatus.ts']).toContain('import type { VirtualAccountStatus as VirtualAccountStatusModel, VirtualAccountStatusParams } from \'../Schema\'')
+        expect(files['src/Apis/VirtualAccountStatus.ts']).toContain('export class VirtualAccountStatus extends BaseApi {')
+        expect(files['src/Apis/VirtualAccountStatus.ts']).toContain('async get (params: VirtualAccountStatusParams): Promise<VirtualAccountStatusModel>')
+        expect(files['src/ApiBinder.ts']).toContain('virtualAccountStatus!: VirtualAccountStatus')
+        expect(files['src/index.ts']).toContain('export { VirtualAccountStatus as VirtualAccountStatusApi } from \'./Apis/VirtualAccountStatus\'')
+    })
+
     it('reverses two-segment SDK class names when the path has no params', () => {
         const files = new SdkPackageGenerator().generate({
             openapi: '3.1.0',

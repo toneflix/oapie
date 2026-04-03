@@ -2,10 +2,10 @@ import { JsonLike, OperationTypeRefs, SdkNamingStrategyOptions, ShapeAliasDeclar
 
 import type { OpenApiDocumentLike } from '../types/open-api'
 import { TypeScriptModuleRenderer } from './TypeScriptModuleRenderer'
-import { TypeScriptTypeBuilder } from './TypeScriptTypeBuilder'
+import { TypeBuilder } from './TypeBuilder'
 
 export class TypeScriptGenerator {
-    private typeBuilder = new TypeScriptTypeBuilder()
+    private typeBuilder = new TypeBuilder()
     private moduleRenderer = new TypeScriptModuleRenderer()
 
     /**

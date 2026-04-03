@@ -2,7 +2,7 @@ import { OperationTypeRefs, SdkManifest, SdkNamingStrategyOptions, SdkSecurityRe
 
 import type { OpenApiDocumentLike } from '../types/open-api'
 import { TypeScriptGenerator } from './TypeScriptGenerator'
-import { TypeScriptTypeBuilder } from './TypeScriptTypeBuilder'
+import { TypeBuilder } from './TypeBuilder'
 
 export interface SdkPackageGeneratorOptions extends SdkNamingStrategyOptions {
     outputMode?: 'runtime' | 'classes' | 'both'
@@ -16,7 +16,7 @@ export interface SdkPackageGeneratorOptions extends SdkNamingStrategyOptions {
 }
 
 export class SdkPackageGenerator {
-    private typeBuilder = new TypeScriptTypeBuilder()
+    private typeBuilder = new TypeBuilder()
     private typeScriptGenerator = new TypeScriptGenerator()
 
     generate (
@@ -92,7 +92,7 @@ export class SdkPackageGenerator {
         ].join('\n')
     }
 
-    private renderApiBinder (manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>): string {
+    private renderApiBinder (manifest: ReturnType<TypeBuilder['buildSdkManifest']>): string {
         return [
             'import { BaseApi } from \'./BaseApi\'',
             '',
@@ -109,7 +109,7 @@ export class SdkPackageGenerator {
     }
 
     private renderApiClass (
-        group: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number],
+        group: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number],
         signatureStyle: 'flat' | 'grouped'
     ): string {
         const typeImportContext = this.createTypeImportContext(group, signatureStyle)
@@ -137,7 +137,7 @@ export class SdkPackageGenerator {
     }
 
     private renderApiMethod (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
         signatureStyle: 'flat' | 'grouped',
         aliasMap: Map<string, string>
     ): string {
@@ -178,7 +178,7 @@ export class SdkPackageGenerator {
     }
 
     private renderMethodDocComment (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
         signatureStyle: 'flat' | 'grouped',
         aliasMap: Map<string, string>
     ): string {
@@ -236,7 +236,7 @@ export class SdkPackageGenerator {
     }
 
     private renderGroupedParameterDocs (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
         aliasMap: Map<string, string>
     ): string[] {
         const docs: string[] = []
@@ -261,7 +261,7 @@ export class SdkPackageGenerator {
     }
 
     private renderFlatParameterDocs (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
         aliasMap: Map<string, string>
     ): string[] {
         const docs = [
@@ -281,7 +281,7 @@ export class SdkPackageGenerator {
     }
 
     private describeParameterGroup (
-        parameters: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]['pathParams'],
+        parameters: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]['pathParams'],
         fallback: string
     ): string {
         const described = parameters
@@ -303,7 +303,7 @@ export class SdkPackageGenerator {
     }
 
     private renderGroupedSignature (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
         aliasMap: Map<string, string>
     ): string {
         const args: string[] = []
@@ -328,7 +328,7 @@ export class SdkPackageGenerator {
     }
 
     private renderFlatSignature (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number],
         aliasMap: Map<string, string>
     ): string {
         const args = [
@@ -342,7 +342,7 @@ export class SdkPackageGenerator {
     }
 
     private createTypeImportContext (
-        group: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number],
+        group: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number],
         signatureStyle: 'flat' | 'grouped'
     ): { specifiers: string[], aliasMap: Map<string, string> } {
         const requiredTypeRefs = new Set<string>()
@@ -410,7 +410,7 @@ export class SdkPackageGenerator {
     }
 
     private renderFlatHeaders (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
     ): string {
         if (operation.headerParams.length === 0) {
             return '{}'
@@ -471,7 +471,7 @@ export class SdkPackageGenerator {
     }
 
     private renderReadme (
-        manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>,
+        manifest: ReturnType<TypeBuilder['buildSdkManifest']>,
         options: SdkPackageGeneratorOptions,
         outputMode: 'runtime' | 'classes' | 'both',
         signatureStyle: 'flat' | 'grouped'
@@ -525,7 +525,7 @@ export class SdkPackageGenerator {
     }
 
     private renderReadmeUsage (
-        manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>,
+        manifest: ReturnType<TypeBuilder['buildSdkManifest']>,
         packageName: string,
         outputMode: 'runtime' | 'classes' | 'both',
         signatureStyle: 'flat' | 'grouped'
@@ -642,7 +642,7 @@ export class SdkPackageGenerator {
         ]
     }
 
-    private pickExampleOperation (manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>) {
+    private pickExampleOperation (manifest: ReturnType<TypeBuilder['buildSdkManifest']>) {
         const group = manifest.groups[0]
         const operation = group?.operations[0]
 
@@ -708,7 +708,7 @@ export class SdkPackageGenerator {
     }
 
     private collectReadmeTypeImports (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
     ): string[] {
         const types = new Set<string>()
 
@@ -749,7 +749,7 @@ export class SdkPackageGenerator {
     }
 
     private renderReadmeGroupedArgs (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
     ): string[] {
         const args: string[] = []
 
@@ -773,7 +773,7 @@ export class SdkPackageGenerator {
     }
 
     private renderReadmeFlatArgs (
-        operation: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
+        operation: ReturnType<TypeBuilder['buildSdkManifest']>['groups'][number]['operations'][number]
     ): string[] {
         return [
             ...operation.pathParams.map((parameter) => `{} as ${operation.paramsType}[${JSON.stringify(parameter.name)}]`),

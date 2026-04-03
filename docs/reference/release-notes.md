@@ -84,7 +84,7 @@
 ### Highlights
 
 - Added a full SDK package generator with support for `runtime`, `classes`, and `both` output modes.
-- Introduced a stronger SDK generation pipeline built around `TypeScriptShapeBuilder`, `TypeScriptTypeBuilder`, and improved naming/shape inference.
+- Introduced a stronger SDK generation pipeline built around `TypeScriptShapeBuilder`, `TypeBuilder`, and improved naming/shape inference.
 - Added checked-in example SDKs for runtime-only, class-based, and combined usage.
 - Generated SDK methods now include richer JSDoc pulled from OpenAPI metadata, including summaries, descriptions, parameter descriptions, and response descriptions.
 - Generated SDK packages now include a concise README with install instructions, quick-start usage, main exports, and build/test commands.

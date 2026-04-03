@@ -1,12 +1,32 @@
 import type { OpenApiDocumentLike, OpenApiOperationLike, OpenApiParameterLike } from '../types/open-api'
 import { SdkMethodNamingStrategy, SdkNamespaceNamingStrategy, SdkOperationManifest, SdkParameterManifest } from './types'
 
-export class TypeScriptNamingSupport {
+export class NamingSupport {
     static contextualTailSegments = new Set([
         'history',
         'status',
         'detail',
         'details',
+    ])
+
+    static irregularSingulars = new Map([
+        ['analyses', 'analysis'],
+        ['diagnoses', 'diagnosis'],
+        ['parentheses', 'parenthesis'],
+        ['statuses', 'status'],
+        ['synopses', 'synopsis'],
+        ['theses', 'thesis'],
+    ])
+
+    static invariantSingulars = new Set([
+        'analysis',
+        'diagnosis',
+        'news',
+        'series',
+        'species',
+        'status',
+        'synopsis',
+        'thesis',
     ])
 
     static nestedContextSegments = new Set([
@@ -52,11 +72,25 @@ export class TypeScriptNamingSupport {
     }
 
     singularize (value: string): string {
+        const normalized = value.toLowerCase()
+
+        if (NamingSupport.irregularSingulars.has(normalized)) {
+            return NamingSupport.irregularSingulars.get(normalized) ?? value
+        }
+
+        if (NamingSupport.invariantSingulars.has(normalized)) {
+            return value
+        }
+
         if (/ies$/i.test(value)) {
             return `${value.slice(0, -3)}y`
         }
 
         if (/(sses|shes|ches|xes|zes)$/i.test(value)) {
+            return value.slice(0, -2)
+        }
+
+        if (/uses$/i.test(value)) {
             return value.slice(0, -2)
         }
 
@@ -95,8 +129,8 @@ export class TypeScriptNamingSupport {
         const shouldPrefixParent = Boolean(
             parentSegment
             && (
-                TypeScriptNamingSupport.contextualTailSegments.has(tailSegment.toLowerCase())
-                || (hasPathParamBeforeTail && TypeScriptNamingSupport.nestedContextSegments.has(tailSegment.toLowerCase()))
+                NamingSupport.contextualTailSegments.has(tailSegment.toLowerCase())
+                || (hasPathParamBeforeTail && NamingSupport.nestedContextSegments.has(tailSegment.toLowerCase()))
             )
         )
         const baseName = this.sanitizeTypeName(shouldPrefixParent ? `${parentSegment} ${tailSegment}` : tailSegment)
@@ -142,7 +176,7 @@ export class TypeScriptNamingSupport {
             return baseName
         }
 
-        for (const roleSuffix of TypeScriptNamingSupport.roleSuffixes) {
+        for (const roleSuffix of NamingSupport.roleSuffixes) {
             if (baseName.endsWith(roleSuffix) && baseName.length > roleSuffix.length) {
                 return `${baseName.slice(0, -roleSuffix.length)}${collisionName}${roleSuffix}`
             }

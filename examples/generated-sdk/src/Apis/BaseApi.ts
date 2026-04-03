@@ -37,7 +37,7 @@ import { MomoCollection } from './MomoCollection'
 import { QuoteFx } from './QuoteFx'
 import { ResolveAccount } from './ResolveAccount'
 import { ResolveInstitution } from './ResolveInstitution'
-import { Statu } from './Statu'
+import { VirtualAccountStatus } from './VirtualAccountStatus'
 import { Subscription } from './Subscription'
 import { TerminateIssuing } from './TerminateIssuing'
 import { Tier1 } from './Tier1'
@@ -96,7 +96,7 @@ export class BaseApi extends KitBaseApi {
     quoteFxs!: QuoteFx
     resolveAccounts!: ResolveAccount
     resolveInstitutions!: ResolveInstitution
-    status!: Statu
+    virtualAccountStatus!: VirtualAccountStatus
     subscriptions!: Subscription
     terminateIssuings!: TerminateIssuing
     tier1s!: Tier1
@@ -155,7 +155,7 @@ export class BaseApi extends KitBaseApi {
         this.quoteFxs = new QuoteFx(this.core)
         this.resolveAccounts = new ResolveAccount(this.core)
         this.resolveInstitutions = new ResolveInstitution(this.core)
-        this.status = new Statu(this.core)
+        this.virtualAccountStatus = new VirtualAccountStatus(this.core)
         this.subscriptions = new Subscription(this.core)
         this.terminateIssuings = new TerminateIssuing(this.core)
         this.tier1s = new Tier1(this.core)

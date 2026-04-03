@@ -141,7 +141,7 @@ export interface Data {
   wallet_id?: string
 }
 
-export interface CustomerResponseExampleVariant2 {}
+export interface CustomerResponseExampleVariant2 { }
 
 export type CustomerResponseExample =
   | CustomerResponseExampleVariant1
@@ -164,9 +164,9 @@ export interface CustomerQuery {
   status?: string
 }
 
-export interface CustomerHeader {}
+export interface CustomerHeader { }
 
-export interface CustomerParams {}
+export interface CustomerParams { }
 
 export interface Address {
   address?: string
@@ -206,7 +206,7 @@ export type CustomerResponseExampleList =
   | CustomerResponseExampleVariant1CustomerResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface CustomerListInput {}
+export interface CustomerListInput { }
 
 export interface Tier1 {
   message?: string
@@ -236,11 +236,11 @@ export interface Phone {
   phone_number?: string
 }
 
-export interface Tier1Query extends CustomerQuery {}
+export interface Tier1Query extends CustomerQuery { }
 
-export interface Tier1Header extends CustomerHeader {}
+export interface Tier1Header extends CustomerHeader { }
 
-export interface Tier1Params extends CustomerParams {}
+export interface Tier1Params extends CustomerParams { }
 
 export interface Tier2 {
   id?: string
@@ -263,13 +263,13 @@ export interface Tier2Input {
   photo?: string
 }
 
-export interface Tier2Query extends CustomerQuery {}
+export interface Tier2Query extends CustomerQuery { }
 
-export interface Tier2Header extends CustomerHeader {}
+export interface Tier2Header extends CustomerHeader { }
 
-export interface Tier2Params extends CustomerParams {}
+export interface Tier2Params extends CustomerParams { }
 
-export interface Enroll extends Customer {}
+export interface Enroll extends Customer { }
 
 export type EnrollResponseExample =
   | CustomerResponseExampleVariant1
@@ -288,23 +288,23 @@ export interface EnrollInput {
   photo?: string
 }
 
-export interface EnrollQuery extends CustomerQuery {}
+export interface EnrollQuery extends CustomerQuery { }
 
-export interface EnrollHeader extends CustomerHeader {}
+export interface EnrollHeader extends CustomerHeader { }
 
-export interface EnrollParams extends CustomerParams {}
+export interface EnrollParams extends CustomerParams { }
 
-export interface Active {}
+export interface Active { }
 
-export interface ActiveResponseExample {}
+export interface ActiveResponseExample { }
 
 export interface ActiveInput {
   blacklist: boolean
 }
 
-export interface ActiveQuery extends CustomerQuery {}
+export interface ActiveQuery extends CustomerQuery { }
 
-export interface ActiveHeader extends CustomerHeader {}
+export interface ActiveHeader extends CustomerHeader { }
 
 export interface ActiveParams {
   customer_id: string
@@ -337,13 +337,13 @@ export type CustomerAccountResponseExample =
   | CustomerAccountResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface CustomerAccountInput extends CustomerListInput {}
+export interface CustomerAccountInput extends CustomerListInput { }
 
-export interface CustomerAccountQuery extends CustomerQuery {}
+export interface CustomerAccountQuery extends CustomerQuery { }
 
-export interface CustomerAccountHeader extends CustomerHeader {}
+export interface CustomerAccountHeader extends CustomerHeader { }
 
-export interface CustomerAccountParams extends CustomerByIdParams {}
+export interface CustomerAccountParams extends CustomerByIdParams { }
 
 export interface CustomerTransaction {
   account_id?: string
@@ -384,31 +384,31 @@ export type CustomerTransactionResponseExample =
   | CustomerTransactionResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface CustomerTransactionInput extends CustomerListInput {}
+export interface CustomerTransactionInput extends CustomerListInput { }
 
-export interface CustomerTransactionQuery extends CustomerQuery {}
+export interface CustomerTransactionQuery extends CustomerQuery { }
 
-export interface CustomerTransactionHeader extends CustomerHeader {}
+export interface CustomerTransactionHeader extends CustomerHeader { }
 
-export interface CustomerTransactionParams extends CustomerByIdParams {}
+export interface CustomerTransactionParams extends CustomerByIdParams { }
 
-export interface CustomerVirtualAccount extends CustomerAccount {}
+export interface CustomerVirtualAccount extends CustomerAccount { }
 
 export type CustomerVirtualAccountResponseExample =
   | CustomerAccountResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface CustomerVirtualAccountInput extends CustomerListInput {}
+export interface CustomerVirtualAccountInput extends CustomerListInput { }
 
-export interface CustomerVirtualAccountQuery extends CustomerQuery {}
+export interface CustomerVirtualAccountQuery extends CustomerQuery { }
 
-export interface CustomerVirtualAccountHeader extends CustomerHeader {}
+export interface CustomerVirtualAccountHeader extends CustomerHeader { }
 
-export interface CustomerVirtualAccountParams extends ActiveParams {}
+export interface CustomerVirtualAccountParams extends ActiveParams { }
 
-export interface Update extends Active {}
+export interface Update extends Active { }
 
-export interface UpdateResponseExample extends ActiveResponseExample {}
+export interface UpdateResponseExample extends ActiveResponseExample { }
 
 export interface UpdateInput {
   address?: Address
@@ -423,11 +423,11 @@ export interface UpdateInput {
   photo?: string
 }
 
-export interface UpdateQuery extends CustomerQuery {}
+export interface UpdateQuery extends CustomerQuery { }
 
-export interface UpdateHeader extends CustomerHeader {}
+export interface UpdateHeader extends CustomerHeader { }
 
-export interface UpdateParams extends CustomerParams {}
+export interface UpdateParams extends CustomerParams { }
 
 export interface Crypto {
   active?: boolean
@@ -495,11 +495,11 @@ export interface CryptoInput {
   offramp?: boolean
 }
 
-export interface CryptoQuery extends CustomerQuery {}
+export interface CryptoQuery extends CustomerQuery { }
 
-export interface CryptoHeader extends CustomerHeader {}
+export interface CryptoHeader extends CustomerHeader { }
 
-export interface CryptoParams extends CustomerParams {}
+export interface CryptoParams extends CustomerParams { }
 
 export interface Transfer {
   account_number?: string
@@ -550,11 +550,11 @@ export interface TransferInput {
   reference?: string
 }
 
-export interface TransferQuery extends CustomerQuery {}
+export interface TransferQuery extends CustomerQuery { }
 
-export interface TransferHeader extends CustomerHeader {}
+export interface TransferHeader extends CustomerHeader { }
 
-export interface TransferParams extends CustomerParams {}
+export interface TransferParams extends CustomerParams { }
 
 export type CryptoResponseExampleByAddressId =
   | CryptoResponseExampleVariant1
@@ -564,7 +564,7 @@ export interface CryptoByAddressIdParams {
   address_id: string
 }
 
-export interface Wallet extends Crypto {}
+export interface Wallet extends Crypto { }
 
 export interface WalletResponseExampleVariant1 {
   data?: DataData[]
@@ -576,19 +576,19 @@ export type WalletResponseExample =
   | WalletResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface WalletInput extends CustomerListInput {}
+export interface WalletInput extends CustomerListInput { }
 
-export interface WalletQuery extends CustomerQuery {}
+export interface WalletQuery extends CustomerQuery { }
 
-export interface WalletHeader extends CustomerHeader {}
+export interface WalletHeader extends CustomerHeader { }
 
-export interface WalletParams extends ActiveParams {}
+export interface WalletParams extends ActiveParams { }
 
 export interface CryptoByIdInput {
   offramp: boolean
 }
 
-export interface VirtualAccount extends CustomerAccount {}
+export interface VirtualAccount extends CustomerAccount { }
 
 export interface VirtualAccountResponseExampleVariant1 {
   data?: Data
@@ -606,11 +606,11 @@ export interface VirtualAccountInput {
   preferred_bank?: string
 }
 
-export interface VirtualAccountQuery extends CustomerQuery {}
+export interface VirtualAccountQuery extends CustomerQuery { }
 
-export interface VirtualAccountHeader extends CustomerHeader {}
+export interface VirtualAccountHeader extends CustomerHeader { }
 
-export interface VirtualAccountParams extends CustomerParams {}
+export interface VirtualAccountParams extends CustomerParams { }
 
 export interface Verify {
   account_id?: string
@@ -641,13 +641,13 @@ export type VerifyResponseExample =
   | VerifyResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface VerifyInput extends CustomerListInput {}
+export interface VerifyInput extends CustomerListInput { }
 
-export interface VerifyQuery extends CustomerQuery {}
+export interface VerifyQuery extends CustomerQuery { }
 
-export interface VerifyHeader extends CustomerHeader {}
+export interface VerifyHeader extends CustomerHeader { }
 
-export interface VerifyParams extends CustomerByIdParams {}
+export interface VerifyParams extends CustomerByIdParams { }
 
 export interface Momo {
   amount?: number
@@ -715,11 +715,11 @@ export interface Counterparty {
   phone_number?: string
 }
 
-export interface MomoQuery extends CustomerQuery {}
+export interface MomoQuery extends CustomerQuery { }
 
-export interface MomoHeader extends CustomerHeader {}
+export interface MomoHeader extends CustomerHeader { }
 
-export interface MomoParams extends CustomerParams {}
+export interface MomoParams extends CustomerParams { }
 
 export interface VerifyOtp {
   amount?: number
@@ -751,11 +751,11 @@ export interface VerifyOtpInput {
   transaction_id: string
 }
 
-export interface VerifyOtpQuery extends CustomerQuery {}
+export interface VerifyOtpQuery extends CustomerQuery { }
 
-export interface VerifyOtpHeader extends CustomerHeader {}
+export interface VerifyOtpHeader extends CustomerHeader { }
 
-export interface VerifyOtpParams extends CustomerParams {}
+export interface VerifyOtpParams extends CustomerParams { }
 
 export interface Usd {
   amount?: number
@@ -816,13 +816,13 @@ export interface ProofOfAddress {
   file_name?: string
 }
 
-export interface UsdQuery extends CustomerQuery {}
+export interface UsdQuery extends CustomerQuery { }
 
-export interface UsdHeader extends CustomerHeader {}
+export interface UsdHeader extends CustomerHeader { }
 
-export interface UsdParams extends CustomerParams {}
+export interface UsdParams extends CustomerParams { }
 
-export interface Statu {
+export interface VirtualAccountStatus {
   account_id?: string
   currency?: string
   kyc_link?: string
@@ -831,23 +831,23 @@ export interface Statu {
   status?: string
 }
 
-export interface StatuResponseExampleVariant1 {
+export interface VirtualAccountStatusResponseExampleVariant1 {
   data?: Data
   message?: string
   status?: boolean
 }
 
-export type StatuResponseExample =
-  | StatuResponseExampleVariant1
+export type VirtualAccountStatusResponseExample =
+  | VirtualAccountStatusResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface StatuInput extends CustomerListInput {}
+export interface VirtualAccountStatusInput extends CustomerListInput { }
 
-export interface StatuQuery extends CustomerQuery {}
+export interface VirtualAccountStatusQuery extends CustomerQuery { }
 
-export interface StatuHeader extends CustomerHeader {}
+export interface VirtualAccountStatusHeader extends CustomerHeader { }
 
-export interface StatuParams {
+export interface VirtualAccountStatusParams {
   reference: string
 }
 
@@ -898,17 +898,17 @@ export type RailResponseExample =
   | RailResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface RailInput extends CustomerListInput {}
+export interface RailInput extends CustomerListInput { }
 
-export interface RailQuery extends CustomerQuery {}
+export interface RailQuery extends CustomerQuery { }
 
-export interface RailHeader extends CustomerHeader {}
+export interface RailHeader extends CustomerHeader { }
 
 export interface RailParams {
   account_id: string
 }
 
-export interface KycLink extends Active {}
+export interface KycLink extends Active { }
 
 export type KycLinkResponseExample = unknown
 
@@ -917,11 +917,11 @@ export interface KycLinkInput {
   redirect_url: string
 }
 
-export interface KycLinkQuery extends CustomerQuery {}
+export interface KycLinkQuery extends CustomerQuery { }
 
-export interface KycLinkHeader extends CustomerHeader {}
+export interface KycLinkHeader extends CustomerHeader { }
 
-export interface KycLinkParams extends CustomerParams {}
+export interface KycLinkParams extends CustomerParams { }
 
 export interface CounterpartyResponseExampleVariant1 {
   data?: Data
@@ -975,11 +975,11 @@ export interface BeneficiaryAddress {
   unit_number?: string
 }
 
-export interface CounterpartyQuery extends CustomerQuery {}
+export interface CounterpartyQuery extends CustomerQuery { }
 
-export interface CounterpartyHeader extends CustomerHeader {}
+export interface CounterpartyHeader extends CustomerHeader { }
 
-export interface CounterpartyParams extends CustomerParams {}
+export interface CounterpartyParams extends CustomerParams { }
 
 export interface CounterpartyResponseExampleVariant1CounterpartyResponseExampleVariant1 {
   data?: Data[]
@@ -999,7 +999,7 @@ export type CounterpartyResponseExampleById =
   | CounterpartyResponseExampleVariant1CounterpartyResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface DynamicAccount extends Active {}
+export interface DynamicAccount extends Active { }
 
 export interface DynamicAccountResponseExample {
   data?: DataData
@@ -1013,11 +1013,11 @@ export interface DynamicAccountInput {
   preferred_bank: string
 }
 
-export interface DynamicAccountQuery extends CustomerQuery {}
+export interface DynamicAccountQuery extends CustomerQuery { }
 
-export interface DynamicAccountHeader extends CustomerHeader {}
+export interface DynamicAccountHeader extends CustomerHeader { }
 
-export interface DynamicAccountParams extends CustomerParams {}
+export interface DynamicAccountParams extends CustomerParams { }
 
 export interface Issuing {
   address?: Address
@@ -1058,11 +1058,11 @@ export interface IssuingInput {
   type: string
 }
 
-export interface IssuingQuery extends CustomerQuery {}
+export interface IssuingQuery extends CustomerQuery { }
 
-export interface IssuingHeader extends CustomerHeader {}
+export interface IssuingHeader extends CustomerHeader { }
 
-export interface IssuingParams extends CustomerParams {}
+export interface IssuingParams extends CustomerParams { }
 
 export interface IssuingResponseExampleVariant1IssuingResponseExampleVariant1 {
   data?: Data[]
@@ -1120,11 +1120,11 @@ export interface BusinessInput {
   type: string
 }
 
-export interface BusinessQuery extends CustomerQuery {}
+export interface BusinessQuery extends CustomerQuery { }
 
-export interface BusinessHeader extends CustomerHeader {}
+export interface BusinessHeader extends CustomerHeader { }
 
-export interface BusinessParams extends CustomerParams {}
+export interface BusinessParams extends CustomerParams { }
 
 export interface Fund {
   id?: string
@@ -1144,25 +1144,25 @@ export interface FundInput {
   amount: number
 }
 
-export interface FundQuery extends CustomerQuery {}
+export interface FundQuery extends CustomerQuery { }
 
-export interface FundHeader extends CustomerHeader {}
+export interface FundHeader extends CustomerHeader { }
 
-export interface FundParams extends CustomerByIdParams {}
+export interface FundParams extends CustomerByIdParams { }
 
-export interface Withdraw extends Fund {}
+export interface Withdraw extends Fund { }
 
 export type WithdrawResponseExample =
   | FundResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface WithdrawInput extends FundInput {}
+export interface WithdrawInput extends FundInput { }
 
-export interface WithdrawQuery extends CustomerQuery {}
+export interface WithdrawQuery extends CustomerQuery { }
 
-export interface WithdrawHeader extends CustomerHeader {}
+export interface WithdrawHeader extends CustomerHeader { }
 
-export interface WithdrawParams extends CustomerByIdParams {}
+export interface WithdrawParams extends CustomerByIdParams { }
 
 export type IssuingResponseExampleById =
   | IssuingResponseExampleVariant1
@@ -1196,7 +1196,7 @@ export type IssuingTransactionResponseExample =
   | IssuingTransactionResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface IssuingTransactionInput extends CustomerListInput {}
+export interface IssuingTransactionInput extends CustomerListInput { }
 
 export interface IssuingTransactionQuery {
   end_date?: string
@@ -1205,51 +1205,51 @@ export interface IssuingTransactionQuery {
   start_date?: string
 }
 
-export interface IssuingTransactionHeader extends CustomerHeader {}
+export interface IssuingTransactionHeader extends CustomerHeader { }
 
-export interface IssuingTransactionParams extends CustomerByIdParams {}
+export interface IssuingTransactionParams extends CustomerByIdParams { }
 
-export interface Freeze extends Tier1 {}
+export interface Freeze extends Tier1 { }
 
 export type FreezeResponseExample =
   | Tier1ResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface FreezeInput extends CustomerListInput {}
+export interface FreezeInput extends CustomerListInput { }
 
-export interface FreezeQuery extends CustomerQuery {}
+export interface FreezeQuery extends CustomerQuery { }
 
-export interface FreezeHeader extends CustomerHeader {}
+export interface FreezeHeader extends CustomerHeader { }
 
-export interface FreezeParams extends CustomerByIdParams {}
+export interface FreezeParams extends CustomerByIdParams { }
 
-export interface Terminate extends Tier1 {}
+export interface Terminate extends Tier1 { }
 
 export type TerminateResponseExample =
   | Tier1ResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface TerminateInput extends CustomerListInput {}
+export interface TerminateInput extends CustomerListInput { }
 
-export interface TerminateQuery extends CustomerQuery {}
+export interface TerminateQuery extends CustomerQuery { }
 
-export interface TerminateHeader extends CustomerHeader {}
+export interface TerminateHeader extends CustomerHeader { }
 
-export interface TerminateParams extends CustomerByIdParams {}
+export interface TerminateParams extends CustomerByIdParams { }
 
-export interface Unfreeze extends Tier1 {}
+export interface Unfreeze extends Tier1 { }
 
 export type UnfreezeResponseExample =
   | Tier1ResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface UnfreezeInput extends CustomerListInput {}
+export interface UnfreezeInput extends CustomerListInput { }
 
-export interface UnfreezeQuery extends CustomerQuery {}
+export interface UnfreezeQuery extends CustomerQuery { }
 
-export interface UnfreezeHeader extends CustomerHeader {}
+export interface UnfreezeHeader extends CustomerHeader { }
 
-export interface UnfreezeParams extends CustomerByIdParams {}
+export interface UnfreezeParams extends CustomerByIdParams { }
 
 export interface Charge {
   card_id?: string
@@ -1271,7 +1271,7 @@ export type ChargeResponseExample =
   | ChargeResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface ChargeInput extends CustomerListInput {}
+export interface ChargeInput extends CustomerListInput { }
 
 export interface ChargeQuery {
   channel?: string
@@ -1283,9 +1283,9 @@ export interface ChargeQuery {
   transaction_id?: string
 }
 
-export interface ChargeHeader extends CustomerHeader {}
+export interface ChargeHeader extends CustomerHeader { }
 
-export interface ChargeParams extends CustomerParams {}
+export interface ChargeParams extends CustomerParams { }
 
 export interface Biller {
   commission?: number
@@ -1303,11 +1303,11 @@ export type BillerResponseExample =
   | BillerResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface BillerInput extends CustomerListInput {}
+export interface BillerInput extends CustomerListInput { }
 
-export interface BillerQuery extends CustomerQuery {}
+export interface BillerQuery extends CustomerQuery { }
 
-export interface BillerHeader extends CustomerHeader {}
+export interface BillerHeader extends CustomerHeader { }
 
 export interface BillerParams {
   country: string
@@ -1340,11 +1340,11 @@ export type BundleResponseExample =
   | BundleResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface BundleInput extends CustomerListInput {}
+export interface BundleInput extends CustomerListInput { }
 
-export interface BundleQuery extends CustomerQuery {}
+export interface BundleQuery extends CustomerQuery { }
 
-export interface BundleHeader extends CustomerHeader {}
+export interface BundleHeader extends CustomerHeader { }
 
 export interface BundleParams {
   bill_type: string
@@ -1377,11 +1377,11 @@ export interface AirtimeInput {
   phone_number: string
 }
 
-export interface AirtimeQuery extends CustomerQuery {}
+export interface AirtimeQuery extends CustomerQuery { }
 
-export interface AirtimeHeader extends CustomerHeader {}
+export interface AirtimeHeader extends CustomerHeader { }
 
-export interface AirtimeParams extends CustomerParams {}
+export interface AirtimeParams extends CustomerParams { }
 
 export interface AirtimeResponseExampleVariant1AirtimeResponseExampleVariant1 {
   data?: Airtime[]
@@ -1410,11 +1410,11 @@ export interface DataInput {
   phone_number: string
 }
 
-export interface DataQuery extends CustomerQuery {}
+export interface DataQuery extends CustomerQuery { }
 
-export interface DataHeader extends CustomerHeader {}
+export interface DataHeader extends CustomerHeader { }
 
-export interface DataParams extends CustomerParams {}
+export interface DataParams extends CustomerParams { }
 
 export interface Cable {
   addons?: string[]
@@ -1450,11 +1450,11 @@ export interface CableInput {
   subscription_id?: string
 }
 
-export interface CableQuery extends CustomerQuery {}
+export interface CableQuery extends CustomerQuery { }
 
-export interface CableHeader extends CustomerHeader {}
+export interface CableHeader extends CustomerHeader { }
 
-export interface CableParams extends CustomerParams {}
+export interface CableParams extends CustomerParams { }
 
 export interface Subscription {
   plan_id?: string
@@ -1483,25 +1483,25 @@ export type SubscriptionResponseExample =
   | SubscriptionResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface SubscriptionInput extends CustomerListInput {}
+export interface SubscriptionInput extends CustomerListInput { }
 
-export interface SubscriptionQuery extends CustomerQuery {}
+export interface SubscriptionQuery extends CustomerQuery { }
 
-export interface SubscriptionHeader extends CustomerHeader {}
+export interface SubscriptionHeader extends CustomerHeader { }
 
 export interface SubscriptionParams {
   biller_identifier: string
 }
 
-export interface Addon extends Active {}
+export interface Addon extends Active { }
 
-export interface AddonResponseExample extends ActiveResponseExample {}
+export interface AddonResponseExample extends ActiveResponseExample { }
 
-export interface AddonInput extends CustomerListInput {}
+export interface AddonInput extends CustomerListInput { }
 
-export interface AddonQuery extends CustomerQuery {}
+export interface AddonQuery extends CustomerQuery { }
 
-export interface AddonHeader extends CustomerHeader {}
+export interface AddonHeader extends CustomerHeader { }
 
 export interface AddonParams {
   addon_id: string
@@ -1536,11 +1536,11 @@ export interface UtilityInput {
   identifier: string
 }
 
-export interface UtilityQuery extends CustomerQuery {}
+export interface UtilityQuery extends CustomerQuery { }
 
-export interface UtilityHeader extends CustomerHeader {}
+export interface UtilityHeader extends CustomerHeader { }
 
-export interface UtilityParams extends CustomerParams {}
+export interface UtilityParams extends CustomerParams { }
 
 export interface ResolveAccount {
   identifier?: string
@@ -1563,11 +1563,11 @@ export interface ResolveAccountInput {
   meter_number: string
 }
 
-export interface ResolveAccountQuery extends CustomerQuery {}
+export interface ResolveAccountQuery extends CustomerQuery { }
 
-export interface ResolveAccountHeader extends CustomerHeader {}
+export interface ResolveAccountHeader extends CustomerHeader { }
 
-export interface ResolveAccountParams extends CustomerParams {}
+export interface ResolveAccountParams extends CustomerParams { }
 
 export interface Electricity {
   amount?: number
@@ -1603,11 +1603,11 @@ export interface ElectricityInput {
   phone_number: string
 }
 
-export interface ElectricityQuery extends CustomerQuery {}
+export interface ElectricityQuery extends CustomerQuery { }
 
-export interface ElectricityHeader extends CustomerHeader {}
+export interface ElectricityHeader extends CustomerHeader { }
 
-export interface ElectricityParams extends CustomerParams {}
+export interface ElectricityParams extends CustomerParams { }
 
 export interface Sender {
   address?: string
@@ -1693,13 +1693,13 @@ export type TransactionResponseExample =
   | TransactionResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface TransactionInput extends CustomerListInput {}
+export interface TransactionInput extends CustomerListInput { }
 
-export interface TransactionQuery extends CustomerQuery {}
+export interface TransactionQuery extends CustomerQuery { }
 
-export interface TransactionHeader extends CustomerHeader {}
+export interface TransactionHeader extends CustomerHeader { }
 
-export interface TransactionParams extends CustomerParams {}
+export interface TransactionParams extends CustomerParams { }
 
 export interface Ledger {
   balance_type?: string
@@ -1747,11 +1747,11 @@ export interface QuoteInput {
   target_currency: string
 }
 
-export interface QuoteQuery extends CustomerQuery {}
+export interface QuoteQuery extends CustomerQuery { }
 
-export interface QuoteHeader extends CustomerHeader {}
+export interface QuoteHeader extends CustomerHeader { }
 
-export interface QuoteParams extends CustomerParams {}
+export interface QuoteParams extends CustomerParams { }
 
 export interface Fx {
   rate?: number
@@ -1773,11 +1773,11 @@ export interface FxInput {
   quote_reference: string
 }
 
-export interface FxQuery extends CustomerQuery {}
+export interface FxQuery extends CustomerQuery { }
 
-export interface FxHeader extends CustomerHeader {}
+export interface FxHeader extends CustomerHeader { }
 
-export interface FxParams extends CustomerParams {}
+export interface FxParams extends CustomerParams { }
 
 export interface Bvn {
   dob?: string
@@ -1803,11 +1803,11 @@ export interface BvnInput {
   bvn: string
 }
 
-export interface BvnQuery extends CustomerQuery {}
+export interface BvnQuery extends CustomerQuery { }
 
-export interface BvnHeader extends CustomerHeader {}
+export interface BvnHeader extends CustomerHeader { }
 
-export interface BvnParams extends CustomerParams {}
+export interface BvnParams extends CustomerParams { }
 
 export interface Institution {
   code?: string
@@ -1827,7 +1827,7 @@ export type InstitutionResponseExample =
   | InstitutionResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface InstitutionInput extends CustomerListInput {}
+export interface InstitutionInput extends CustomerListInput { }
 
 export interface InstitutionQuery {
   country?: string
@@ -1836,9 +1836,9 @@ export interface InstitutionQuery {
   type?: string
 }
 
-export interface InstitutionHeader extends CustomerHeader {}
+export interface InstitutionHeader extends CustomerHeader { }
 
-export interface InstitutionParams extends CustomerParams {}
+export interface InstitutionParams extends CustomerParams { }
 
 export interface Fetch {
   address?: Address
@@ -1862,11 +1862,11 @@ export interface FetchInput {
   routing_number: string
 }
 
-export interface FetchQuery extends CustomerQuery {}
+export interface FetchQuery extends CustomerQuery { }
 
-export interface FetchHeader extends CustomerHeader {}
+export interface FetchHeader extends CustomerHeader { }
 
-export interface FetchParams extends CustomerParams {}
+export interface FetchParams extends CustomerParams { }
 
 export interface Resolve {
   account_name?: string
@@ -1888,11 +1888,11 @@ export interface ResolveInput {
   bank_code: string
 }
 
-export interface ResolveQuery extends CustomerQuery {}
+export interface ResolveQuery extends CustomerQuery { }
 
-export interface ResolveHeader extends CustomerHeader {}
+export interface ResolveHeader extends CustomerHeader { }
 
-export interface ResolveParams extends CustomerParams {}
+export interface ResolveParams extends CustomerParams { }
 
 export interface Currency {
   currency?: string
@@ -1910,13 +1910,13 @@ export type CurrencyResponseExample =
   | CurrencyResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface CurrencyInput extends CustomerListInput {}
+export interface CurrencyInput extends CustomerListInput { }
 
-export interface CurrencyQuery extends CustomerQuery {}
+export interface CurrencyQuery extends CustomerQuery { }
 
-export interface CurrencyHeader extends CustomerHeader {}
+export interface CurrencyHeader extends CustomerHeader { }
 
-export interface CurrencyParams extends CustomerParams {}
+export interface CurrencyParams extends CustomerParams { }
 
 export interface Country {
   calling_code?: string
@@ -1934,13 +1934,13 @@ export type CountryResponseExample =
   | CountryResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface CountryInput extends CustomerListInput {}
+export interface CountryInput extends CustomerListInput { }
 
-export interface CountryQuery extends CustomerQuery {}
+export interface CountryQuery extends CustomerQuery { }
 
-export interface CountryHeader extends CustomerHeader {}
+export interface CountryHeader extends CustomerHeader { }
 
-export interface CountryParams extends CustomerParams {}
+export interface CountryParams extends CustomerParams { }
 
 export interface WalletList {
   active?: boolean
@@ -1983,13 +1983,13 @@ export type WalletHistoryResponseExample =
   | WalletHistoryResponseExampleVariant1
   | CustomerResponseExampleVariant2
 
-export interface WalletHistoryInput extends CustomerListInput {}
+export interface WalletHistoryInput extends CustomerListInput { }
 
-export interface WalletHistoryQuery extends IssuingTransactionQuery {}
+export interface WalletHistoryQuery extends IssuingTransactionQuery { }
 
-export interface WalletHistoryHeader extends CustomerHeader {}
+export interface WalletHistoryHeader extends CustomerHeader { }
 
-export interface WalletHistoryParams extends CustomerParams {}
+export interface WalletHistoryParams extends CustomerParams { }
 
 export type WalletHistoryResponseExampleByCurrencyCode =
   | WalletHistoryResponseExampleVariant1
@@ -2006,7 +2006,7 @@ export interface WalletHistoryByCurrencyCodeParams {
   currency_code: string
 }
 
-export interface Credit extends Tier1 {}
+export interface Credit extends Tier1 { }
 
 export type CreditResponseExample =
   | Tier1ResponseExampleVariant1
@@ -2017,11 +2017,11 @@ export interface CreditInput {
   currency: string
 }
 
-export interface CreditQuery extends CustomerQuery {}
+export interface CreditQuery extends CustomerQuery { }
 
-export interface CreditHeader extends CustomerHeader {}
+export interface CreditHeader extends CustomerHeader { }
 
-export interface CreditParams extends CustomerParams {}
+export interface CreditParams extends CustomerParams { }
 
 export interface MockTransaction {
   amount?: number
@@ -2058,11 +2058,11 @@ export interface MockTransactionInput {
   type: string
 }
 
-export interface MockTransactionQuery extends CustomerQuery {}
+export interface MockTransactionQuery extends CustomerQuery { }
 
-export interface MockTransactionHeader extends CustomerHeader {}
+export interface MockTransactionHeader extends CustomerHeader { }
 
-export interface MockTransactionParams extends CustomerByIdParams {}
+export interface MockTransactionParams extends CustomerByIdParams { }
 
 export type MockTransactionResponseExampleCollection =
   | Tier1ResponseExampleVariant1
@@ -2183,7 +2183,7 @@ export interface CustomersPathPostOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CustomersPathGetOperation extends OpenApiOperationDefinition<
   Customer,
@@ -2192,7 +2192,7 @@ export interface CustomersPathGetOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CustomersPath {
   post: CustomersPathPostOperation
@@ -2206,7 +2206,7 @@ export interface CustomersUpgradeTier1PathPatchOperation extends OpenApiOperatio
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CustomersUpgradeTier1Path {
   patch: CustomersUpgradeTier1PathPatchOperation
@@ -2219,7 +2219,7 @@ export interface CustomersUpgradeTier2PathPatchOperation extends OpenApiOperatio
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CustomersUpgradeTier2Path {
   patch: CustomersUpgradeTier2PathPatchOperation
@@ -2232,7 +2232,7 @@ export interface CustomersEnrollPathPostOperation extends OpenApiOperationDefini
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CustomersEnrollPath {
   post: CustomersEnrollPathPostOperation
@@ -2245,7 +2245,7 @@ export interface CustomersByCustomerIdActivePathPostOperation extends OpenApiOpe
   CustomerQuery,
   CustomerHeader,
   ActiveParams
-> {}
+> { }
 
 export interface CustomersByCustomerIdActivePath {
   post: CustomersByCustomerIdActivePathPostOperation
@@ -2258,7 +2258,7 @@ export interface CustomersByIdPathGetOperation extends OpenApiOperationDefinitio
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface CustomersByIdPath {
   get: CustomersByIdPathGetOperation
@@ -2271,7 +2271,7 @@ export interface CustomersByIdAccountsPathGetOperation extends OpenApiOperationD
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface CustomersByIdAccountsPath {
   get: CustomersByIdAccountsPathGetOperation
@@ -2284,7 +2284,7 @@ export interface CustomersByIdTransactionsPathGetOperation extends OpenApiOperat
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface CustomersByIdTransactionsPath {
   get: CustomersByIdTransactionsPathGetOperation
@@ -2297,7 +2297,7 @@ export interface CustomersByCustomerIdVirtualAccountPathGetOperation extends Ope
   CustomerQuery,
   CustomerHeader,
   ActiveParams
-> {}
+> { }
 
 export interface CustomersByCustomerIdVirtualAccountPath {
   get: CustomersByCustomerIdVirtualAccountPathGetOperation
@@ -2310,7 +2310,7 @@ export interface CustomersUpdatePathPatchOperation extends OpenApiOperationDefin
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CustomersUpdatePath {
   patch: CustomersUpdatePathPatchOperation
@@ -2323,7 +2323,7 @@ export interface CryptoPathPostOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CryptoPath {
   post: CryptoPathPostOperation
@@ -2336,7 +2336,7 @@ export interface CryptoTransferPathPostOperation extends OpenApiOperationDefinit
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CryptoTransferPath {
   post: CryptoTransferPathPostOperation
@@ -2349,7 +2349,7 @@ export interface CryptoByAddressIdPathGetOperation extends OpenApiOperationDefin
   CustomerQuery,
   CustomerHeader,
   CryptoByAddressIdParams
-> {}
+> { }
 
 export interface CryptoByAddressIdPath {
   get: CryptoByAddressIdPathGetOperation
@@ -2362,7 +2362,7 @@ export interface CryptoWalletsByCustomerIdPathGetOperation extends OpenApiOperat
   CustomerQuery,
   CustomerHeader,
   ActiveParams
-> {}
+> { }
 
 export interface CryptoWalletsByCustomerIdPath {
   get: CryptoWalletsByCustomerIdPathGetOperation
@@ -2375,7 +2375,7 @@ export interface CryptoByIdPathPatchOperation extends OpenApiOperationDefinition
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface CryptoByIdPath {
   patch: CryptoByIdPathPatchOperation
@@ -2388,7 +2388,7 @@ export interface CollectionsVirtualAccountPathPostOperation extends OpenApiOpera
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CollectionsVirtualAccountPath {
   post: CollectionsVirtualAccountPathPostOperation
@@ -2401,7 +2401,7 @@ export interface TransactionsVerifyByIdPathGetOperation extends OpenApiOperation
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface TransactionsVerifyByIdPath {
   get: TransactionsVerifyByIdPathGetOperation
@@ -2414,7 +2414,7 @@ export interface CollectionsMomoPathPostOperation extends OpenApiOperationDefini
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CollectionsMomoPath {
   post: CollectionsMomoPathPostOperation
@@ -2427,7 +2427,7 @@ export interface CollectionsMomoVerifyOtpPathPostOperation extends OpenApiOperat
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CollectionsMomoVerifyOtpPath {
   post: CollectionsMomoVerifyOtpPathPostOperation
@@ -2440,20 +2440,20 @@ export interface CollectionsVirtualAccountUsdPathPostOperation extends OpenApiOp
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CollectionsVirtualAccountUsdPath {
   post: CollectionsVirtualAccountUsdPathPostOperation
 }
 
 export interface CollectionsVirtualAccountStatusByReferencePathGetOperation extends OpenApiOperationDefinition<
-  Statu,
-  StatuResponseExample,
+  VirtualAccountStatus,
+  VirtualAccountStatusResponseExample,
   CustomerListInput,
   CustomerQuery,
   CustomerHeader,
-  StatuParams
-> {}
+  VirtualAccountStatusParams
+> { }
 
 export interface CollectionsVirtualAccountStatusByReferencePath {
   get: CollectionsVirtualAccountStatusByReferencePathGetOperation
@@ -2466,7 +2466,7 @@ export interface CollectionsVirtualAccountByIdPathGetOperation extends OpenApiOp
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface CollectionsVirtualAccountByIdPath {
   get: CollectionsVirtualAccountByIdPathGetOperation
@@ -2479,7 +2479,7 @@ export interface CollectionsVirtualAccountByAccountIdRailsPathGetOperation exten
   CustomerQuery,
   CustomerHeader,
   RailParams
-> {}
+> { }
 
 export interface CollectionsVirtualAccountByAccountIdRailsPath {
   get: CollectionsVirtualAccountByAccountIdRailsPathGetOperation
@@ -2492,7 +2492,7 @@ export interface CollectionsUsdKycLinkPathPostOperation extends OpenApiOperation
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CollectionsUsdKycLinkPath {
   post: CollectionsUsdKycLinkPathPostOperation
@@ -2505,7 +2505,7 @@ export interface CollectionsVirtualAccountCounterpartiesPathPostOperation extend
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CollectionsVirtualAccountCounterpartiesPath {
   post: CollectionsVirtualAccountCounterpartiesPathPostOperation
@@ -2518,7 +2518,7 @@ export interface CollectionsVirtualAccountCounterpartiesByCounterPartyIdPathGetO
   CustomerQuery,
   CustomerHeader,
   CounterpartyByCounterPartyIdParams
-> {}
+> { }
 
 export interface CollectionsVirtualAccountCounterpartiesByCounterPartyIdPath {
   get: CollectionsVirtualAccountCounterpartiesByCounterPartyIdPathGetOperation
@@ -2531,7 +2531,7 @@ export interface CollectionsVirtualAccountByIdCounterpartiesPathGetOperation ext
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface CollectionsVirtualAccountByIdCounterpartiesPath {
   get: CollectionsVirtualAccountByIdCounterpartiesPathGetOperation
@@ -2544,7 +2544,7 @@ export interface CollectionsDynamicAccountPathPostOperation extends OpenApiOpera
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CollectionsDynamicAccountPath {
   post: CollectionsDynamicAccountPathPostOperation
@@ -2557,7 +2557,7 @@ export interface IssuingPathPostOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface IssuingPathGetOperation extends OpenApiOperationDefinition<
   Issuing,
@@ -2566,7 +2566,7 @@ export interface IssuingPathGetOperation extends OpenApiOperationDefinition<
   IssuingGetIssuingQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface IssuingPath {
   post: IssuingPathPostOperation
@@ -2580,7 +2580,7 @@ export interface IssuingBusinessPathPostOperation extends OpenApiOperationDefini
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface IssuingBusinessPath {
   post: IssuingBusinessPathPostOperation
@@ -2593,7 +2593,7 @@ export interface IssuingByIdFundPathPostOperation extends OpenApiOperationDefini
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface IssuingByIdFundPath {
   post: IssuingByIdFundPathPostOperation
@@ -2606,7 +2606,7 @@ export interface IssuingByIdWithdrawPathPostOperation extends OpenApiOperationDe
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface IssuingByIdWithdrawPath {
   post: IssuingByIdWithdrawPathPostOperation
@@ -2619,7 +2619,7 @@ export interface IssuingByIdPathGetOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface IssuingByIdPath {
   get: IssuingByIdPathGetOperation
@@ -2632,7 +2632,7 @@ export interface IssuingByIdTransactionsPathGetOperation extends OpenApiOperatio
   IssuingTransactionQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface IssuingByIdTransactionsPath {
   get: IssuingByIdTransactionsPathGetOperation
@@ -2645,7 +2645,7 @@ export interface IssuingByIdFreezePathPatchOperation extends OpenApiOperationDef
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface IssuingByIdFreezePath {
   patch: IssuingByIdFreezePathPatchOperation
@@ -2658,7 +2658,7 @@ export interface IssuingByIdTerminatePathPutOperation extends OpenApiOperationDe
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface IssuingByIdTerminatePath {
   put: IssuingByIdTerminatePathPutOperation
@@ -2671,7 +2671,7 @@ export interface IssuingByIdUnfreezePathPatchOperation extends OpenApiOperationD
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface IssuingByIdUnfreezePath {
   patch: IssuingByIdUnfreezePathPatchOperation
@@ -2684,7 +2684,7 @@ export interface IssuingChargesPathGetOperation extends OpenApiOperationDefiniti
   ChargeQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface IssuingChargesPath {
   get: IssuingChargesPathGetOperation
@@ -2697,7 +2697,7 @@ export interface BillsAirtimeBillersByCountryPathGetOperation extends OpenApiOpe
   CustomerQuery,
   CustomerHeader,
   BillerParams
-> {}
+> { }
 
 export interface BillsAirtimeBillersByCountryPath {
   get: BillsAirtimeBillersByCountryPathGetOperation
@@ -2710,7 +2710,7 @@ export interface BillsByTypeBillersByCountryPathGetOperation extends OpenApiOper
   CustomerQuery,
   CustomerHeader,
   BillerByTypeAndCountryParams
-> {}
+> { }
 
 export interface BillsByTypeBillersByCountryPath {
   get: BillsByTypeBillersByCountryPathGetOperation
@@ -2723,7 +2723,7 @@ export interface BillsByBillTypeBundleByBillerPathGetOperation extends OpenApiOp
   CustomerQuery,
   CustomerHeader,
   BundleParams
-> {}
+> { }
 
 export interface BillsByBillTypeBundleByBillerPath {
   get: BillsByBillTypeBundleByBillerPathGetOperation
@@ -2736,7 +2736,7 @@ export interface BillsAirtimePathPostOperation extends OpenApiOperationDefinitio
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface BillsAirtimePathGetOperation extends OpenApiOperationDefinition<
   Airtime,
@@ -2745,7 +2745,7 @@ export interface BillsAirtimePathGetOperation extends OpenApiOperationDefinition
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface BillsAirtimePath {
   post: BillsAirtimePathPostOperation
@@ -2759,7 +2759,7 @@ export interface BillsDataPathPostOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface BillsDataPath {
   post: BillsDataPathPostOperation
@@ -2772,7 +2772,7 @@ export interface BillsCablePathPostOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface BillsCablePath {
   post: BillsCablePathPostOperation
@@ -2785,7 +2785,7 @@ export interface BillsCableSubscriptionsByBillerIdentifierPathGetOperation exten
   CustomerQuery,
   CustomerHeader,
   SubscriptionParams
-> {}
+> { }
 
 export interface BillsCableSubscriptionsByBillerIdentifierPath {
   get: BillsCableSubscriptionsByBillerIdentifierPathGetOperation
@@ -2798,7 +2798,7 @@ export interface BillsCableAddonByBillerByAddonIdPathGetOperation extends OpenAp
   CustomerQuery,
   CustomerHeader,
   AddonParams
-> {}
+> { }
 
 export interface BillsCableAddonByBillerByAddonIdPath {
   get: BillsCableAddonByBillerByAddonIdPathGetOperation
@@ -2811,7 +2811,7 @@ export interface BillsUtilityPathPostOperation extends OpenApiOperationDefinitio
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface BillsUtilityPath {
   post: BillsUtilityPathPostOperation
@@ -2824,7 +2824,7 @@ export interface BillsElectricityResolveAccountPathPostOperation extends OpenApi
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface BillsElectricityResolveAccountPath {
   post: BillsElectricityResolveAccountPathPostOperation
@@ -2837,7 +2837,7 @@ export interface BillsElectricityPathPostOperation extends OpenApiOperationDefin
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface BillsElectricityPath {
   post: BillsElectricityPathPostOperation
@@ -2850,7 +2850,7 @@ export interface TransfersPathPostOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface TransfersPath {
   post: TransfersPathPostOperation
@@ -2863,7 +2863,7 @@ export interface TransfersUsdPathPostOperation extends OpenApiOperationDefinitio
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface TransfersUsdPath {
   post: TransfersUsdPathPostOperation
@@ -2876,7 +2876,7 @@ export interface TransfersByTransferIdPathGetOperation extends OpenApiOperationD
   CustomerQuery,
   CustomerHeader,
   TransferByTransferIdParams
-> {}
+> { }
 
 export interface TransfersByTransferIdPath {
   get: TransfersByTransferIdPathGetOperation
@@ -2889,7 +2889,7 @@ export interface TransactionsPathGetOperation extends OpenApiOperationDefinition
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface TransactionsPath {
   get: TransactionsPathGetOperation
@@ -2902,7 +2902,7 @@ export interface TransactionsByIdPathGetOperation extends OpenApiOperationDefini
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface TransactionsByIdPath {
   get: TransactionsByIdPathGetOperation
@@ -2915,7 +2915,7 @@ export interface FxQuotePathPostOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface FxQuotePath {
   post: FxQuotePathPostOperation
@@ -2928,7 +2928,7 @@ export interface FxPathPostOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface FxPathGetOperation extends OpenApiOperationDefinition<
   Active,
@@ -2937,7 +2937,7 @@ export interface FxPathGetOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface FxPath {
   post: FxPathPostOperation
@@ -2951,7 +2951,7 @@ export interface IdentityBvnPathPostOperation extends OpenApiOperationDefinition
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface IdentityBvnPath {
   post: IdentityBvnPathPostOperation
@@ -2964,7 +2964,7 @@ export interface InstitutionsPathGetOperation extends OpenApiOperationDefinition
   InstitutionQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface InstitutionsPath {
   get: InstitutionsPathGetOperation
@@ -2977,7 +2977,7 @@ export interface InstitutionsFetchPathPostOperation extends OpenApiOperationDefi
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface InstitutionsFetchPath {
   post: InstitutionsFetchPathPostOperation
@@ -2990,7 +2990,7 @@ export interface InstitutionsResolvePathPostOperation extends OpenApiOperationDe
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface InstitutionsResolvePath {
   post: InstitutionsResolvePathPostOperation
@@ -3003,7 +3003,7 @@ export interface CurrenciesPathGetOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CurrenciesPath {
   get: CurrenciesPathGetOperation
@@ -3016,7 +3016,7 @@ export interface CountriesPathGetOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface CountriesPath {
   get: CountriesPathGetOperation
@@ -3029,7 +3029,7 @@ export interface WalletsPathGetOperation extends OpenApiOperationDefinition<
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface WalletsPath {
   get: WalletsPathGetOperation
@@ -3042,7 +3042,7 @@ export interface WalletsHistoryPathGetOperation extends OpenApiOperationDefiniti
   IssuingTransactionQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface WalletsHistoryPath {
   get: WalletsHistoryPathGetOperation
@@ -3055,7 +3055,7 @@ export interface WalletsByCurrencyCodeHistoryPathGetOperation extends OpenApiOpe
   WalletHistoryByCurrencyCodeQuery,
   CustomerHeader,
   WalletHistoryByCurrencyCodeParams
-> {}
+> { }
 
 export interface WalletsByCurrencyCodeHistoryPath {
   get: WalletsByCurrencyCodeHistoryPathGetOperation
@@ -3068,7 +3068,7 @@ export interface TestWalletCreditPathPostOperation extends OpenApiOperationDefin
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface TestWalletCreditPath {
   post: TestWalletCreditPathPostOperation
@@ -3081,7 +3081,7 @@ export interface TestIssuingByIdMockTransactionPathPostOperation extends OpenApi
   CustomerQuery,
   CustomerHeader,
   CustomerByIdParams
-> {}
+> { }
 
 export interface TestIssuingByIdMockTransactionPath {
   post: TestIssuingByIdMockTransactionPathPostOperation
@@ -3094,7 +3094,7 @@ export interface TestCollectionMockTransactionPathPostOperation extends OpenApiO
   CustomerQuery,
   CustomerHeader,
   CustomerParams
-> {}
+> { }
 
 export interface TestCollectionMockTransactionPath {
   post: TestCollectionMockTransactionPathPostOperation
@@ -3179,201 +3179,201 @@ export interface ExtractedApiDocument {
 
 export interface ExtractedApiDocumentApi {
   activeCustomers: {
-    create(params: ActiveParams, body: ActiveInput): Promise<Active>
+    create (params: ActiveParams, body: ActiveInput): Promise<Active>
   }
   addonCables: {
-    get(params: AddonParams): Promise<Active>
+    get (params: AddonParams): Promise<Active>
   }
   airtimeBills: {
-    create(body: AirtimeInput): Promise<Airtime>
-    list(): Promise<Airtime[]>
+    create (body: AirtimeInput): Promise<Airtime>
+    list (): Promise<Airtime[]>
   }
   billBillers: {
-    get(params: BillerByTypeAndCountryParams): Promise<Biller[]>
+    get (params: BillerByTypeAndCountryParams): Promise<Biller[]>
   }
   billers: {
-    get(params: BillerParams): Promise<Biller[]>
+    get (params: BillerParams): Promise<Biller[]>
   }
   bundleBills: {
-    get(params: BundleParams): Promise<Bundle[]>
+    get (params: BundleParams): Promise<Bundle[]>
   }
   businessIssuings: {
-    create(body: BusinessInput): Promise<Business>
+    create (body: BusinessInput): Promise<Business>
   }
   bvnIdentities: {
-    create(body: BvnInput): Promise<Bvn>
+    create (body: BvnInput): Promise<Bvn>
   }
   cableBills: {
-    create(body: CableInput): Promise<Cable>
+    create (body: CableInput): Promise<Cable>
   }
   chargeIssuings: {
-    list(query: ChargeQuery): Promise<Charge[]>
+    list (query: ChargeQuery): Promise<Charge[]>
   }
   counterparties: {
-    create(body: CounterpartyInput): Promise<Counterparty>
-    get(params: CounterpartyByCounterPartyIdParams): Promise<Counterparty[]>
-    list(params: CustomerByIdParams): Promise<Counterparty[]>
+    create (body: CounterpartyInput): Promise<Counterparty>
+    get (params: CounterpartyByCounterPartyIdParams): Promise<Counterparty[]>
+    list (params: CustomerByIdParams): Promise<Counterparty[]>
   }
   countries: {
-    list(): Promise<Country[]>
+    list (): Promise<Country[]>
   }
   credits: {
-    create(body: CreditInput): Promise<Tier1>
+    create (body: CreditInput): Promise<Tier1>
   }
   cryptos: {
-    create(body: CryptoInput): Promise<Crypto>
-    get(params: CryptoByAddressIdParams): Promise<Crypto>
-    update(params: CustomerByIdParams, body: CryptoByIdInput): Promise<Active>
+    create (body: CryptoInput): Promise<Crypto>
+    get (params: CryptoByAddressIdParams): Promise<Crypto>
+    update (params: CustomerByIdParams, body: CryptoByIdInput): Promise<Active>
   }
   cryptoWallets: {
-    get(params: ActiveParams): Promise<Crypto[]>
+    get (params: ActiveParams): Promise<Crypto[]>
   }
   currencies: {
-    list(): Promise<Currency[]>
+    list (): Promise<Currency[]>
   }
   customerAccounts: {
-    list(params: CustomerByIdParams): Promise<CustomerAccount[]>
+    list (params: CustomerByIdParams): Promise<CustomerAccount[]>
   }
   customers: {
-    create(body: CustomerInput): Promise<Customer>
-    list(query: CustomerQuery): Promise<Customer[]>
-    get(params: CustomerByIdParams): Promise<Customer>
+    create (body: CustomerInput): Promise<Customer>
+    list (query: CustomerQuery): Promise<Customer[]>
+    get (params: CustomerByIdParams): Promise<Customer>
   }
   customerTransactions: {
-    list(params: CustomerByIdParams): Promise<CustomerTransaction[]>
+    list (params: CustomerByIdParams): Promise<CustomerTransaction[]>
   }
   dataBills: {
-    create(body: DataInput): Promise<Data>
+    create (body: DataInput): Promise<Data>
   }
   dynamicAccountCollections: {
-    create(body: DynamicAccountInput): Promise<Active>
+    create (body: DynamicAccountInput): Promise<Active>
   }
   electricityBills: {
-    create(body: ElectricityInput): Promise<Electricity>
+    create (body: ElectricityInput): Promise<Electricity>
   }
   enrollCustomers: {
-    create(body: EnrollInput): Promise<Customer>
+    create (body: EnrollInput): Promise<Customer>
   }
   fetchInstitutions: {
-    create(body: FetchInput): Promise<Fetch>
+    create (body: FetchInput): Promise<Fetch>
   }
   freezeIssuings: {
-    update(params: CustomerByIdParams): Promise<Tier1>
+    update (params: CustomerByIdParams): Promise<Tier1>
   }
   fundIssuings: {
-    create(params: CustomerByIdParams, body: FundInput): Promise<Fund>
+    create (params: CustomerByIdParams, body: FundInput): Promise<Fund>
   }
   fxs: {
-    create(body: FxInput): Promise<Fx>
-    list(): Promise<Active>
+    create (body: FxInput): Promise<Fx>
+    list (): Promise<Active>
   }
   historyWallets: {
-    list(query: IssuingTransactionQuery): Promise<WalletHistory[]>
-    get(
+    list (query: IssuingTransactionQuery): Promise<WalletHistory[]>
+    get (
       params: WalletHistoryByCurrencyCodeParams,
       query: WalletHistoryByCurrencyCodeQuery,
     ): Promise<WalletHistory[]>
   }
   institutions: {
-    list(query: InstitutionQuery): Promise<Institution[]>
+    list (query: InstitutionQuery): Promise<Institution[]>
   }
   issuings: {
-    create(body: IssuingInput): Promise<Issuing>
-    list(query: IssuingGetIssuingQuery): Promise<Issuing[]>
-    get(params: CustomerByIdParams): Promise<Issuing>
+    create (body: IssuingInput): Promise<Issuing>
+    list (query: IssuingGetIssuingQuery): Promise<Issuing[]>
+    get (params: CustomerByIdParams): Promise<Issuing>
   }
   issuingTransactions: {
-    list(
+    list (
       params: CustomerByIdParams,
       query: IssuingTransactionQuery,
     ): Promise<IssuingTransaction[]>
   }
   kycLinks: {
-    create(body: KycLinkInput): Promise<Active>
+    create (body: KycLinkInput): Promise<Active>
   }
   mockTransactionIssuings: {
-    create(
+    create (
       params: CustomerByIdParams,
       body: MockTransactionInput,
     ): Promise<MockTransaction>
   }
   mockTransactions: {
-    create(body: MockTransactionCollectionInput): Promise<Tier1>
+    create (body: MockTransactionCollectionInput): Promise<Tier1>
   }
   momoCollections: {
-    create(body: MomoInput): Promise<Momo>
+    create (body: MomoInput): Promise<Momo>
   }
   quoteFxs: {
-    create(body: QuoteInput): Promise<Quote>
+    create (body: QuoteInput): Promise<Quote>
   }
   resolveAccounts: {
-    create(body: ResolveAccountInput): Promise<ResolveAccount>
+    create (body: ResolveAccountInput): Promise<ResolveAccount>
   }
   resolveInstitutions: {
-    create(body: ResolveInput): Promise<Resolve>
+    create (body: ResolveInput): Promise<Resolve>
   }
-  status: {
-    get(params: StatuParams): Promise<Statu>
+  virtualAccountStatus: {
+    get (params: VirtualAccountStatusParams): Promise<VirtualAccountStatus>
   }
   subscriptions: {
-    get(params: SubscriptionParams): Promise<Subscription[]>
+    get (params: SubscriptionParams): Promise<Subscription[]>
   }
   terminateIssuings: {
-    update(params: CustomerByIdParams): Promise<Tier1>
+    update (params: CustomerByIdParams): Promise<Tier1>
   }
   tier1s: {
-    update(body: Tier1Input): Promise<Tier1>
+    update (body: Tier1Input): Promise<Tier1>
   }
   tier2s: {
-    update(body: Tier2Input): Promise<Tier2>
+    update (body: Tier2Input): Promise<Tier2>
   }
   transactions: {
-    list(): Promise<Transaction[]>
-    get(params: CustomerByIdParams): Promise<Transaction>
+    list (): Promise<Transaction[]>
+    get (params: CustomerByIdParams): Promise<Transaction>
   }
   transferCryptos: {
-    create(body: TransferInput): Promise<Transfer>
+    create (body: TransferInput): Promise<Transfer>
   }
   transfers: {
-    create(body: TransferCreateInput): Promise<Transfer>
-    get(params: TransferByTransferIdParams): Promise<Transfer>
+    create (body: TransferCreateInput): Promise<Transfer>
+    get (params: TransferByTransferIdParams): Promise<Transfer>
   }
   unfreezeIssuings: {
-    update(params: CustomerByIdParams): Promise<Tier1>
+    update (params: CustomerByIdParams): Promise<Tier1>
   }
   updateCustomers: {
-    update(body: UpdateInput): Promise<Active>
+    update (body: UpdateInput): Promise<Active>
   }
   usds: {
-    create(body: UsdInput): Promise<Usd>
+    create (body: UsdInput): Promise<Usd>
   }
   usdTransfers: {
-    create(body: UsdTransferInput): Promise<Usd>
+    create (body: UsdTransferInput): Promise<Usd>
   }
   utilityBills: {
-    create(body: UtilityInput): Promise<Utility>
+    create (body: UtilityInput): Promise<Utility>
   }
   verifies: {
-    get(params: CustomerByIdParams): Promise<Verify>
+    get (params: CustomerByIdParams): Promise<Verify>
   }
   verifyOtps: {
-    create(body: VerifyOtpInput): Promise<VerifyOtp>
+    create (body: VerifyOtpInput): Promise<VerifyOtp>
   }
   virtualAccountCollections: {
-    create(body: VirtualAccountInput): Promise<CustomerAccount>
-    get(params: CustomerByIdParams): Promise<VirtualAccountById>
+    create (body: VirtualAccountInput): Promise<CustomerAccount>
+    get (params: CustomerByIdParams): Promise<VirtualAccountById>
   }
   virtualAccountCustomers: {
-    get(params: ActiveParams): Promise<CustomerAccount[]>
+    get (params: ActiveParams): Promise<CustomerAccount[]>
   }
   virtualAccountRails: {
-    list(params: RailParams): Promise<Rail[]>
+    list (params: RailParams): Promise<Rail[]>
   }
   wallets: {
-    list(): Promise<WalletList[]>
+    list (): Promise<WalletList[]>
   }
   withdrawIssuings: {
-    create(params: CustomerByIdParams, body: FundInput): Promise<Fund>
+    create (params: CustomerByIdParams, body: FundInput): Promise<Fund>
   }
 }
 
@@ -4816,8 +4816,8 @@ export const extractedApiDocumentManifest = {
       ],
     },
     {
-      className: 'Statu',
-      propertyName: 'status',
+      className: 'VirtualAccountStatus',
+      propertyName: 'virtualAccountStatus',
       operations: [
         {
           path: '/v1/collections/virtual-account/status/{reference}',
@@ -4825,11 +4825,11 @@ export const extractedApiDocumentManifest = {
           methodName: 'get',
           summary: 'Check Account Request Status',
           operationId: 'getV1CollectionsVirtualAccountStatusReference',
-          responseType: 'Statu',
+          responseType: 'VirtualAccountStatus',
           inputType: 'CustomerListInput',
           queryType: 'CustomerQuery',
           headerType: 'CustomerHeader',
-          paramsType: 'StatuParams',
+          paramsType: 'VirtualAccountStatusParams',
           hasBody: false,
           bodyRequired: false,
           pathParams: [
@@ -20340,9 +20340,9 @@ export const extractedApiDocument: ExtractedApiDocument = {
 }
 
 export const extractedApiDocumentSdk: OpenApiRuntimeBundle<ExtractedApiDocumentApi> =
-  {
-    document: extractedApiDocument,
-    manifest: extractedApiDocumentManifest,
-  }
+{
+  document: extractedApiDocument,
+  manifest: extractedApiDocumentManifest,
+}
 
 export default extractedApiDocument

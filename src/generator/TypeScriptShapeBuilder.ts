@@ -1,10 +1,10 @@
 import { GeneratorContext, InterfaceAliasDeclaration, InterfaceDeclaration, PayloadSchemaCandidate, SemanticModel, ShapeAliasDeclaration, ShapeNode, ShapeProperty } from './types'
 import type { OpenApiMediaType, OpenApiOperationLike, OpenApiParameterLike, OpenApiResponse, OpenApiSchema } from '../types/open-api'
 
-import { TypeScriptNamingSupport } from './TypeScriptNamingSupport'
+import { NamingSupport } from './NamingSupport'
 
 export class TypeScriptShapeBuilder {
-    constructor(private readonly naming: TypeScriptNamingSupport) {}
+    constructor(private readonly naming: NamingSupport) { }
 
     createContext (): GeneratorContext {
         return {

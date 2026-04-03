@@ -26,6 +26,120 @@ yarn add @oapiex/sdk-kit
 
 :::
 
+## Client Configuration
+
+`Core` and `createSdk()` use the same `InitOptions` contract.
+
+```ts
+const sdk = new Core({
+  clientId: process.env.CLIENT_ID!,
+  clientSecret: process.env.CLIENT_SECRET!,
+  environment: 'sandbox',
+  urls: {
+    sandbox: 'https://sandbox-api.example.com',
+    live: 'https://api.example.com',
+  },
+  headers: {
+    'X-Trace-Source': 'custom-sdk',
+  },
+  timeout: 15000,
+  encryptionKey: process.env.ENCRYPTION_KEY,
+});
+```
+
+Supported init fields:
+
+- `clientId`
+- `clientSecret`
+- `environment`
+- `urls`
+- `headers`
+- `timeout`
+- `encryptionKey`
+- `auth`
+
+`urls` lets you override the base URL for `sandbox` and `live`, which is useful when an API has regional hosts, mock servers, or staging gateways.
+
+## Auth Strategies
+
+The `auth` field accepts one auth strategy or an array of strategies.
+
+### Bearer
+
+```ts
+auth: {
+  type: 'bearer',
+  token: process.env.ACCESS_TOKEN!,
+}
+```
+
+### Basic
+
+```ts
+auth: {
+  type: 'basic',
+  username: process.env.API_USERNAME!,
+  password: process.env.API_PASSWORD!,
+}
+```
+
+### API Key
+
+```ts
+auth: {
+  type: 'apiKey',
+  name: 'X-API-Key',
+  value: process.env.API_KEY!,
+  in: 'header',
+}
+```
+
+### OAuth2 Access Token
+
+```ts
+auth: {
+  type: 'oauth2',
+  accessToken: process.env.ACCESS_TOKEN!,
+  tokenType: 'Bearer',
+}
+```
+
+### Multiple Schemes
+
+```ts
+auth: [
+  {
+    type: 'apiKey',
+    name: 'X-Partner-Key',
+    value: process.env.PARTNER_KEY!,
+    in: 'header',
+  },
+  {
+    type: 'apiKey',
+    name: 'api_key',
+    value: process.env.QUERY_KEY!,
+    in: 'query',
+  },
+];
+```
+
+### Custom Request Mutator
+
+```ts
+auth: {
+  type: 'custom',
+  apply: async (request) => ({
+    ...request,
+    headers: {
+      ...request.headers,
+      Authorization: `Token ${process.env.CUSTOM_TOKEN!}`,
+    },
+  }),
+}
+```
+
+These strategies are applied centrally by `Http`, so generated class SDKs and manifest-driven SDKs both use the same auth behavior.
+
 ## Build An SDK From Scratch
 
 You can use `@oapiex/sdk-kit` directly without `oapie generate sdk`.
@@ -178,7 +292,7 @@ const sdk = new Core({
 await sdk.api.examples.list({ code: 'NG' });
 ```
 
-## Access Validation
+## Access Validation and Authentication
 
 You can register an access validator if the SDK should enforce custom auth or readiness checks before requests are made.
 
@@ -187,6 +301,68 @@ sdk.setAccessValidator(async (core) => {
   return core.getEnvironment() ? true : 'SDK is not initialized correctly';
 });
 ```
+
+Validators can also replace auth or shared config before the request is sent.
+
+This is useful when an API requires a token exchange step with the configured client credentials.
+
+```ts
+import axios from 'axios';
+
+sdk.setAccessValidator(async (core) => {
+  const response = await axios.post(
+    'https://developersandbox-api.example.com/auth/token',
+    {
+      client_id: core.getClientId(),
+      client_secret: core.getClientSecret(),
+    },
+  );
+
+  return {
+    auth: {
+      type: 'bearer',
+      token: response.data.access_token,
+    },
+    headers: {
+      'X-Token-Source': 'access-validator',
+    },
+  };
+});
+```
+
+Supported validator results:
+
+- `true` or `undefined`: continue without changes
+- `string`: stop and throw that message
+- `AuthConfig` or `AuthConfig[]`: replace auth directly
+- `Partial<UserConfig>`: update auth, headers, timeout, URLs, or encryption key together
+
+You can also call `core.setAuth(...)`, `core.clearAuth()`, or `core.configure(...)` directly inside the validator when you want imperative control.
+
+### Cached Token Refresh
+
+For APIs that return expiring bearer tokens, `createAccessTokenCache()` avoids hitting the auth endpoint on every request.
+
+```ts
+import axios from 'axios'
+import { createAccessTokenCache } from '@oapiex/sdk-kit'
+
+const tokenCache = createAccessTokenCache(async (core) => {
+  const response = await axios.post('https://developersandbox-api.example.com/auth/token', {
+    client_id: core.getClientId(),
+    client_secret: core.getClientSecret(),
+  })
+
+  return {
+    token: response.data.access_token,
+    expiresInSeconds: Math.max((response.data.expires_in ?? 60) - 30, 1),
+  }
+})
+
+sdk.setAccessValidator(tokenCache)
+```
+
+`createAccessTokenCache()` returns an access validator that caches the auth result until expiry, then refreshes it automatically on the next guarded request.
 
 Generated SDKs rely on the same mechanism.
 
@@ -237,6 +413,10 @@ const sdk = createSdk(bundle, {
   clientId: process.env.CLIENT_ID!,
   clientSecret: process.env.CLIENT_SECRET!,
   environment: 'sandbox',
+  auth: {
+    type: 'bearer',
+    token: process.env.ACCESS_TOKEN!,
+  },
 });
 
 await sdk.api.examples.list({ code: 'NG' });
@@ -317,6 +497,8 @@ Utility used to resolve target URLs and environment-specific base URLs.
 
 The package also exports shared contracts and helper types, including:
 
+- `AuthConfig`
+- `createAccessTokenCache`
 - `InitOptions`
 - `UnifiedResponse`
 - `RuntimeSdkBundle`

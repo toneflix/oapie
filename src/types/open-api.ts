@@ -27,10 +27,44 @@ export interface OpenApiResponse {
     content?: Record<string, OpenApiMediaType>
 }
 
+export interface OpenApiOauthFlowLike {
+    authorizationUrl?: string
+    tokenUrl?: string
+    refreshUrl?: string
+    scopes?: Record<string, string>
+}
+
+export type OpenApiSecurityRequirementLike = Record<string, string[]>
+
+export type OpenApiSecuritySchemeLike =
+    | {
+        type: 'http'
+        description?: string
+        scheme: string
+        bearerFormat?: string
+    }
+    | {
+        type: 'apiKey'
+        description?: string
+        name: string
+        in: 'query' | 'header' | 'cookie'
+    }
+    | {
+        type: 'oauth2'
+        description?: string
+        flows?: Record<string, OpenApiOauthFlowLike>
+    }
+    | {
+        type: 'openIdConnect'
+        description?: string
+        openIdConnectUrl: string
+    }
+
 export interface OpenApiOperationLike {
     summary?: string
     description?: string
     operationId?: string
+    security?: OpenApiSecurityRequirementLike[]
     parameters?: OpenApiParameterLike[]
     requestBody?: {
         description?: string
@@ -46,5 +80,9 @@ export interface OpenApiDocumentLike {
         title: string
         version: string
     }
+    components?: {
+        securitySchemes?: Record<string, OpenApiSecuritySchemeLike>
+    }
+    security?: OpenApiSecurityRequirementLike[]
     paths: Record<string, Record<string, OpenApiOperationLike>>
 }

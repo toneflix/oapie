@@ -1,4 +1,4 @@
-import { OperationTypeRefs, SdkNamingStrategyOptions } from './types'
+import { OperationTypeRefs, SdkManifest, SdkNamingStrategyOptions, SdkSecurityRequirementManifest, SdkSecuritySchemeManifest } from './types'
 
 import type { OpenApiDocumentLike } from '../types/open-api'
 import { TypeScriptGenerator } from './TypeScriptGenerator'
@@ -35,7 +35,7 @@ export class SdkPackageGenerator {
             'package.json': this.renderPackageJson(options),
             'README.md': this.renderReadme(manifest, options, outputMode, signatureStyle),
             'src/Schema.ts': schemaModule,
-            'src/index.ts': this.renderIndexFile(classNames, outputMode, rootTypeName),
+            'src/index.ts': this.renderIndexFile(classNames, outputMode, rootTypeName, manifest),
             'tsconfig.json': this.renderTsconfig(),
             'tsdown.config.ts': this.renderTsdownConfig(),
             'vitest.config.ts': this.renderVitestConfig(),
@@ -480,7 +480,7 @@ export class SdkPackageGenerator {
         const title = `# ${packageName}`
         const description = this.renderReadmeDescription(outputMode)
         const usage = this.renderReadmeUsage(manifest, packageName, outputMode, signatureStyle)
-        const exports = this.renderReadmeExports(outputMode)
+        const exports = this.renderReadmeExports(outputMode, manifest)
 
         return [
             title,
@@ -544,9 +544,11 @@ export class SdkPackageGenerator {
         }
 
         const typeImports = exampleOperation ? this.collectReadmeTypeImports(exampleOperation.operation) : []
+        const helperImports = exampleOperation ? this.collectReadmeAuthHelperImports(exampleOperation) : []
+        const valueImports = ['Core', 'createClient', ...helperImports]
         const importLine = typeImports.length > 0
-            ? `import { Core, createClient, type ${typeImports.join(', type ')} } from '${packageName}'`
-            : `import { Core, createClient } from '${packageName}'`
+            ? `import { ${valueImports.join(', ')}, type ${typeImports.join(', type ')} } from '${packageName}'`
+            : `import { ${valueImports.join(', ')} } from '${packageName}'`
 
         return [
             importLine,
@@ -567,9 +569,11 @@ export class SdkPackageGenerator {
     ): string {
         const importNames = mode === 'runtime' ? ['createClient'] : ['Core']
         const typeImports = exampleOperation ? this.collectReadmeTypeImports(exampleOperation.operation) : []
+        const helperImports = exampleOperation ? this.collectReadmeAuthHelperImports(exampleOperation) : []
+        const valueImports = [...importNames, ...helperImports]
         const importLine = typeImports.length > 0
-            ? `import { ${importNames.join(', ')}, type ${typeImports.join(', type ')} } from '${packageName}'`
-            : `import { ${importNames.join(', ')} } from '${packageName}'`
+            ? `import { ${valueImports.join(', ')}, type ${typeImports.join(', type ')} } from '${packageName}'`
+            : `import { ${valueImports.join(', ')} } from '${packageName}'`
         const sdkVariable = mode === 'runtime' ? 'runtimeSdk' : 'sdk'
 
         return [
@@ -591,21 +595,33 @@ export class SdkPackageGenerator {
         const callLines = exampleOperation
             ? this.renderReadmeOperationCall(sdkVariable, exampleOperation, mode === 'runtime' ? 'grouped' : signatureStyle)
             : []
+        const authLines = exampleOperation
+            ? this.renderReadmeAuthLines(exampleOperation.operation.security ?? exampleOperation.groupSecurity ?? exampleOperation.globalSecurity)
+            : []
 
         return [
             initLine,
             '  clientId: process.env.CLIENT_ID!,',
             '  clientSecret: process.env.CLIENT_SECRET!,',
             "  environment: 'sandbox',",
+            ...authLines,
             '})',
             ...(callLines.length > 0 ? ['', ...callLines] : []),
         ]
     }
 
-    private renderReadmeExports (outputMode: 'runtime' | 'classes' | 'both'): string[] {
+    private renderReadmeExports (
+        outputMode: 'runtime' | 'classes' | 'both',
+        manifest: SdkManifest
+    ): string[] {
+        const authLine = manifest.securitySchemes.length > 0
+            ? ['generated auth helpers derived from OpenAPI security schemes']
+            : []
+
         if (outputMode === 'runtime') {
             return [
                 '`createClient()` for a typed runtime SDK instance',
+                ...authLine,
                 '`Schema` exports for request, response, params, query, and header types',
             ]
         }
@@ -613,6 +629,7 @@ export class SdkPackageGenerator {
         if (outputMode === 'classes') {
             return [
                 '`Core` as the class-based SDK entrypoint',
+                ...authLine,
                 'generated API classes plus `Schema` type exports',
             ]
         }
@@ -620,6 +637,7 @@ export class SdkPackageGenerator {
         return [
             '`Core` for class-based usage',
             '`createClient()` for runtime-first usage',
+            ...authLine,
             '`Schema` exports for generated request, response, params, query, and header types',
         ]
     }
@@ -632,7 +650,61 @@ export class SdkPackageGenerator {
             return null
         }
 
-        return { group, operation }
+        return {
+            group,
+            operation,
+            groupSecurity: undefined,
+            globalSecurity: manifest.security,
+        }
+    }
+
+    private renderReadmeAuthLines (security?: SdkSecurityRequirementManifest[]): string[] {
+        if (!security || security.length === 0) {
+            return []
+        }
+
+        const selectedRequirement = security[0]
+
+        if (!selectedRequirement || selectedRequirement.schemes.length === 0) {
+            return []
+        }
+
+        const value = selectedRequirement.schemes.length === 1
+            ? this.renderReadmeAuthFactoryCall(selectedRequirement.schemes[0].name)
+            : `[
+    ${selectedRequirement.schemes.map((scheme) => this.renderReadmeAuthFactoryCall(scheme.name)).join(',\n    ')}
+  ]`
+        const lines = security.length > 1
+            ? ['  // Choose a generated auth helper that matches your API access setup.']
+            : []
+
+        lines.push(`  auth: ${value},`)
+
+        return lines
+    }
+
+    private renderReadmeAuthFactoryCall (schemeName: string): string {
+        const helperName = this.createSecurityHelperName(schemeName)
+        const envName = this.toConstantCase(schemeName)
+
+        if (/basic/i.test(schemeName)) {
+            return `${helperName}(process.env.${envName}_USERNAME!, process.env.${envName}_PASSWORD!)`
+        }
+
+        return `${helperName}(process.env.${envName}_VALUE!)`
+    }
+
+    private collectReadmeAuthHelperImports (
+        exampleOperation: NonNullable<ReturnType<SdkPackageGenerator['pickExampleOperation']>>
+    ): string[] {
+        const security = exampleOperation.operation.security ?? exampleOperation.groupSecurity ?? exampleOperation.globalSecurity
+        const selectedRequirement = security?.[0]
+
+        if (!selectedRequirement) {
+            return []
+        }
+
+        return selectedRequirement.schemes.map((scheme) => this.createSecurityHelperName(scheme.name))
     }
 
     private collectReadmeTypeImports (
@@ -793,14 +865,15 @@ export class SdkPackageGenerator {
     private renderIndexFile (
         classNames: string[],
         outputMode: 'runtime' | 'classes' | 'both',
-        rootTypeName: string
+        rootTypeName: string,
+        manifest: SdkManifest
     ): string {
         const rootExportName = `${rootTypeName.charAt(0).toLowerCase()}${rootTypeName.slice(1)}`
         const lines = [
             `import type { ${rootTypeName}Api } from './Schema'`,
-            `import { ${rootExportName}Sdk } from './Schema'`,
+            `import { ${rootExportName}Manifest, ${rootExportName}Sdk } from './Schema'`,
             "import { createSdk as createBoundSdk } from '@oapiex/sdk-kit'",
-            "import type { BaseApi as KitBaseApi, Core as KitCore, InitOptions } from '@oapiex/sdk-kit'",
+            "import type { AuthConfig, BaseApi as KitBaseApi, Core as KitCore, InitOptions } from '@oapiex/sdk-kit'",
             '',
             "export * from './Schema'",
         ]
@@ -813,6 +886,18 @@ export class SdkPackageGenerator {
         }
 
         lines.push('')
+        lines.push(`export const securitySchemes = ${rootExportName}Manifest.securitySchemes`)
+        lines.push(`export const security = ${rootExportName}Manifest.security`)
+
+        if (manifest.securitySchemes.length > 0) {
+            lines.push('')
+
+            for (const scheme of manifest.securitySchemes) {
+                lines.push(...this.renderSecurityHelper(scheme))
+                lines.push('')
+            }
+        }
+
         lines.push('export const createClient = (')
         lines.push('    options: InitOptions')
         lines.push(`): KitCore & { api: KitBaseApi & ${rootTypeName}Api } =>`)
@@ -830,6 +915,7 @@ export class SdkPackageGenerator {
         lines.push('} from \'@oapiex/sdk-kit\'')
         lines.push('')
         lines.push('export type {')
+        lines.push('    AuthConfig,')
         lines.push('    InitOptions,')
         lines.push('    UnifiedResponse,')
         lines.push('    XGenericObject,')
@@ -842,5 +928,68 @@ export class SdkPackageGenerator {
         return Array.from(new Set((typeRef.match(/\b[A-Z][A-Za-z0-9_]*/g) ?? []).filter((identifier) => {
             return !['Record', 'Promise'].includes(identifier)
         })))
+    }
+
+    private renderSecurityHelper (scheme: SdkSecuritySchemeManifest): string[] {
+        if (scheme.authType === 'basic') {
+            return [
+                `export const ${scheme.helperName} = (username: string, password: string): AuthConfig => ({`,
+                "    type: 'basic',",
+                '    username,',
+                '    password,',
+                '})',
+            ]
+        }
+
+        if (scheme.authType === 'apiKey') {
+            return [
+                `export const ${scheme.helperName} = (value: string): AuthConfig => ({`,
+                "    type: 'apiKey',",
+                `    name: ${JSON.stringify(scheme.parameterName ?? scheme.name)},`,
+                '    value,',
+                `    in: ${JSON.stringify(scheme.in ?? 'header')},`,
+                '})',
+            ]
+        }
+
+        if (scheme.authType === 'oauth2') {
+            return [
+                `export const ${scheme.helperName} = (accessToken: string, tokenType = 'Bearer'): AuthConfig => ({`,
+                "    type: 'oauth2',",
+                '    accessToken,',
+                '    tokenType,',
+                '})',
+            ]
+        }
+
+        return [
+            `export const ${scheme.helperName} = (token: string): AuthConfig => ({`,
+            "    type: 'bearer',",
+            '    token,',
+            ...(scheme.scheme && scheme.scheme.toLowerCase() !== 'bearer'
+                ? [`    prefix: ${JSON.stringify(this.normalizeHttpAuthPrefix(scheme.scheme))},`]
+                : []),
+            '})',
+        ]
+    }
+
+    private createSecurityHelperName (schemeName: string): string {
+        const sanitized = this.typeBuilder.sanitizeTypeName(schemeName)
+
+        return sanitized.endsWith('Auth')
+            ? `create${sanitized}`
+            : `create${sanitized}Auth`
+    }
+
+    private normalizeHttpAuthPrefix (scheme: string): string {
+        return scheme.charAt(0).toUpperCase() + scheme.slice(1)
+    }
+
+    private toConstantCase (value: string): string {
+        return value
+            .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+            .replace(/[^A-Za-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .toUpperCase() || 'AUTH'
     }
 }

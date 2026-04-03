@@ -92,6 +92,84 @@ describe('SdkPackageGenerator', () => {
         },
     } as const
 
+    const secureDocument = {
+        openapi: '3.1.0',
+        info: {
+            title: 'Secure API',
+            version: '1.0.0',
+        },
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                },
+                basicAuth: {
+                    type: 'http',
+                    scheme: 'basic',
+                },
+                partnerKey: {
+                    type: 'apiKey',
+                    name: 'X-Partner-Key',
+                    in: 'header',
+                },
+                queryKey: {
+                    type: 'apiKey',
+                    name: 'api_key',
+                    in: 'query',
+                },
+                oauth: {
+                    type: 'oauth2',
+                    flows: {
+                        clientCredentials: {
+                            tokenUrl: 'https://example.test/oauth/token',
+                            scopes: {
+                                charges: 'Manage charges',
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        security: [
+            { bearerAuth: [] },
+            { basicAuth: [] },
+        ],
+        paths: {
+            '/charges': {
+                get: {
+                    security: [
+                        { partnerKey: [], queryKey: [] },
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'OK',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: {
+                                                type: 'array',
+                                                items: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        id: { type: 'string' },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    } as const
+
     it('generates runtime and class package files from the shared manifest', () => {
         const files = new SdkPackageGenerator().generate(document as never)
 
@@ -156,6 +234,33 @@ describe('SdkPackageGenerator', () => {
         expect(classFiles['src/Apis/ExampleApp.ts']).toContain('async list (code: ExampleAppQuery["code"], xKey1?: ExampleHeader["X-Key-1"]): Promise<Example[]>')
         expect(classFiles['src/Apis/ExampleApp.ts']).toContain('async create (body: ExampleInput, xKey1?: ExampleHeader["X-Key-1"]): Promise<Example>')
         expect(classFiles['src/Apis/ExampleApp.ts']).toContain('({ "X-Key-1": xKey1 } as Record<string, string | undefined>)')
+    })
+
+    it('maps OpenAPI security schemes into generated auth helpers and metadata', () => {
+        const files = new SdkPackageGenerator().generate(secureDocument as never)
+
+        expect(files['src/Schema.ts']).toContain('export type OpenApiSecuritySchemeDefinition =')
+        expect(files['src/Schema.ts']).toContain('securitySchemes: [')
+        expect(files['src/Schema.ts']).toContain("helperName: 'createBearerAuth'")
+        expect(files['src/Schema.ts']).toContain("helperName: 'createPartnerKeyAuth'")
+        expect(files['src/Schema.ts']).toContain("parameterName: 'X-Partner-Key'")
+        expect(files['src/Schema.ts']).toContain('security: [')
+        expect(files['src/index.ts']).toContain('export const securitySchemes = extractedApiDocumentManifest.securitySchemes')
+        expect(files['src/index.ts']).toContain('export const security = extractedApiDocumentManifest.security')
+        expect(files['src/index.ts']).toContain('export const createBearerAuth = (token: string): AuthConfig => ({')
+        expect(files['src/index.ts']).toContain('export const createBasicAuth = (username: string, password: string): AuthConfig => ({')
+        expect(files['src/index.ts']).toContain('export const createPartnerKeyAuth = (value: string): AuthConfig => ({')
+        expect(files['src/index.ts']).toContain('name: "X-Partner-Key"')
+        expect(files['src/index.ts']).toContain('in: "header"')
+        expect(files['src/index.ts']).toContain('export const createQueryKeyAuth = (value: string): AuthConfig => ({')
+        expect(files['src/index.ts']).toContain('name: "api_key"')
+        expect(files['src/index.ts']).toContain('in: "query"')
+        expect(files['src/index.ts']).toContain("export const createOauthAuth = (accessToken: string, tokenType = 'Bearer'): AuthConfig => ({")
+        expect(files['README.md']).toContain("import { Core, createClient, createPartnerKeyAuth, createQueryKeyAuth } from 'generated-sdk'")
+        expect(files['README.md']).toContain('auth: [')
+        expect(files['README.md']).toContain('createPartnerKeyAuth(process.env.PARTNER_KEY_VALUE!)')
+        expect(files['README.md']).toContain('createQueryKeyAuth(process.env.QUERY_KEY_VALUE!)')
+        expect(files['README.md']).toContain('generated auth helpers derived from OpenAPI security schemes')
     })
 
     it('uses scoped class names when nested resources would otherwise collide', () => {

@@ -1,5 +1,9 @@
 import { XGenericObject } from './Interfaces'
 
+export type Environment = 'sandbox' | 'live'
+
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
 export type ResponseStatus = 'failed' | 'success'
 
 export interface ValidationError {
@@ -81,29 +85,107 @@ export interface PageInfoMeta {
     page_info: NormalPagination
 }
 
+export interface UserUrls {
+    live?: string
+    sandbox?: string
+}
+
+export interface BearerAuthConfig {
+    type: 'bearer'
+    token: string
+    prefix?: string
+}
+
+export interface OAuth2AuthConfig {
+    type: 'oauth2'
+    accessToken: string
+    tokenType?: string
+}
+
+export interface BasicAuthConfig {
+    type: 'basic'
+    username: string
+    password: string
+}
+
+export interface ApiKeyAuthConfig {
+    type: 'apiKey'
+    name: string
+    value: string
+    in?: 'header' | 'query' | 'cookie'
+    prefix?: string
+}
+
+export interface AuthRequestConfig {
+    url: string
+    method: HttpMethod
+    headers: Record<string, string>
+    params: XGenericObject
+    body?: unknown
+}
+
+export interface CustomAuthConfig {
+    type: 'custom'
+    apply: (
+        request: AuthRequestConfig
+    ) => AuthRequestConfig | Promise<AuthRequestConfig>
+}
+
+export type AuthConfig =
+    | BearerAuthConfig
+    | OAuth2AuthConfig
+    | BasicAuthConfig
+    | ApiKeyAuthConfig
+    | CustomAuthConfig
+
+export type AccessValidationConfigUpdate = Partial<UserConfig> | AuthConfig | AuthConfig[]
+
+export type AccessValidationResult =
+    | boolean
+    | string
+    | void
+    | AccessValidationConfigUpdate
+
 export interface InitOptions {
     /**
-     * Your Flutterwave Public Key
+     * Your API Public Key
      */
     clientId: string
     /**
-     * Your Flutterwave Secret Key
+     * Your API Secret Key
      */
     clientSecret: string
     /**
-     * Your Flutterwave Encryption Key
+     * Your API Encryption Key
      */
     encryptionKey?: string
     /**     
      * Environment to use
      */
-    environment?: 'sandbox' | 'live'
+    environment?: Environment
+    /**
+     * Override environment base URLs.
+     */
+    urls?: UserUrls
+    /**
+     * Default headers applied to every request.
+     */
+    headers?: Record<string, string>
+    /**
+     * Request timeout in milliseconds.
+     */
+    timeout?: number
+    /**
+     * Request authentication strategy or strategies.
+     */
+    auth?: AuthConfig | AuthConfig[]
 }
 
 export interface UserConfig {
-    environment?: 'sandbox' | 'live'
-    urls: {
-        live: string
-        sandbox: string
-    }
+    environment?: Environment
+    urls?: UserUrls
+    headers?: Record<string, string>
+    timeout?: number
+    encryptionKey?: string
+    auth?: AuthConfig | AuthConfig[]
 }

@@ -14,6 +14,9 @@ describe('RuntimeSdk', () => {
             clientId: 'client-id',
             clientSecret: 'client-secret',
             environment: 'sandbox',
+            urls: {
+                sandbox: 'https://sandbox-api.example.com',
+            },
         })
         const validator = vi.fn(async () => true)
         const sendSpy = vi.spyOn(Http, 'send')
@@ -35,6 +38,7 @@ describe('RuntimeSdk', () => {
         const runtimeCore = core.useDocument({
             document: {},
             manifest: {
+                securitySchemes: [],
                 groups: [
                     {
                         className: 'Example',
@@ -82,14 +86,14 @@ describe('RuntimeSdk', () => {
         expect(validator).toHaveBeenCalledTimes(2)
         expect(sendSpy).toHaveBeenNthCalledWith(
             1,
-            'https://developersandbox-api.flutterwave.com/app/example?code=NG',
+            'https://sandbox-api.example.com/app/example?code=NG',
             'GET',
             {},
             { 'X-Key-1': 'header-1' },
         )
         expect(sendSpy).toHaveBeenNthCalledWith(
             2,
-            'https://developersandbox-api.flutterwave.com/app/example',
+            'https://sandbox-api.example.com/app/example',
             'POST',
             { code: 'NG' },
             { 'X-Key-1': 'header-2' },
@@ -107,6 +111,7 @@ describe('RuntimeSdk', () => {
         const core = createSdk({
             document: {},
             manifest: {
+                securitySchemes: [],
                 groups: [
                     {
                         className: 'Example',
@@ -135,6 +140,9 @@ describe('RuntimeSdk', () => {
             clientId: 'client-id',
             clientSecret: 'client-secret',
             environment: 'sandbox',
+            urls: {
+                sandbox: 'https://sandbox-api.example.com',
+            },
         })
 
         core.setAccessValidator(async () => true)

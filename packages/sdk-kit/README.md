@@ -65,6 +65,17 @@ const sdk = new ExampleCore({
   clientId: process.env.CLIENT_ID!,
   clientSecret: process.env.CLIENT_SECRET!,
   environment: 'sandbox',
+  urls: {
+    sandbox: 'https://sandbox-api.example.com',
+  },
+  headers: {
+    'X-SDK-Version': '1.0.0',
+  },
+  timeout: 10000,
+  auth: {
+    type: 'bearer',
+    token: process.env.ACCESS_TOKEN!,
+  },
 });
 
 await sdk.api.examples.list();
@@ -108,9 +119,224 @@ const sdk = createSdk(bundle, {
   clientId: process.env.CLIENT_ID!,
   clientSecret: process.env.CLIENT_SECRET!,
   environment: 'sandbox',
+  auth: {
+    type: 'apiKey',
+    name: 'X-API-Key',
+    value: process.env.API_KEY!,
+    in: 'header',
+  },
 });
 
 await sdk.api.examples.list();
+```
+
+## Init Options
+
+`Core` and `createSdk()` both accept the same `InitOptions` object.
+
+- `clientId`: required API client identifier
+- `clientSecret`: required API client secret
+- `environment`: selects `sandbox` or `live`
+- `urls`: optional base URL overrides per environment
+- `headers`: optional default headers added to every request
+- `timeout`: optional Axios timeout in milliseconds
+- `encryptionKey`: optional runtime encryption key override
+- `auth`: one auth strategy or an array of strategies applied to outgoing requests
+
+```ts
+const sdk = new Core({
+  clientId: process.env.CLIENT_ID!,
+  clientSecret: process.env.CLIENT_SECRET!,
+  environment: 'sandbox',
+  urls: {
+    sandbox: 'https://sandbox-api.example.com',
+    live: 'https://api.example.com',
+  },
+  headers: {
+    'X-Trace-Source': 'example-sdk',
+  },
+  timeout: 15000,
+});
+```
+
+## Auth Shapes
+
+The `auth` option accepts any `AuthConfig` supported by the transport layer.
+
+### Bearer
+
+```ts
+auth: {
+  type: 'bearer',
+  token: process.env.ACCESS_TOKEN!,
+}
+```
+
+### Basic
+
+```ts
+auth: {
+  type: 'basic',
+  username: process.env.API_USERNAME!,
+  password: process.env.API_PASSWORD!,
+}
+```
+
+### API Key
+
+```ts
+auth: {
+  type: 'apiKey',
+  name: 'X-API-Key',
+  value: process.env.API_KEY!,
+  in: 'header',
+}
+```
+
+### OAuth2 Token
+
+```ts
+auth: {
+  type: 'oauth2',
+  accessToken: process.env.ACCESS_TOKEN!,
+  tokenType: 'Bearer',
+}
+```
+
+### Multiple Strategies
+
+```ts
+auth: [
+  {
+    type: 'apiKey',
+    name: 'X-Partner-Key',
+    value: process.env.PARTNER_KEY!,
+    in: 'header',
+  },
+  {
+    type: 'apiKey',
+    name: 'api_key',
+    value: process.env.QUERY_KEY!,
+    in: 'query',
+  },
+];
+```
+
+### Custom
+
+```ts
+auth: {
+  type: 'custom',
+  apply: async (request) => ({
+    ...request,
+    headers: {
+      ...request.headers,
+      Authorization: `Token ${process.env.CUSTOM_TOKEN!}`,
+    },
+  }),
+}
+```
+
+Generated SDK packages can now expose auth helper functions derived from OpenAPI `securitySchemes`, plus `securitySchemes` and `security` metadata exports for inspection.
+
+## Access Validator Auth Refresh
+
+`setAccessValidator()` can be used to replace auth before the actual SDK request is sent. This is useful for APIs like Flutterwave where you first exchange API keys for a bearer token.
+
+The validator can:
+
+- return `true` to allow the request as-is
+- return a string to fail validation with a custom message
+- return an `AuthConfig` or `AuthConfig[]` to replace auth for the pending request
+- return a partial config object such as `{ auth, headers, timeout }`
+- call `core.setAuth(...)` or `core.configure(...)` directly
+
+```ts
+import axios from 'axios';
+import { Core } from '@oapiex/sdk-kit';
+
+const sdk = new Core({
+  clientId: process.env.CLIENT_ID!,
+  clientSecret: process.env.CLIENT_SECRET!,
+  environment: 'sandbox',
+  urls: {
+    sandbox: 'https://developersandbox-api.example.com',
+  },
+});
+
+sdk.setAccessValidator(async (core) => {
+  const response = await axios.post(
+    'https://developersandbox-api.example.com/auth/token',
+    {
+      client_id: core.getClientId(),
+      client_secret: core.getClientSecret(),
+    },
+  );
+
+  return {
+    type: 'bearer',
+    token: response.data.access_token,
+  };
+});
+
+await sdk.api.examples.list();
+```
+
+If you need to update more than auth, return a config object instead:
+
+```ts
+sdk.setAccessValidator(async (core) => {
+  const response = await axios.post(
+    'https://developersandbox-api.example.com/auth/token',
+    {
+      client_id: core.getClientId(),
+      client_secret: core.getClientSecret(),
+    },
+  );
+
+  return {
+    auth: {
+      type: 'bearer',
+      token: response.data.access_token,
+    },
+    headers: {
+      'X-Token-Source': 'access-validator',
+    },
+  };
+});
+```
+
+If the token endpoint returns an expiry value, use `createAccessTokenCache()` so the validator does not fetch a new token on every request.
+
+```ts
+import axios from 'axios';
+import { Core, createAccessTokenCache } from '@oapiex/sdk-kit';
+
+const sdk = new Core({
+  clientId: process.env.CLIENT_ID!,
+  clientSecret: process.env.CLIENT_SECRET!,
+  environment: 'sandbox',
+  urls: {
+    sandbox: 'https://developersandbox-api.example.com',
+  },
+});
+
+const tokenCache = createAccessTokenCache(async (core) => {
+  const response = await axios.post(
+    'https://developersandbox-api.example.com/auth/token',
+    {
+      client_id: core.getClientId(),
+      client_secret: core.getClientSecret(),
+    },
+  );
+
+  return {
+    token: response.data.access_token,
+    expiresInSeconds: Math.max((response.data.expires_in ?? 60) - 30, 1),
+  };
+});
+
+sdk.setAccessValidator(tokenCache);
 ```
 
 ## Main Exports
@@ -118,6 +344,9 @@ await sdk.api.examples.list();
 - `Core`: base SDK client with environment setup, access validation, and runtime bundle support
 - `BaseApi`: base class for SDK-specific API binders and API classes
 - `createSdk()`: helper for creating a runtime SDK from a manifest bundle
+- `AuthConfig`: shared auth strategy union used by `InitOptions.auth`
+- `createAccessTokenCache()`: helper for caching validator-fetched tokens until expiry
+- `setAccessValidator()`: hook for readiness checks, auth refresh, and config replacement before requests
 - `Http`, `Builder`, and exceptions: lower-level request and error primitives
 - `InitOptions`, `UnifiedResponse`, and runtime manifest types: shared contracts for generated SDKs
 

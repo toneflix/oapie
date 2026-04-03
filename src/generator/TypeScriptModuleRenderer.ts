@@ -73,15 +73,22 @@ export class TypeScriptModuleRenderer {
             'export interface OpenApiMediaTypeDefinition<TExample = unknown> {\n  schema?: OpenApiSchemaDefinition\n  example?: TExample\n}',
             'export interface OpenApiResponseDefinition<_TResponse = unknown, TExample = unknown> {\n  description: string\n  content?: Record<string, OpenApiMediaTypeDefinition<TExample>>\n}',
             'export interface OpenApiRequestBodyDefinition<TInput = unknown> {\n  description?: string\n  required: boolean\n  content: Record<string, OpenApiMediaTypeDefinition<TInput>>\n}',
-            'export interface OpenApiOperationDefinition<_TResponse = unknown, TResponseExample = unknown, TInput = Record<string, never>, _TQuery = Record<string, never>, _THeader = Record<string, never>, _TParams = Record<string, never>> {\n  summary?: string\n  description?: string\n  operationId?: string\n  parameters?: OpenApiParameterDefinition[]\n  requestBody?: OpenApiRequestBodyDefinition<TInput>\n  responses: Record<string, OpenApiResponseDefinition<_TResponse, TResponseExample>>\n}',
+            'export interface OpenApiOauthFlowDefinition {\n  authorizationUrl?: string\n  tokenUrl?: string\n  refreshUrl?: string\n  scopes?: Record<string, string>\n}',
+            'export type OpenApiSecurityRequirementDefinition = Record<string, string[]>',
+            'export type OpenApiSecuritySchemeDefinition =\n  | {\n      type: \'http\'\n      description?: string\n      scheme: string\n      bearerFormat?: string\n    }\n  | {\n      type: \'apiKey\'\n      description?: string\n      name: string\n      in: \'query\' | \'header\' | \'cookie\'\n    }\n  | {\n      type: \'oauth2\'\n      description?: string\n      flows?: Record<string, OpenApiOauthFlowDefinition>\n    }\n  | {\n      type: \'openIdConnect\'\n      description?: string\n      openIdConnectUrl: string\n    }',
+            'export interface OpenApiComponentsDefinition {\n  securitySchemes?: Record<string, OpenApiSecuritySchemeDefinition>\n}',
+            'export interface OpenApiOperationDefinition<_TResponse = unknown, TResponseExample = unknown, TInput = Record<string, never>, _TQuery = Record<string, never>, _THeader = Record<string, never>, _TParams = Record<string, never>> {\n  summary?: string\n  description?: string\n  operationId?: string\n  security?: OpenApiSecurityRequirementDefinition[]\n  parameters?: OpenApiParameterDefinition[]\n  requestBody?: OpenApiRequestBodyDefinition<TInput>\n  responses: Record<string, OpenApiResponseDefinition<_TResponse, TResponseExample>>\n}',
             'export interface OpenApiSdkParameterManifest {\n  name: string\n  accessor: string\n  in: \'query\' | \'header\' | \'path\'\n  required: boolean\n  description?: string\n}',
-            'export interface OpenApiSdkOperationManifest {\n  path: string\n  method: \'GET\' | \'POST\' | \'PUT\' | \'PATCH\' | \'DELETE\'\n  methodName: string\n  summary?: string\n  description?: string\n  operationId?: string\n  requestBodyDescription?: string\n  responseDescription?: string\n  responseType: string\n  inputType: string\n  queryType: string\n  headerType: string\n  paramsType: string\n  hasBody: boolean\n  bodyRequired: boolean\n  pathParams: OpenApiSdkParameterManifest[]\n  queryParams: OpenApiSdkParameterManifest[]\n  headerParams: OpenApiSdkParameterManifest[]\n}',
+            'export interface OpenApiSdkSecurityRequirementSchemeManifest {\n  name: string\n  scopes: string[]\n}',
+            'export interface OpenApiSdkSecurityRequirementManifest {\n  schemes: OpenApiSdkSecurityRequirementSchemeManifest[]\n}',
+            'export interface OpenApiSdkSecuritySchemeManifest {\n  name: string\n  helperName: string\n  description?: string\n  type: \'http\' | \'apiKey\' | \'oauth2\' | \'openIdConnect\'\n  authType: \'bearer\' | \'basic\' | \'apiKey\' | \'oauth2\'\n  scheme?: string\n  bearerFormat?: string\n  in?: \'header\' | \'query\' | \'cookie\'\n  parameterName?: string\n  openIdConnectUrl?: string\n  scopes?: string[]\n}',
+            'export interface OpenApiSdkOperationManifest {\n  path: string\n  method: \'GET\' | \'POST\' | \'PUT\' | \'PATCH\' | \'DELETE\'\n  methodName: string\n  summary?: string\n  description?: string\n  operationId?: string\n  requestBodyDescription?: string\n  responseDescription?: string\n  responseType: string\n  inputType: string\n  queryType: string\n  headerType: string\n  paramsType: string\n  hasBody: boolean\n  bodyRequired: boolean\n  pathParams: OpenApiSdkParameterManifest[]\n  queryParams: OpenApiSdkParameterManifest[]\n  headerParams: OpenApiSdkParameterManifest[]\n  security?: OpenApiSdkSecurityRequirementManifest[]\n}',
             'export interface OpenApiSdkGroupManifest {\n  className: string\n  propertyName: string\n  operations: OpenApiSdkOperationManifest[]\n}',
-            'export interface OpenApiSdkManifest {\n  groups: OpenApiSdkGroupManifest[]\n}',
+            'export interface OpenApiSdkManifest {\n  groups: OpenApiSdkGroupManifest[]\n  securitySchemes: OpenApiSdkSecuritySchemeManifest[]\n  security?: OpenApiSdkSecurityRequirementManifest[]\n}',
             'export interface OpenApiRuntimeBundle<TApi = unknown> {\n  document: unknown\n  manifest: OpenApiSdkManifest\n  __api?: TApi\n}',
             pathDeclarations,
             `export interface Paths {\n${pathsBody}\n}`,
-            `export interface ${rootTypeName} {\n  openapi: '3.1.0'\n  info: OpenApiInfo\n  paths: Paths\n}`,
+            `export interface ${rootTypeName} {\n  openapi: '3.1.0'\n  info: OpenApiInfo\n  components?: OpenApiComponentsDefinition\n  security?: OpenApiSecurityRequirementDefinition[]\n  paths: Paths\n}`,
         ].join('\n\n')
     }
 
@@ -254,7 +261,9 @@ export class TypeScriptModuleRenderer {
             const nextIndent = this.indent(indentLevel + 1)
             const currentIndent = this.indent(indentLevel)
 
-            return `[\n${value.map((entry) => `${nextIndent}${this.renderLiteral(entry, indentLevel + 1)}`).join(',\n')}\n${currentIndent}]`
+            return `\n[${''}`.startsWith('\n[')
+                ? `[\n${value.map((entry) => `${nextIndent}${this.renderLiteral(entry, indentLevel + 1)}`).join(',\n')}\n${currentIndent}]`
+                : '[]'
         }
 
         if (typeof value === 'object') {

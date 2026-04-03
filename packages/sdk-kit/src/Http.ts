@@ -4,15 +4,16 @@ import axios, { RawAxiosRequestHeaders } from 'axios'
 
 import { BaseApi } from './Apis/BaseApi'
 import { Builder } from './Builder'
+import { AuthConfig, AuthRequestConfig, HttpMethod, UnifiedResponse } from './Contracts/Core'
 import { HttpException } from './Exceptions/HttpException'
-import { UnifiedResponse } from './Contracts/Core'
 import { XGenericObject } from './Contracts/Interfaces'
+import { defineConfig, getConfig } from './utilities/Manager'
 
 export class Http {
     /**
      * Bearer token
      */
-    private static bearerToken: string
+    private static bearerToken?: string
 
     /**
      * Debug level
@@ -59,12 +60,53 @@ export class Http {
      */
     static setBearerToken (token: string) {
         this.bearerToken = token
+        defineConfig({
+            auth: {
+                type: 'bearer',
+                token,
+            },
+        })
+    }
+
+    static setAuth (auth: AuthConfig | AuthConfig[]) {
+        defineConfig({ auth })
+    }
+
+    static setBasicAuth (username: string, password: string) {
+        this.setAuth({
+            type: 'basic',
+            username,
+            password,
+        })
+    }
+
+    static setApiKey (
+        name: string,
+        value: string,
+        location: 'header' | 'query' | 'cookie' = 'header',
+        prefix?: string
+    ) {
+        this.setAuth({
+            type: 'apiKey',
+            name,
+            value,
+            in: location,
+            prefix,
+        })
+    }
+
+    static clearAuth () {
+        this.bearerToken = undefined
+        defineConfig({ auth: undefined })
     }
 
     setDefaultHeaders (defaults: Record<string, string>) {
-        this.headers = { ...defaults, ...this.headers }
-        if (Http.bearerToken) {
-            this.headers.Authorization = `Bearer ${Http.bearerToken}`
+        const config = getConfig()
+
+        this.headers = {
+            ...defaults,
+            ...(config.headers ?? {}),
+            ...this.headers,
         }
     }
 
@@ -77,6 +119,8 @@ export class Http {
     }
 
     axiosApi () {
+        const config = getConfig()
+
         this.setDefaultHeaders({
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -85,6 +129,7 @@ export class Http {
         const instance = axios.create({
             baseURL: Builder.baseUrl(),
             headers: this.getHeaders(),
+            timeout: config.timeout,
         })
 
         if (Http.debugLevel > 0) {
@@ -159,17 +204,24 @@ export class Http {
      */
     static async send<R = any, M extends XGenericObject = XGenericObject> (
         url: string,
-        method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+        method: HttpMethod,
         body?: any,
         headers: RawAxiosRequestHeaders = {},
         params?: XGenericObject,
     ): Promise<UnifiedResponse<R, M>> {
         try {
-            const { data } = await new Http(headers).axiosApi()<UnifiedResponse<R & M>>({
+            const request = await this.prepareRequest({
                 url,
                 method,
-                data: body,
-                params,
+                body,
+                headers: this.toHeaderRecord(headers),
+                params: { ...(params ?? {}) },
+            })
+            const { data } = await new Http(request.headers, request.body).axiosApi()<UnifiedResponse<R & M>>({
+                url: request.url,
+                method: request.method,
+                data: request.body,
+                params: request.params,
             })
 
             return {
@@ -182,6 +234,135 @@ export class Http {
             const error = (e.response?.data ?? {})
 
             throw this.exception(e.response?.status ?? 500, error || e, e)
+        }
+    }
+
+    private static async prepareRequest (request: AuthRequestConfig): Promise<AuthRequestConfig> {
+        let prepared: AuthRequestConfig = {
+            ...request,
+            headers: { ...request.headers },
+            params: { ...(request.params ?? {}) },
+        }
+
+        for (const auth of this.getConfiguredAuth()) {
+            prepared = await this.applyAuth(prepared, auth)
+        }
+
+        return prepared
+    }
+
+    private static getConfiguredAuth (): AuthConfig[] {
+        const configuredAuth = getConfig().auth
+
+        if (configuredAuth) {
+            return Array.isArray(configuredAuth) ? configuredAuth : [configuredAuth]
+        }
+
+        if (this.bearerToken) {
+            return [{
+                type: 'bearer',
+                token: this.bearerToken,
+            }]
+        }
+
+        return []
+    }
+
+    private static async applyAuth (
+        request: AuthRequestConfig,
+        auth: AuthConfig
+    ): Promise<AuthRequestConfig> {
+        switch (auth.type) {
+            case 'bearer': {
+                this.setHeaderIfMissing(
+                    request.headers,
+                    'Authorization',
+                    `${auth.prefix ?? 'Bearer'} ${auth.token}`.trim()
+                )
+
+                return request
+            }
+
+            case 'oauth2': {
+                this.setHeaderIfMissing(
+                    request.headers,
+                    'Authorization',
+                    `${auth.tokenType ?? 'Bearer'} ${auth.accessToken}`.trim()
+                )
+
+                return request
+            }
+
+            case 'basic': {
+                const encoded = Buffer.from(`${auth.username}:${auth.password}`).toString('base64')
+
+                this.setHeaderIfMissing(request.headers, 'Authorization', `Basic ${encoded}`)
+
+                return request
+            }
+
+            case 'apiKey': {
+                const value = auth.prefix ? `${auth.prefix} ${auth.value}`.trim() : auth.value
+                const location = auth.in ?? 'header'
+
+                if (location === 'query') {
+                    if (request.params[auth.name] === undefined) {
+                        request.params[auth.name] = value
+                    }
+
+                    return request
+                }
+
+                if (location === 'cookie') {
+                    this.appendCookie(request.headers, auth.name, value)
+
+                    return request
+                }
+
+                this.setHeaderIfMissing(request.headers, auth.name, value)
+
+                return request
+            }
+
+            case 'custom': {
+                return await auth.apply({
+                    ...request,
+                    headers: { ...request.headers },
+                    params: { ...request.params },
+                })
+            }
+        }
+    }
+
+    private static setHeaderIfMissing (
+        headers: Record<string, string>,
+        name: string,
+        value: string
+    ) {
+        const existingHeaderName = Object.keys(headers).find(header => header.toLowerCase() === name.toLowerCase())
+
+        if (!existingHeaderName) {
+            headers[name] = value
+        }
+    }
+
+    private static appendCookie (
+        headers: Record<string, string>,
+        name: string,
+        value: string
+    ) {
+        const headerName = Object.keys(headers).find(header => header.toLowerCase() === 'cookie') ?? 'Cookie'
+        const existingCookie = headers[headerName]
+        const cookieEntry = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`
+
+        if (!existingCookie) {
+            headers[headerName] = cookieEntry
+
+            return
+        }
+
+        if (!existingCookie.split(';').map(part => part.trim()).some(part => part.startsWith(`${encodeURIComponent(name)}=`))) {
+            headers[headerName] = `${existingCookie}; ${cookieEntry}`
         }
     }
 
@@ -212,5 +393,11 @@ export class Http {
         }
 
         return exception
+    }
+
+    private static toHeaderRecord = (headers: RawAxiosRequestHeaders): Record<string, string> => {
+        return Object.fromEntries(
+            Object.entries(headers).map(([key, value]) => [key, String(value)])
+        )
     }
 }

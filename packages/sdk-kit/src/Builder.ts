@@ -1,19 +1,21 @@
 import './utilities/global'
 
+import { Environment } from './Contracts/Core'
 import { XGenericObject } from './Contracts/Interfaces'
 import { buildUrl } from './utilities/helpers'
+import { getConfig } from './utilities/Manager'
 import crypto from 'crypto'
 
 export class Builder {
     private static baseUrls = {
-        live: 'https://api.flutterwave.com/v4/',
-        sandbox: 'https://developersandbox-api.flutterwave.com/',
+        live: '',
+        sandbox: '',
     }
 
     /**
-     * Flutterwave Environment
+     * API Environment
      */
-    static environment?: 'sandbox' | 'live'
+    static environment?: Environment
 
     constructor() { }
 
@@ -22,7 +24,7 @@ export class Builder {
      * 
      * @param env
      */
-    static setEnvironment (env: 'sandbox' | 'live') {
+    static setEnvironment (env: Environment) {
         this.environment = env
     }
 
@@ -32,13 +34,18 @@ export class Builder {
      * @returns 
      */
     static baseUrl () {
-        const env = process.env.ENVIRONMENT || this.environment || 'sandbox'
+        const config = getConfig()
+        const env = this.environment
+            ?? config.environment
+            ?? this.normalizeEnvironment(process.env.ENVIRONMENT)
+            ?? 'sandbox'
+        const configuredUrl = config.urls?.[env]
 
-        if (env === 'live') {
-            return this.baseUrls.live
+        if (configuredUrl) {
+            return this.normalizeBaseUrl(configuredUrl)
         }
 
-        return this.baseUrls.sandbox
+        return this.normalizeBaseUrl(this.baseUrls[env])
     }
 
     /**
@@ -146,6 +153,12 @@ export class Builder {
         keysToEncrypt: (keyof X)[] = [],
         outputMapping: Partial<Record<keyof X, string>> = {}
     ): Promise<X> {
+        const encryptionKey = getConfig().encryptionKey ?? process.env.ENCRYPTION_KEY
+
+        if (!encryptionKey) {
+            throw new Error('Encryption key is required to encrypt details')
+        }
+
         const nonce = crypto.randomBytes(12).toString('base64').slice(0, 12)
         const encryptableKeys = keysToEncrypt.length > 0
             ? keysToEncrypt
@@ -156,7 +169,7 @@ export class Builder {
                 if (encryptableKeys.includes(key) && typeof value === 'string') {
                     const outputKey = outputMapping?.[key] || key
 
-                    return [outputKey, this.encryptAES(value, process.env.ENCRYPTION_KEY!, nonce)]
+                    return [outputKey, this.encryptAES(value, encryptionKey, nonce)]
                 }
 
                 return [key, value]
@@ -208,5 +221,15 @@ export class Builder {
         )
 
         return btoa(String.fromCharCode(...new Uint8Array(encryptedData)))
+    }
+
+    private static normalizeBaseUrl = (url: string): string => url.endsWith('/') ? url : `${url}/`
+
+    private static normalizeEnvironment = (value?: string): Environment | undefined => {
+        if (value === 'live' || value === 'sandbox') {
+            return value
+        }
+
+        return undefined
     }
 }

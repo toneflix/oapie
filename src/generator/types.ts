@@ -88,6 +88,29 @@ export interface SdkParameterManifest {
     description?: string
 }
 
+export interface SdkSecurityRequirementSchemeManifest {
+    name: string
+    scopes: string[]
+}
+
+export interface SdkSecurityRequirementManifest {
+    schemes: SdkSecurityRequirementSchemeManifest[]
+}
+
+export interface SdkSecuritySchemeManifest {
+    name: string
+    helperName: string
+    description?: string
+    type: 'http' | 'apiKey' | 'oauth2' | 'openIdConnect'
+    authType: 'bearer' | 'basic' | 'apiKey' | 'oauth2'
+    scheme?: string
+    bearerFormat?: string
+    in?: 'header' | 'query' | 'cookie'
+    parameterName?: string
+    openIdConnectUrl?: string
+    scopes?: string[]
+}
+
 export interface SdkOperationManifest {
     path: string
     method: string
@@ -107,6 +130,7 @@ export interface SdkOperationManifest {
     pathParams: SdkParameterManifest[]
     queryParams: SdkParameterManifest[]
     headerParams: SdkParameterManifest[]
+    security?: SdkSecurityRequirementManifest[]
 }
 
 export interface SdkGroupManifest {
@@ -117,6 +141,8 @@ export interface SdkGroupManifest {
 
 export interface SdkManifest {
     groups: SdkGroupManifest[]
+    securitySchemes: SdkSecuritySchemeManifest[]
+    security?: SdkSecurityRequirementManifest[]
 }
 
 export interface PayloadSchemaCandidate {

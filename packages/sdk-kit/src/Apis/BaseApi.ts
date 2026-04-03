@@ -7,7 +7,7 @@ import { UnauthorizedRequestException } from '../Exceptions/UnauthorizedRequestE
 
 export class BaseApi {
     /**
-     * Flutterwave instance
+     * API Core instance for API bootstrapping and shared utilities
      */
     #core: Core
 

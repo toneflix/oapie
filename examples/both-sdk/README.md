@@ -11,6 +11,7 @@ This package shows both integration styles from the same output:
 
 ```ts
 import { Core, createClient } from '@oapiex/example-both-sdk';
+import { createAccessTokenCache } from '@oapiex/sdk-kit';
 
 const classSdk = new Core({
   clientId: process.env.CLIENT_ID!,
@@ -27,6 +28,26 @@ const runtimeSdk = createClient({
 });
 
 await runtimeSdk.api.profiles.get({ profileId: 'profile-1' });
+
+const tokenCache = createAccessTokenCache(async (core) => {
+  const response = await fetch('https://developersandbox-api.example.com/auth/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      client_id: core.getClientId(),
+      client_secret: core.getClientSecret(),
+    }),
+  }).then((res) => res.json());
+
+  return {
+    token: response.access_token,
+    expiresInSeconds: Math.max((response.expires_in ?? 60) - 30, 1),
+  };
+});
+
+classSdk.setAccessValidator(tokenCache);
 ```
 
 ## Commands

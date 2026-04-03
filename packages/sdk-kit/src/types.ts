@@ -3,6 +3,30 @@ export interface RuntimeSdkParameterManifest {
     accessor: string
     in: 'query' | 'header' | 'path'
     required: boolean
+    description?: string
+}
+
+export interface RuntimeSdkSecurityRequirementSchemeManifest {
+    name: string
+    scopes: string[]
+}
+
+export interface RuntimeSdkSecurityRequirementManifest {
+    schemes: RuntimeSdkSecurityRequirementSchemeManifest[]
+}
+
+export interface RuntimeSdkSecuritySchemeManifest {
+    name: string
+    helperName: string
+    description?: string
+    type: 'http' | 'apiKey' | 'oauth2' | 'openIdConnect'
+    authType: 'bearer' | 'basic' | 'apiKey' | 'oauth2'
+    scheme?: string
+    bearerFormat?: string
+    in?: 'header' | 'query' | 'cookie'
+    parameterName?: string
+    openIdConnectUrl?: string
+    scopes?: string[]
 }
 
 export interface RuntimeSdkOperationManifest {
@@ -10,6 +34,9 @@ export interface RuntimeSdkOperationManifest {
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
     methodName: string
     summary?: string
+    description?: string
+    requestBodyDescription?: string
+    responseDescription?: string
     operationId?: string
     responseType: string
     inputType: string
@@ -21,6 +48,7 @@ export interface RuntimeSdkOperationManifest {
     pathParams: RuntimeSdkParameterManifest[]
     queryParams: RuntimeSdkParameterManifest[]
     headerParams: RuntimeSdkParameterManifest[]
+    security?: RuntimeSdkSecurityRequirementManifest[]
 }
 
 export interface RuntimeSdkGroupManifest {
@@ -31,6 +59,8 @@ export interface RuntimeSdkGroupManifest {
 
 export interface RuntimeSdkManifest {
     groups: RuntimeSdkGroupManifest[]
+    securitySchemes: RuntimeSdkSecuritySchemeManifest[]
+    security?: RuntimeSdkSecurityRequirementManifest[]
 }
 
 export interface RuntimeSdkBundle<TApi = unknown> {

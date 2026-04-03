@@ -3,8 +3,11 @@ import axios from 'axios'
 
 import { BadRequestException } from '../src/Exceptions/BadRequestException'
 import { BaseApi } from '../src/Apis/BaseApi'
+import { Builder } from '../src/Builder'
 import { Core } from '../src/Core'
 import { Http } from '../src/Http'
+import { createAccessTokenCache } from '../src/utilities/AuthCache'
+import { getConfig, resetConfig } from '../src/utilities/Manager'
 
 class TestExampleApi {
     constructor(private core: Core) { }
@@ -40,6 +43,9 @@ class TestCore extends Core {
 describe('BaseApi', () => {
     afterEach(() => {
         vi.restoreAllMocks()
+        resetConfig()
+        Http.clearAuth()
+        Builder.setEnvironment('sandbox')
     })
 
     it('boots sdk-specific child apis with the same core instance', async () => {
@@ -126,5 +132,318 @@ describe('BaseApi', () => {
         expect(request).toHaveBeenCalledTimes(1)
         expect(lastException).toBeInstanceOf(BadRequestException)
         expect(lastException?.message).toBe('Country code is invalid')
+    })
+
+    it('applies init config values to runtime url resolution', () => {
+        const core = new TestCore({
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            environment: 'sandbox',
+            encryptionKey: 'encryption-key',
+            urls: {
+                sandbox: 'https://sandbox.override.test/api',
+            },
+            headers: {
+                'X-SDK': 'sdk-kit',
+            },
+            timeout: 4321,
+        })
+
+        expect(core.getEnvironment()).toBe('sandbox')
+        expect(Builder.baseUrl()).toBe('https://sandbox.override.test/api/')
+        expect(getConfig()).toMatchObject({
+            environment: 'sandbox',
+            encryptionKey: 'encryption-key',
+            timeout: 4321,
+            headers: {
+                'X-SDK': 'sdk-kit',
+            },
+            urls: {
+                sandbox: 'https://sandbox.override.test/api',
+            },
+        })
+    })
+
+    it('applies drop-in auth strategies to outgoing requests', async () => {
+        new TestCore({
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            environment: 'sandbox',
+            urls: {
+                sandbox: 'https://sandbox.override.test/api',
+            },
+            headers: {
+                'X-SDK': 'sdk-kit',
+            },
+            timeout: 9876,
+            auth: [
+                {
+                    type: 'basic',
+                    username: 'demo',
+                    password: 'secret',
+                },
+                {
+                    type: 'apiKey',
+                    name: 'X-Api-Key',
+                    value: 'header-key',
+                },
+                {
+                    type: 'apiKey',
+                    name: 'api_key',
+                    value: 'query-key',
+                    in: 'query',
+                },
+                {
+                    type: 'apiKey',
+                    name: 'session',
+                    value: 'cookie-key',
+                    in: 'cookie',
+                },
+                {
+                    type: 'custom',
+                    apply: async request => ({
+                        ...request,
+                        headers: {
+                            ...request.headers,
+                            'X-Custom': 'custom-value',
+                        },
+                    }),
+                },
+            ],
+        })
+
+        const request = vi.fn().mockResolvedValue({
+            data: {
+                message: 'ok',
+                data: { id: '1' },
+                meta: {},
+            },
+        })
+        const axiosInstance = Object.assign(request, {
+            interceptors: {
+                request: { use: vi.fn() },
+                response: { use: vi.fn() },
+            },
+            defaults: {},
+        })
+        const createSpy = vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
+
+        await expect(
+            Http.send('/charges', 'GET', undefined, { 'X-Request': 'request-header' }, { page: 1 })
+        ).resolves.toMatchObject({
+            success: true,
+            data: { id: '1' },
+        })
+
+        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+            baseURL: 'https://sandbox.override.test/api/',
+            timeout: 9876,
+            headers: expect.objectContaining({
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                Authorization: 'Basic ZGVtbzpzZWNyZXQ=',
+                Cookie: 'session=cookie-key',
+                'X-Api-Key': 'header-key',
+                'X-Custom': 'custom-value',
+                'X-SDK': 'sdk-kit',
+                'X-Request': 'request-header',
+            }),
+        }))
+        expect(request).toHaveBeenCalledWith(expect.objectContaining({
+            url: '/charges',
+            method: 'GET',
+            params: {
+                page: 1,
+                api_key: 'query-key',
+            },
+        }))
+    })
+
+    it('keeps bearer auth helper working for authorization headers', async () => {
+        Http.setBearerToken('token-123')
+
+        const request = vi.fn().mockResolvedValue({
+            data: {
+                message: 'ok',
+                data: [],
+                meta: {},
+            },
+        })
+        const axiosInstance = Object.assign(request, {
+            interceptors: {
+                request: { use: vi.fn() },
+                response: { use: vi.fn() },
+            },
+            defaults: {},
+        })
+
+        const createSpy = vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
+
+        await Http.send('/charges', 'GET')
+
+        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: 'Bearer token-123',
+            }),
+        }))
+    })
+
+    it('allows access validators to replace auth before a request is sent', async () => {
+        const core = new TestCore({
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            environment: 'sandbox',
+            urls: {
+                sandbox: 'https://sandbox.override.test/api',
+            },
+            auth: {
+                type: 'basic',
+                username: 'demo',
+                password: 'secret',
+            },
+        })
+        const validator = vi.fn(async () => ({
+            type: 'bearer' as const,
+            token: 'fresh-token',
+        }))
+        const request = vi.fn().mockResolvedValue({
+            data: {
+                message: 'ok',
+                data: [],
+                meta: {},
+            },
+        })
+        const axiosInstance = Object.assign(request, {
+            interceptors: {
+                request: { use: vi.fn() },
+                response: { use: vi.fn() },
+            },
+            defaults: {},
+        })
+        const createSpy = vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
+
+        core.setAccessValidator(validator)
+
+        await expect(core.api.testExamples.list()).resolves.toEqual([])
+
+        expect(validator).toHaveBeenCalledTimes(1)
+        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: 'Bearer fresh-token',
+            }),
+        }))
+    })
+
+    it('exposes client credentials and allows config updates from access validators', async () => {
+        const core = new TestCore({
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            environment: 'sandbox',
+            urls: {
+                sandbox: 'https://sandbox.override.test/api',
+            },
+        })
+        const validator = vi.fn(async (instance: Core) => {
+            expect(instance.getClientId()).toBe('client-id')
+            expect(instance.getClientSecret()).toBe('client-secret')
+
+            return {
+                headers: {
+                    'X-Access-Token': 'fetched-token',
+                },
+                auth: {
+                    type: 'bearer' as const,
+                    token: 'token-from-auth-endpoint',
+                },
+            }
+        })
+        const request = vi.fn().mockResolvedValue({
+            data: {
+                message: 'ok',
+                data: [],
+                meta: {},
+            },
+        })
+        const axiosInstance = Object.assign(request, {
+            interceptors: {
+                request: { use: vi.fn() },
+                response: { use: vi.fn() },
+            },
+            defaults: {},
+        })
+        const createSpy = vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
+
+        core.setAccessValidator(validator)
+
+        await core.api.testExamples.list()
+
+        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: 'Bearer token-from-auth-endpoint',
+                'X-Access-Token': 'fetched-token',
+            }),
+        }))
+        expect(core.getConfig()).toMatchObject({
+            headers: {
+                'X-Access-Token': 'fetched-token',
+            },
+            auth: {
+                type: 'bearer',
+                token: 'token-from-auth-endpoint',
+            },
+        })
+    })
+
+    it('reuses cached validator tokens until expiry', async () => {
+        const core = new TestCore({
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            environment: 'sandbox',
+            urls: {
+                sandbox: 'https://sandbox.override.test/api',
+            },
+        })
+        const fetchToken = vi.fn()
+            .mockResolvedValueOnce({
+                token: 'cached-token-1',
+                expiresInMs: 60_000,
+            })
+            .mockResolvedValueOnce({
+                token: 'cached-token-2',
+                expiresInMs: 60_000,
+            })
+        const request = vi.fn().mockResolvedValue({
+            data: {
+                message: 'ok',
+                data: [],
+                meta: {},
+            },
+        })
+        const axiosInstance = Object.assign(request, {
+            interceptors: {
+                request: { use: vi.fn() },
+                response: { use: vi.fn() },
+            },
+            defaults: {},
+        })
+        const createSpy = vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
+        const tokenCache = createAccessTokenCache(fetchToken)
+
+        core.setAccessValidator(tokenCache)
+
+        await core.api.testExamples.list()
+        await core.api.testExamples.list()
+
+        expect(fetchToken).toHaveBeenCalledTimes(1)
+        expect(createSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: 'Bearer cached-token-1',
+            }),
+        }))
+        expect(createSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: 'Bearer cached-token-1',
+            }),
+        }))
     })
 })

@@ -5,19 +5,29 @@ const defaultConfig: UserConfig = {
     urls: {
         live: '',
         sandbox: ''
-    }
+    },
+    headers: {},
 }
 
 let globalConfig: UserConfig = defaultConfig
 
 const defineConfig = (config: Partial<UserConfig>): UserConfig => {
-    const userConfig = {
-        ...defaultConfig,
+    const baseConfig = globalConfig ?? defaultConfig
+    const userConfig: UserConfig = {
+        ...baseConfig,
         ...config,
-        urls: {
-            ...defaultConfig.urls,
-            ...config.urls,
-        },
+        urls: config.urls
+            ? {
+                ...(baseConfig.urls ?? defaultConfig.urls),
+                ...config.urls,
+            }
+            : baseConfig.urls,
+        headers: config.headers
+            ? {
+                ...(baseConfig.headers ?? defaultConfig.headers),
+                ...config.headers,
+            }
+            : baseConfig.headers,
     }
 
     globalConfig = userConfig
@@ -25,8 +35,22 @@ const defineConfig = (config: Partial<UserConfig>): UserConfig => {
     return userConfig
 }
 
+const getConfig = (): UserConfig => globalConfig
+
+const resetConfig = (): UserConfig => {
+    globalConfig = {
+        ...defaultConfig,
+        urls: { ...(defaultConfig.urls ?? {}) },
+        headers: { ...(defaultConfig.headers ?? {}) },
+    }
+
+    return globalConfig
+}
+
 export {
+    getConfig,
     defineConfig,
     globalConfig,
     defaultConfig,
+    resetConfig,
 }

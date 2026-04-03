@@ -1,12 +1,13 @@
 import './utilities/global'
 
+import { AccessValidationResult, AuthConfig, Environment, InitOptions, UserConfig } from './Contracts/Core'
 import { InferRuntimeSdkApi, RuntimeSdkBundle } from './types'
 
 import { BaseApi } from './Apis/BaseApi'
 import { Builder } from './Builder'
 import { Http } from './Http'
-import { InitOptions } from './Contracts/Core'
 import { createRuntimeApi } from './RuntimeSdk'
+import { defineConfig, getConfig } from './utilities/Manager'
 
 export class Core {
     static apiClass: typeof BaseApi = BaseApi
@@ -24,11 +25,11 @@ export class Core {
     private clientSecret: string
 
     /**
-     * Flutterwave Environment
+     * API Environment
      */
-    private environment: 'sandbox' | 'live' = 'live'
+    private environment: Environment = 'live'
 
-    private accessValidator?: (...args: any[]) => Promise<boolean | string>
+    private accessValidator?: (core: Core) => AccessValidationResult | Promise<AccessValidationResult>
 
     /**
      * API Instance
@@ -48,28 +49,49 @@ export class Core {
      * @param encryptionKey 
      */
     constructor(clientId?: InitOptions)
-    constructor(clientId?: string, clientSecret?: string, encryptionKey?: string, env?: 'sandbox' | 'live')
+    constructor(clientId?: string, clientSecret?: string, encryptionKey?: string, env?: Environment, config?: Partial<UserConfig>)
     constructor(
         clientId?: string | InitOptions,
         clientSecret?: string,
         encryptionKey?: string,
-        env?: 'sandbox' | 'live'
+        env?: Environment,
+        config?: Partial<UserConfig>
     ) {
+        const currentConfig = getConfig()
+
         if (typeof clientId === 'object') {
             this.clientId = clientId.clientId
             this.clientSecret = clientId.clientSecret
-            this.environment = clientId.environment ?? 'live'
+            this.environment = clientId.environment
+                ?? currentConfig.environment
+                ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
+                ?? 'live'
+            this.configure({
+                environment: this.environment,
+                urls: clientId.urls,
+                headers: clientId.headers,
+                timeout: clientId.timeout,
+                encryptionKey: clientId.encryptionKey,
+                auth: clientId.auth,
+            })
         } else {
             this.clientId = clientId ?? process.env.CLIENT_ID ?? ''
             this.clientSecret = clientSecret ?? process.env.CLIENT_SECRET ?? ''
-            this.environment = env ?? (process.env.ENVIRONMENT ?? 'live') as 'sandbox' | 'live'
+            this.environment = env
+                ?? currentConfig.environment
+                ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
+                ?? 'live'
+            this.configure({
+                ...(config ?? {}),
+                environment: this.environment,
+                encryptionKey: encryptionKey ?? config?.encryptionKey,
+            })
         }
 
         if (!this.clientId || !this.clientSecret) {
-            throw new Error('Client ID and Client Secret are required to initialize Flutterwave instance')
+            throw new Error('Client ID and Client Secret are required to initialize API instance')
         }
 
-        this.builder.setEnvironment(this.environment)
         this.api = this.createApi()
     }
 
@@ -89,14 +111,26 @@ export class Core {
      * @returns 
      */
     init (clientId?: InitOptions): this
-    init (clientId?: string, clientSecret?: string, encryptionKey?: string, env?: 'sandbox' | 'live'): this
-    init (clientId?: any, clientSecret?: string, encryptionKey?: string, env?: 'sandbox' | 'live'): this {
+    init (clientId?: string, clientSecret?: string, encryptionKey?: string, env?: Environment, config?: Partial<UserConfig>): this
+    init (clientId?: any, clientSecret?: string, encryptionKey?: string, env?: Environment, config?: Partial<UserConfig>): this {
         return new (this.constructor as any)(
             clientId,
             clientSecret,
             encryptionKey,
-            env
+            env,
+            config
         )
+    }
+
+    configure (config: Partial<UserConfig>): this {
+        const nextConfig = defineConfig(config)
+
+        if (nextConfig.environment) {
+            this.environment = nextConfig.environment
+            this.builder.setEnvironment(nextConfig.environment)
+        }
+
+        return this
     }
 
     /**
@@ -123,12 +157,51 @@ export class Core {
     }
 
     /**
+     * Get the configured client identifier.
+     */
+    getClientId () {
+        return this.clientId
+    }
+
+    /**
+     * Get the configured client secret.
+     */
+    getClientSecret () {
+        return this.clientSecret
+    }
+
+    /**
+     * Get the current shared SDK config.
+     */
+    getConfig (): UserConfig {
+        return getConfig()
+    }
+
+    /**
+     * Replace the active auth strategy.
+     */
+    setAuth (auth: AuthConfig | AuthConfig[]): this {
+        return this.configure({ auth })
+    }
+
+    /**
+     * Clear any configured auth strategy.
+     */
+    clearAuth (): this {
+        Http.clearAuth()
+
+        return this
+    }
+
+    /**
      * Set access validator function
      * 
      * @param validator Function to validate access
      */
-    setAccessValidator (validator: (...args: any[]) => Promise<boolean | string>) {
+    setAccessValidator (validator: (core: Core) => AccessValidationResult | Promise<AccessValidationResult>) {
         this.accessValidator = validator
+
+        return this
     }
 
     /**
@@ -139,9 +212,23 @@ export class Core {
     async validateAccess () {
         const check = this.accessValidator ? await this.accessValidator(this) : true
 
-        if (check !== true) {
-            throw new Error(typeof check === 'string' ? check : 'Access validation failed')
+        if (check === true || check == null) {
+            return
         }
+
+        if (this.isAuthConfigOrArray(check)) {
+            this.setAuth(check)
+
+            return
+        }
+
+        if (this.isConfigUpdate(check)) {
+            this.configure(check)
+
+            return
+        }
+
+        throw new Error(typeof check === 'string' ? check : 'Access validation failed')
     }
 
     /**
@@ -168,5 +255,36 @@ export class Core {
         bundle: TBundle
     ): this & { api: BaseApi & InferRuntimeSdkApi<TBundle> } {
         return this.useDocument(bundle)
+    }
+
+    private static normalizeEnvironment = (value?: string): Environment | undefined => {
+        if (value === 'live' || value === 'sandbox') {
+            return value
+        }
+
+        return undefined
+    }
+
+    private isAuthConfigOrArray (value: unknown): value is AuthConfig | AuthConfig[] {
+        if (Array.isArray(value)) {
+            return value.every((entry) => this.isAuthConfig(entry))
+        }
+
+        return this.isAuthConfig(value)
+    }
+
+    private isAuthConfig (value: unknown): value is AuthConfig {
+        return typeof value === 'object'
+            && value !== null
+            && 'type' in value
+            && typeof (value as { type?: unknown }).type === 'string'
+    }
+
+    private isConfigUpdate (value: unknown): value is Partial<UserConfig> {
+        if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+            return false
+        }
+
+        return ['auth', 'environment', 'headers', 'timeout', 'urls', 'encryptionKey'].some((key) => key in value)
     }
 }

@@ -155,6 +155,94 @@ Each generated SDK package now includes a concise `README.md` with:
 - main exports
 - build and test commands
 
+## Generated Security Helpers
+
+When the source OpenAPI document includes `components.securitySchemes`, generated SDK packages now emit auth metadata and helper functions alongside `createClient()` and `Core`.
+
+Generated packages export:
+
+- `securitySchemes`: normalized security scheme metadata from the manifest
+- `security`: document-level security requirements when present
+- helper functions such as `createBearerAuth()`, `createBasicAuth()`, `createPartnerKeyAuth()`, or `createOauthAuth()` depending on the source schemes
+
+Example:
+
+```ts
+import {
+  Core,
+  createBearerAuth,
+  createPartnerKeyAuth,
+  createQueryKeyAuth,
+} from 'generated-sdk';
+
+const sdk = new Core({
+  clientId: process.env.CLIENT_ID!,
+  clientSecret: process.env.CLIENT_SECRET!,
+  environment: 'sandbox',
+  auth: [
+    createPartnerKeyAuth(process.env.PARTNER_KEY_VALUE!),
+    createQueryKeyAuth(process.env.QUERY_KEY_VALUE!),
+  ],
+});
+```
+
+The helper signatures are derived from the security scheme type:
+
+- HTTP bearer schemes map to bearer-style auth helpers
+- HTTP basic schemes map to username/password helpers
+- API key schemes map to header, query, or cookie auth helpers
+- OAuth2 and OpenID Connect schemes map to access-token helpers
+
+This keeps generated SDK setup aligned with the shared `InitOptions.auth` contract exposed by `@oapiex/sdk-kit`.
+
+## Recommended Auth Refresh Pattern
+
+If the target API requires exchanging your client credentials for an expiring bearer token, prefer `setAccessValidator()` together with `createAccessTokenCache()`.
+
+This keeps the auth flow outside generated request methods, while avoiding a token-refresh request before every API call.
+
+```ts
+import axios from 'axios';
+import { Core } from 'generated-sdk';
+import { createAccessTokenCache } from '@oapiex/sdk-kit';
+
+const sdk = new Core({
+  clientId: process.env.CLIENT_ID!,
+  clientSecret: process.env.CLIENT_SECRET!,
+  environment: 'sandbox',
+  urls: {
+    sandbox: 'https://developersandbox-api.example.com',
+  },
+});
+
+const tokenCache = createAccessTokenCache(async (core) => {
+  const response = await axios.post(
+    'https://developersandbox-api.example.com/auth/token',
+    {
+      client_id: core.getClientId(),
+      client_secret: core.getClientSecret(),
+    },
+  );
+
+  return {
+    token: response.data.access_token,
+    expiresInSeconds: Math.max((response.data.expires_in ?? 60) - 30, 1),
+  };
+});
+
+sdk.setAccessValidator(tokenCache);
+
+await sdk.api.examples.list({ code: 'NG' }, { 'X-Key-1': 'header-1' });
+```
+
+This makes sense when:
+
+- The API uses an auth endpoint to mint bearer tokens from your client credentials
+- Tokens expire and need periodic refresh
+- You want generated SDK calls to stay unchanged while auth refresh remains centralized
+
+If the source OpenAPI document already emits auth helpers such as `createBearerAuth()`, the validator can still return those helper results or a config object containing `auth`.
+
 ## Examples
 
 See the checked-in example packages for concrete generated output shapes:

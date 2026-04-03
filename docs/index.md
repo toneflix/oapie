@@ -18,6 +18,8 @@ features:
     details: Parse saved HTML files or live documentation URLs with one CLI.
   - title: OpenAPI generation
     details: Convert extracted operations into raw payloads or OpenAPI-shaped documents.
+  - title: SDK package generation
+    details: Generate runtime-first, class-based, or combined TypeScript SDK packages.
   - title: Crawl-aware extraction
     details: Reuse a shared browser session while crawling linked reference pages.
 ---
@@ -60,4 +62,4 @@ yarn add oapiex
 
 ## Start Here
 
-[Getting Started](/guide/getting-started) | [Extraction Flow](/guide/extraction-flow) | [CLI Reference](/reference/cli) | [Programmatic Usage](/reference/programmatic-usage) | [Configuration Reference](/reference/configuration)
+[Getting Started](/guide/getting-started) | [SDK Generation](/guide/sdk-generation) | [Extraction Flow](/guide/extraction-flow) | [CLI Reference](/reference/cli) | [Programmatic Usage](/reference/programmatic-usage) | [Configuration Reference](/reference/configuration)

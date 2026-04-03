@@ -29,6 +29,7 @@ The core programmatic pieces are:
 - `Application`: load local or remote HTML and crawl linked pages
 - `extractReadmeOperationFromHtml`: extract a normalized operation from HTML
 - `transformer.createDocument`: convert extracted operations into an OpenAPI-like document
+- `TypeScriptGenerator.generateModule`: emit a TypeScript OpenAPI module from an OpenAPI-like document
 - `defineConfig`: merge config with defaults
 - `startBrowserSession` and `endBrowserSession`: control shared browser sessions for advanced workflows
 
@@ -84,6 +85,43 @@ const document = transformer.createDocument(
 
 console.log(JSON.stringify(document, null, 2));
 ```
+
+## Emit A TypeScript OpenAPI Module
+
+```ts
+import {
+  Application,
+  TypeScriptGenerator,
+  transformer,
+  extractReadmeOperationFromHtml,
+} from 'oapiex';
+
+const app = new Application({ browser: 'puppeteer' });
+const html = await app.loadHtmlSource(
+  'https://maplerad.dev/reference/create-a-customer',
+  true,
+);
+
+const operation = extractReadmeOperationFromHtml(html);
+const document = transformer.createDocument(
+  [operation],
+  'Extracted API',
+  '0.0.0',
+);
+
+const moduleSource = TypeScriptGenerator.generateModule(
+  document,
+  'ExtractedApiDocument',
+  {
+    namespaceStrategy: 'smart',
+    methodStrategy: 'smart',
+  },
+);
+
+console.log(moduleSource);
+```
+
+The generated module can then be used as the input to `oapie generate sdk <artifact.ts>`.
 
 ## Crawl A ReadMe Sidebar Section
 
@@ -184,3 +222,4 @@ This matters most when you are loading many pages and want to avoid launching Ch
 - The default browser is `puppeteer`.
 - `Application.crawlReadmeOperations()` automatically opens and closes a shared browser session when needed.
 - The OpenAPI transformer intentionally skips clearly invalid placeholder operations.
+- Generated TypeScript OpenAPI modules now include manifest and runtime bundle exports used by SDK generation.

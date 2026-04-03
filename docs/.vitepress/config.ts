@@ -16,6 +16,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'CLI', link: '/reference/cli' },
       { text: 'Programmatic', link: '/reference/programmatic-usage' },
+      { text: 'SDKs', link: '/guide/sdk-generation' },
     ],
     sidebar: [
       {
@@ -24,7 +25,8 @@ export default defineConfig({
           { text: 'Introduction', link: '/introduction' },
           { text: 'Getting Started', link: '/guide/getting-started' },
           { text: 'Extraction Flow', link: '/guide/extraction-flow' },
-          { text: 'Output Files', link: '/guide/output-files' }
+          { text: 'Output Files', link: '/guide/output-files' },
+          { text: 'SDK Generation', link: '/guide/sdk-generation' }
         ]
       },
       {
@@ -33,7 +35,8 @@ export default defineConfig({
           { text: 'CLI', link: '/reference/cli' },
           { text: 'Programmatic Usage', link: '/reference/programmatic-usage' },
           { text: 'Configuration', link: '/reference/configuration' },
-          { text: 'Browser Engines', link: '/reference/browser-engines' }
+          { text: 'Browser Engines', link: '/reference/browser-engines' },
+          { text: 'SDK Kit', link: '/reference/sdk-kit' }
         ]
       },
       {

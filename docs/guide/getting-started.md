@@ -63,6 +63,19 @@ oapie parse https://maplerad.dev/reference/create-a-customer \
 
 When crawl mode is enabled, OAPIE resolves sidebar links from the current page and visits each discovered operation page.
 
+## Generate Your First SDK
+
+```bash
+oapie generate sdk https://maplerad.dev/reference/create-a-customer \
+  --dir=./output/sdk \
+  --crawl \
+  --output-mode=both
+```
+
+That command emits a TypeScript SDK package scaffold with generated schema types, runtime bundle exports, and class-based SDK files.
+
+See [SDK Generation](/guide/sdk-generation) for output modes, naming strategies, and package layout details.
+
 ## Initialize Config
 
 ```bash

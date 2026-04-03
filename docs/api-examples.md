@@ -70,3 +70,44 @@ oapie parse https://maplerad.dev/reference/create-a-customer \
 ```
 
 JavaScript output is formatted with Prettier before being written.
+
+## Generate A Runtime SDK Package
+
+```bash
+oapie generate sdk https://maplerad.dev/reference/create-a-customer \
+	--dir=./output/sdk-runtime \
+	--crawl \
+	--output-mode=runtime
+```
+
+## Generate A Class-Based SDK Package
+
+```bash
+oapie generate sdk https://maplerad.dev/reference/create-a-customer \
+	--dir=./output/sdk-classes \
+	--crawl \
+	--output-mode=classes
+```
+
+## Generate A Combined SDK Package
+
+```bash
+oapie generate sdk https://maplerad.dev/reference/create-a-customer \
+	--dir=./output/sdk \
+	--crawl \
+	--output-mode=both \
+	--signature-style=grouped
+```
+
+## Generate An SDK From A Parsed Artifact
+
+```bash
+oapie parse https://maplerad.dev/reference/create-a-customer \
+	--shape=openapi \
+	--output=js \
+	--crawl
+
+oapie generate sdk ./output/https_maplerad_dev_reference_create-a-customer.openapi.js \
+	--dir=./output/generated-sdk \
+	--output-mode=both
+```

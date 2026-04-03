@@ -10,6 +10,10 @@ oapie init
 oapie parse <source>
 ```
 
+```bash
+oapie generate sdk <source>
+```
+
 ## Common Parse Flags
 
 - `--output=pretty|json|js`
@@ -17,6 +21,15 @@ oapie parse <source>
 - `--browser=axios|happy-dom|jsdom|puppeteer`
 - `--crawl`
 - `--base-url=<url>`
+
+## Common SDK Flags
+
+- `--dir=<path>`
+- `--output-mode=runtime|classes|both`
+- `--signature-style=grouped|flat`
+- `--namespace-strategy=smart|scoped`
+- `--method-strategy=smart|operation-id`
+- `--crawl`
 
 ## Config File Names
 
@@ -40,6 +53,7 @@ All parse results are written under:
 ## Links
 
 - [Getting Started](/guide/getting-started)
+- [SDK Generation](/guide/sdk-generation)
 - [CLI Reference](/reference/cli)
 - [Configuration](/reference/configuration)
 - [Development](/project/development)

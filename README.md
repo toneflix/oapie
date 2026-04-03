@@ -1,7 +1,8 @@
 # OAPIEX
 
 [![NPM Downloads](https://img.shields.io/npm/dt/oapiex.svg)](https://www.npmjs.com/package/oapiex)
-[![npm version](https://img.shields.io/npm/v/oapiex.svg)](https://www.npmjs.com/package/oapiex)
+[![npm version](https://img.shields.io/npm/v/oapiex.svg?label=version)](https://www.npmjs.com/package/oapiex)
+[![@oapiex/sdk-kit npm version](https://img.shields.io/npm/v/@oapiex/sdk-kit.svg?label=@oapiex/sdk-kit)](https://www.npmjs.com/package/@oapiex/sdk-kit)
 [![License](https://img.shields.io/npm/l/oapiex.svg)](https://github.com/toneflix/oapiex/blob/main/LICENSE)
 [![codecov](https://codecov.io/gh/toneflix/oapiex/graph/badge.svg?token=9C8arbqlX2)](https://codecov.io/gh/toneflix/oapiex)
 [![Publish Package](https://github.com/toneflix/oapiex/actions/workflows/publish.yml/badge.svg)](https://github.com/toneflix/oapiex/actions/workflows/publish.yml)

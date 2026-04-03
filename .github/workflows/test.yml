@@ -39,11 +39,11 @@ jobs:
       - name: Code linting
         run: pnpm lint
 
-      - name: Run tests
-        run: pnpm test
-
       - name: Build package
         run: pnpm build
+
+      - name: Run tests with coverage
+        run: pnpm coverage
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5

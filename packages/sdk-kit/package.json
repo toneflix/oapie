@@ -1,7 +1,7 @@
 {
   "name": "@oapiex/sdk-kit",
   "type": "module",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A TypeScript Base for building SDKs using OpenAPI specifications extracted by OAPIEX.",
   "main": "./dist/index.cjs",
   "private": false,

@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: 'OAPIEX'
-  tagline: 'A CLI and library for extracting OpenAPI documents from ReadMe powered API docs.'
+  tagline: CLI and TypeScript toolkit for turning documentation pages into usable developer artifacts.
   text: OpenAPI Extraction Toolkit
   actions:
     - theme: brand

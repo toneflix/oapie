@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: 'OAPIEX',
-  description: 'Extract OpenAPI documents from ReadMe powered documentation sites and saved HTML files.',
+  description: 'CLI and TypeScript toolkit for turning documentation pages into usable developer artifacts.',
   base: '/oapiex/',
   cleanUrls: true,
   lastUpdated: true,

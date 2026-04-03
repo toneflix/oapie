@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { ResolveAccount as ResolveAccountModel, ResolveAccountInput } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class ResolveAccount {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class ResolveAccount extends BaseApi {
 
     async create (body: ResolveAccountInput): Promise<ResolveAccountModel> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<ResolveAccountModel>(
-            this.#core.builder.buildTargetUrl('/v1/bills/electricity/resolve-account', {}, {}),
+            this.core.builder.buildTargetUrl('/v1/bills/electricity/resolve-account', {}, {}),
             'POST',
             body ?? {},
             {}

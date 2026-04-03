@@ -1,20 +1,15 @@
 import type { ProfileApiResponse, UpdateProfileInput } from '../Contracts'
 
+import { BaseApi } from '../BaseApi'
 import { Http } from '@oapiex/sdk-kit'
-import type { Core as KitCore } from '@oapiex/sdk-kit'
 
-export class Profile {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class Profile extends BaseApi {
 
     async get (profileId: string): Promise<ProfileApiResponse> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<ProfileApiResponse>(
-            this.#core.builder.buildTargetUrl('/app/profiles/{profileId}', { profileId }),
+            this.core.builder.buildTargetUrl('/app/profiles/{profileId}', { profileId }),
             'GET',
             {},
             {}
@@ -24,10 +19,10 @@ export class Profile {
     }
 
     async update (profileId: string, params: UpdateProfileInput): Promise<ProfileApiResponse> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<ProfileApiResponse>(
-            this.#core.builder.buildTargetUrl('/app/profiles/{profileId}', { profileId }),
+            this.core.builder.buildTargetUrl('/app/profiles/{profileId}', { profileId }),
             'PATCH',
             params,
             {}

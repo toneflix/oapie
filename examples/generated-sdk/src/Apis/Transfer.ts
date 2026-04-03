@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { Transfer as TransferModel, TransferByTransferIdParams, TransferCreateInput } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class Transfer {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class Transfer extends BaseApi {
 
     async create (body: TransferCreateInput): Promise<TransferModel> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<TransferModel>(
-            this.#core.builder.buildTargetUrl('/v1/transfers', {}, {}),
+            this.core.builder.buildTargetUrl('/v1/transfers', {}, {}),
             'POST',
             body ?? {},
             {}
@@ -23,10 +18,10 @@ export class Transfer {
     }
 
     async get (params: TransferByTransferIdParams): Promise<TransferModel> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<TransferModel>(
-            this.#core.builder.buildTargetUrl('/v1/transfers/{transfer_id}', params, {}),
+            this.core.builder.buildTargetUrl('/v1/transfers/{transfer_id}', params, {}),
             'GET',
             {},
             {}

@@ -3,9 +3,10 @@
 [![NPM Downloads](https://img.shields.io/npm/dt/oapiex.svg)](https://www.npmjs.com/package/oapiex)
 [![npm version](https://img.shields.io/npm/v/oapiex.svg)](https://www.npmjs.com/package/oapiex)
 [![License](https://img.shields.io/npm/l/oapiex.svg)](https://github.com/toneflix/oapiex/blob/main/LICENSE)
+[![codecov](https://codecov.io/gh/toneflix/oapiex/graph/badge.svg?token=9C8arbqlX2)](https://codecov.io/gh/toneflix/oapiex)
+[![Publish Package](https://github.com/toneflix/oapiex/actions/workflows/publish.yml/badge.svg)](https://github.com/toneflix/oapiex/actions/workflows/publish.yml)
 [![Deploy Docs](https://github.com/toneflix/oapiex/actions/workflows/docs.yml/badge.svg)](https://github.com/toneflix/oapiex/actions/workflows/docs.yml)
 [![Run Tests](https://github.com/toneflix/oapiex/actions/workflows/test.yml/badge.svg)](https://github.com/toneflix/oapiex/actions/workflows/test.yml)
-[![Publish Package](https://github.com/toneflix/oapiex/actions/workflows/publish.yml/badge.svg)](https://github.com/toneflix/oapiex/actions/workflows/publish.yml)
 
 OAPIE is a CLI and TypeScript library for extracting API operation data from documentation sites and converting it into raw extracted payloads or OpenAPI-like documents.
 

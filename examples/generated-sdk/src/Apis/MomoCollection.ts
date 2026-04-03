@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { Momo, MomoInput } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class MomoCollection {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class MomoCollection extends BaseApi {
 
     async create (body: MomoInput): Promise<Momo> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<Momo>(
-            this.#core.builder.buildTargetUrl('/v1/collections/momo', {}, {}),
+            this.core.builder.buildTargetUrl('/v1/collections/momo', {}, {}),
             'POST',
             body ?? {},
             {}

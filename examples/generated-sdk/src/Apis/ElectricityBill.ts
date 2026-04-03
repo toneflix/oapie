@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { Electricity, ElectricityInput } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class ElectricityBill {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class ElectricityBill extends BaseApi {
 
     async create (body: ElectricityInput): Promise<Electricity> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<Electricity>(
-            this.#core.builder.buildTargetUrl('/v1/bills/electricity', {}, {}),
+            this.core.builder.buildTargetUrl('/v1/bills/electricity', {}, {}),
             'POST',
             body ?? {},
             {}

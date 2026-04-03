@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { Charge, ChargeQuery } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class ChargeIssuing {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class ChargeIssuing extends BaseApi {
 
     async list (query: ChargeQuery): Promise<Charge[]> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<Charge[]>(
-            this.#core.builder.buildTargetUrl('/v1/issuing/charges', {}, query),
+            this.core.builder.buildTargetUrl('/v1/issuing/charges', {}, query),
             'GET',
             {},
             {}

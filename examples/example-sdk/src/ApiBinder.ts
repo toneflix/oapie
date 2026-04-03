@@ -1,9 +1,9 @@
-import { BaseApi as KitBaseApi } from '@oapiex/sdk-kit'
+import { BaseApi } from './BaseApi'
 
-import { Example } from './Example'
-import { Profile } from './Profile'
+import { Example } from './Apis/Example'
+import { Profile } from './Apis/Profile'
 
-export class BaseApi extends KitBaseApi {
+export class ApiBinder extends BaseApi {
     examples!: Example
     profiles!: Profile
 

@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { CustomerByIdParams, Transaction as TransactionModel } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class Transaction {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class Transaction extends BaseApi {
 
     async list (): Promise<TransactionModel[]> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<TransactionModel[]>(
-            this.#core.builder.buildTargetUrl('/v1/transactions', {}, {}),
+            this.core.builder.buildTargetUrl('/v1/transactions', {}, {}),
             'GET',
             {},
             {}
@@ -23,10 +18,10 @@ export class Transaction {
     }
 
     async get (params: CustomerByIdParams): Promise<TransactionModel> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<TransactionModel>(
-            this.#core.builder.buildTargetUrl('/v1/transactions/{id}', params, {}),
+            this.core.builder.buildTargetUrl('/v1/transactions/{id}', params, {}),
             'GET',
             {},
             {}

@@ -7,7 +7,8 @@ This package exists as a scaffold showing how extracted API groups can be mapped
 ## Structure
 
 - `src/Core.ts`: SDK-specific `Core` subclass
-- `src/Apis/BaseApi.ts`: SDK-specific API root that wires child groups
+- `src/ApiBinder.ts`: SDK-specific API root that wires child groups
+- `src/BaseApi.ts`: shared API base class inherited by child API groups
 - `src/Apis/Example.ts`: Example API group
 - `src/Apis/Profile.ts`: Another example API group
 - `src/Contracts/Api/*`: generated request and response contracts
@@ -33,8 +34,9 @@ pnpm build
 
 The intended generated structure is:
 
-1. create one SDK-specific `Core` subclass that points to an SDK-specific `BaseApi`
-2. create one child API class per endpoint group
-3. register those child APIs inside `BaseApi.boot()`
-4. emit contracts beside the API classes
-5. re-export the generated APIs together with the shared kit primitives
+1. create one SDK-specific `Core` subclass that points to an SDK-specific `ApiBinder`
+2. create one shared `BaseApi` that child API classes extend for inherited core access
+3. create one child API class per endpoint group
+4. register those child APIs inside `ApiBinder.boot()`
+5. emit contracts beside the API classes
+6. re-export the generated APIs together with the shared kit primitives

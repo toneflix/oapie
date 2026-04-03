@@ -1,9 +1,9 @@
 import { Core as KitCore } from '@oapiex/sdk-kit'
 
-import { BaseApi } from './Apis/BaseApi'
+import { ApiBinder } from './ApiBinder'
 
 export class Core extends KitCore {
-    static override apiClass = BaseApi
+    static override apiClass = ApiBinder
 
-    declare api: BaseApi
+    declare api: ApiBinder
 }

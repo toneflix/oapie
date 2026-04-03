@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { Data, DataInput } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class DataBill {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class DataBill extends BaseApi {
 
     async create (body: DataInput): Promise<Data> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<Data>(
-            this.#core.builder.buildTargetUrl('/v1/bills/data', {}, {}),
+            this.core.builder.buildTargetUrl('/v1/bills/data', {}, {}),
             'POST',
             body ?? {},
             {}

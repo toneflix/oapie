@@ -1,4 +1,5 @@
-export * from './Apis/BaseApi'
+export * from './ApiBinder'
+export * from './BaseApi'
 export * from './Apis/Example'
 export * from './Apis/Profile'
 export * from './Contracts/Api/ExampleApi'

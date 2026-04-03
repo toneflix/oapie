@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { Country as CountryModel } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class Country {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class Country extends BaseApi {
 
     async list (): Promise<CountryModel[]> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<CountryModel[]>(
-            this.#core.builder.buildTargetUrl('/v1/countries', {}, {}),
+            this.core.builder.buildTargetUrl('/v1/countries', {}, {}),
             'GET',
             {},
             {}

@@ -90,13 +90,17 @@ describe('SdkPackageGenerator', () => {
 
         expect(files['package.json']).toContain('"name": "generated-sdk"')
         expect(files['src/Schema.ts']).toContain('export const extractedApiDocumentSdk')
-        expect(files['src/Apis/BaseApi.ts']).toContain('exampleApps!: ExampleApp')
+        expect(files['src/BaseApi.ts']).toContain('export class BaseApi extends KitBaseApi {}')
+        expect(files['src/ApiBinder.ts']).toContain('exampleApps!: ExampleApp')
         expect(files['src/Apis/ExampleApp.ts']).toContain('async list (query: ExampleAppQuery, headers?: ExampleHeader): Promise<Example[]>')
         expect(files['src/Apis/ExampleApp.ts']).toContain('async create (body: ExampleInput, headers?: ExampleHeader): Promise<Example>')
+        expect(files['src/Apis/ExampleApp.ts']).toContain('export class ExampleApp extends BaseApi {')
+        expect(files['src/Apis/ExampleApp.ts']).not.toContain('constructor(core:')
         expect(files['src/Apis/ExampleApp.ts']).toContain('((headers ? { ...headers } : {}) as Record<string, string | undefined>)')
-        expect(files['src/Core.ts']).toContain('static override apiClass = BaseApi')
+        expect(files['src/Core.ts']).toContain('static override apiClass = ApiBinder')
         expect(files['src/index.ts']).toContain('export * from \'./Schema\'')
-        expect(files['src/index.ts']).toContain('export { BaseApi } from \'./Apis/BaseApi\'')
+        expect(files['src/index.ts']).toContain('export { ApiBinder } from \'./ApiBinder\'')
+        expect(files['src/index.ts']).toContain('export { BaseApi } from \'./BaseApi\'')
         expect(files['src/index.ts']).toContain('export { ExampleApp as ExampleAppApi } from \'./Apis/ExampleApp\'')
         expect(files['src/index.ts']).not.toContain('export * from \'./Apis/ExampleApp\'')
         expect(files['src/index.ts']).toContain('): KitCore & { api: KitBaseApi & ExtractedApiDocumentApi } =>')
@@ -186,8 +190,8 @@ describe('SdkPackageGenerator', () => {
             },
         } as never)
 
-        expect(files['src/Apis/BaseApi.ts']).toContain('wallets!: Wallet')
-        expect(files['src/Apis/BaseApi.ts']).toContain('cryptoWallets!: CryptoWallet')
+        expect(files['src/ApiBinder.ts']).toContain('wallets!: Wallet')
+        expect(files['src/ApiBinder.ts']).toContain('cryptoWallets!: CryptoWallet')
         expect(files['src/Apis/CryptoWallet.ts']).toContain('export class CryptoWallet')
     })
 
@@ -236,7 +240,7 @@ describe('SdkPackageGenerator', () => {
             methodStrategy: 'operation-id',
         })
 
-        expect(files['src/Apis/BaseApi.ts']).toContain('cryptoWallets!: CryptoWallet')
+        expect(files['src/ApiBinder.ts']).toContain('cryptoWallets!: CryptoWallet')
         expect(files['src/Apis/CryptoWallet.ts']).toContain('async getCustomerCryptoWallets (params: WalletParams): Promise<Wallet[]>')
     })
 
@@ -289,7 +293,7 @@ describe('SdkPackageGenerator', () => {
         } as never)
 
         expect(files['src/Apis/Crypto.ts']).toContain('export class Crypto')
-        expect(files['src/Apis/BaseApi.ts']).toContain('cryptos!: Crypto')
+        expect(files['src/ApiBinder.ts']).toContain('cryptos!: Crypto')
         expect(files['src/Apis/Crypto.ts']).toContain('async update (params: CryptoParams, body: CryptoInput): Promise<CryptoModel>')
         expect(files['src/Apis/Crypto.ts']).toContain("buildTargetUrl('/v1/crypto/:id', params, {})")
     })

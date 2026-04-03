@@ -1,19 +1,14 @@
-import type { Core as KitCore } from '@oapiex/sdk-kit'
+import { BaseApi } from '../BaseApi'
 import type { Counterparty as CounterpartyModel, CounterpartyByCounterPartyIdParams, CounterpartyInput, CustomerByIdParams } from '../Schema'
 import { Http } from '@oapiex/sdk-kit'
 
-export class Counterparty {
-    #core: KitCore
-
-    constructor(core: KitCore) {
-        this.#core = core
-    }
+export class Counterparty extends BaseApi {
 
     async create (body: CounterpartyInput): Promise<CounterpartyModel> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<CounterpartyModel>(
-            this.#core.builder.buildTargetUrl('/v1/collections/virtual-account/counterparties', {}, {}),
+            this.core.builder.buildTargetUrl('/v1/collections/virtual-account/counterparties', {}, {}),
             'POST',
             body ?? {},
             {}
@@ -23,10 +18,10 @@ export class Counterparty {
     }
 
     async get (params: CounterpartyByCounterPartyIdParams): Promise<CounterpartyModel[]> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<CounterpartyModel[]>(
-            this.#core.builder.buildTargetUrl('/v1/collections/virtual-account/counterparties/{counter_party_id}', params, {}),
+            this.core.builder.buildTargetUrl('/v1/collections/virtual-account/counterparties/{counter_party_id}', params, {}),
             'GET',
             {},
             {}
@@ -36,10 +31,10 @@ export class Counterparty {
     }
 
     async list (params: CustomerByIdParams): Promise<CounterpartyModel[]> {
-        await this.#core.validateAccess()
+        await this.core.validateAccess()
 
         const { data } = await Http.send<CounterpartyModel[]>(
-            this.#core.builder.buildTargetUrl('/v1/collections/virtual-account/{id}/counterparties', params, {}),
+            this.core.builder.buildTargetUrl('/v1/collections/virtual-account/{id}/counterparties', params, {}),
             'GET',
             {},
             {}

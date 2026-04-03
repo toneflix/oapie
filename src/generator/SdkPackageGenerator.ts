@@ -42,7 +42,8 @@ export class SdkPackageGenerator {
         }
 
         if (outputMode !== 'runtime') {
-            files['src/Apis/BaseApi.ts'] = this.renderBaseApi(manifest)
+            files['src/BaseApi.ts'] = this.renderBaseApi()
+            files['src/ApiBinder.ts'] = this.renderApiBinder(manifest)
 
             for (const group of manifest.groups) {
                 files[`src/Apis/${group.className}.ts`] = this.renderApiClass(group, signatureStyle)
@@ -82,13 +83,21 @@ export class SdkPackageGenerator {
         return operationTypeRefs
     }
 
-    private renderBaseApi (manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>): string {
+    private renderBaseApi (): string {
         return [
             'import { BaseApi as KitBaseApi } from \'@oapiex/sdk-kit\'',
             '',
-            ...manifest.groups.map((group) => `import { ${group.className} } from './${group.className}'`),
+            'export class BaseApi extends KitBaseApi {}',
+        ].join('\n')
+    }
+
+    private renderApiBinder (manifest: ReturnType<TypeScriptTypeBuilder['buildSdkManifest']>): string {
+        return [
+            'import { BaseApi } from \'./BaseApi\'',
             '',
-            'export class BaseApi extends KitBaseApi {',
+            ...manifest.groups.map((group) => `import { ${group.className} } from './Apis/${group.className}'`),
+            '',
+            'export class ApiBinder extends BaseApi {',
             ...manifest.groups.map((group) => `    ${group.propertyName}!: ${group.className}`),
             '',
             '    protected override boot () {',
@@ -105,7 +114,7 @@ export class SdkPackageGenerator {
         const typeImportContext = this.createTypeImportContext(group, signatureStyle)
 
         const imports = [
-            "import type { Core as KitCore } from '@oapiex/sdk-kit'",
+            "import { BaseApi } from '../BaseApi'",
             "import { Http } from '@oapiex/sdk-kit'",
         ]
 
@@ -116,12 +125,7 @@ export class SdkPackageGenerator {
         return [
             ...imports,
             '',
-            `export class ${group.className} {`,
-            '    #core: KitCore',
-            '',
-            '    constructor(core: KitCore) {',
-            '        this.#core = core',
-            '    }',
+            `export class ${group.className} extends BaseApi {`,
             '',
             ...group.operations.flatMap((operation) => [
                 this.renderApiMethod(operation, signatureStyle, typeImportContext.aliasMap),
@@ -156,10 +160,10 @@ export class SdkPackageGenerator {
 
         return [
             `    async ${operation.methodName} ${signature}: Promise<${this.rewriteTypeReference(operation.responseType, aliasMap)}> {`,
-            '        await this.#core.validateAccess()',
+            '        await this.core.validateAccess()',
             '',
             `        const { data } = await Http.send<${this.rewriteTypeReference(operation.responseType, aliasMap)}>(`,
-            `            this.#core.builder.buildTargetUrl('${operation.path}', ${urlPathArgs}, ${urlQueryArgs}),`,
+            `            this.core.builder.buildTargetUrl('${operation.path}', ${urlPathArgs}, ${urlQueryArgs}),`,
             `            '${operation.method}',`,
             `            ${bodyArg},`,
             `            ${headerArgs}`,
@@ -291,12 +295,12 @@ export class SdkPackageGenerator {
         return [
             "import { Core as KitCore } from '@oapiex/sdk-kit'",
             '',
-            "import { BaseApi } from './Apis/BaseApi'",
+            "import { ApiBinder } from './ApiBinder'",
             '',
             'export class Core extends KitCore {',
-            '    static override apiClass = BaseApi',
+            '    static override apiClass = ApiBinder',
             '',
-            '    declare api: BaseApi',
+            '    declare api: ApiBinder',
             '}',
         ].join('\n')
     }
@@ -433,7 +437,8 @@ export class SdkPackageGenerator {
         ]
 
         if (outputMode !== 'runtime') {
-            lines.push("export { BaseApi } from './Apis/BaseApi'")
+            lines.push("export { ApiBinder } from './ApiBinder'")
+            lines.push("export { BaseApi } from './BaseApi'")
             lines.push(...classNames.map((className) => `export { ${className} as ${className}Api } from './Apis/${className}'`))
             lines.push("export { Core } from './Core'")
         }

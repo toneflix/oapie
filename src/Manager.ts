@@ -11,6 +11,10 @@ interface BrowserSession {
     puppeteerBrowser?: PuppeteerBrowser
 }
 
+type CleanupCloser = () => Promise<void> | void
+
+const terminationSignals = ['SIGINT', 'SIGTERM', 'SIGTSTP'] as const
+
 declare global {
     var __oapieBrowserSession: BrowserSession | undefined
 }
@@ -37,8 +41,88 @@ const defaultConfig: UserConfig = {
 }
 
 let globalConfig: UserConfig = defaultConfig
+let cleanupInProgress = false
+let terminationHandlersInstalled = false
+const activeClosers = new Set<CleanupCloser>()
 
 const getBrowserSession = (): BrowserSession | undefined => globalThis.__oapieBrowserSession
+
+const removeTerminationHandlersWhenIdle = () => {
+    if (!getBrowserSession() && activeClosers.size === 0) {
+        removeTerminationHandlers()
+    }
+}
+
+const ensureTerminationHandlers = () => {
+    if (terminationHandlersInstalled) {
+        return
+    }
+
+    for (const signal of terminationSignals) {
+        process.on(signal, handleTerminationSignal)
+    }
+
+    terminationHandlersInstalled = true
+}
+
+const removeTerminationHandlers = () => {
+    if (!terminationHandlersInstalled) {
+        return
+    }
+
+    for (const signal of terminationSignals) {
+        process.off(signal, handleTerminationSignal)
+    }
+
+    terminationHandlersInstalled = false
+}
+
+const registerActiveBrowserCloser = (closer: CleanupCloser): (() => void) => {
+    ensureTerminationHandlers()
+    activeClosers.add(closer)
+
+    return () => {
+        activeClosers.delete(closer)
+        removeTerminationHandlersWhenIdle()
+    }
+}
+
+const closeActiveBrowserResources = async (): Promise<void> => {
+    const closers = Array.from(activeClosers).reverse()
+
+    activeClosers.clear()
+
+    for (const closer of closers) {
+        await closer()
+    }
+
+    await endBrowserSession()
+}
+
+const handleTerminationSignal = async (signal: NodeJS.Signals) => {
+    if (cleanupInProgress) {
+        return
+    }
+
+    cleanupInProgress = true
+    removeTerminationHandlers()
+
+    try {
+        await closeActiveBrowserResources()
+    } catch (error) {
+        console.error('Failed to close active browser resources:', error)
+    } finally {
+        cleanupInProgress = false
+    }
+
+    if (signal === 'SIGTSTP') {
+        process.kill(process.pid, signal)
+
+        return
+    }
+
+    process.exit(signal === 'SIGINT' ? 130 : 143)
+}
 
 const startBrowserSession = async (
     config: UserConfig = globalConfig
@@ -67,6 +151,7 @@ const startBrowserSession = async (
         })
     }
 
+    ensureTerminationHandlers()
     globalThis.__oapieBrowserSession = nextSession
 
     return nextSession
@@ -88,6 +173,8 @@ const endBrowserSession = async (): Promise<void> => {
     if (activeSession.puppeteerBrowser) {
         await activeSession.puppeteerBrowser.close()
     }
+
+    removeTerminationHandlersWhenIdle()
 }
 
 const registerDeferredCloser = (
@@ -154,27 +241,33 @@ const browser = async (
             innerHeight: 768,
             settings: config.happyDom
         })
+        const unregisterWindowCloser = registerActiveBrowserCloser(() => window.happyDOM.close())
 
-        window.document.write(data)
+        try {
+            window.document.write(data)
 
-        await window.happyDOM.waitUntilComplete()
+            await window.happyDOM.waitUntilComplete()
 
-        const html = window.document.documentElement.outerHTML
+            const html = window.document.documentElement.outerHTML
 
-        if (!html) {
-            await window.happyDOM.close()
+            if (!html) {
+                await window.happyDOM.close()
 
-            throw new Error(`Unable to extract HTML from remote source: ${source}`)
+                throw new Error(`Unable to extract HTML from remote source: ${source}`)
+            }
+
+            if (!registerDeferredCloser('happy-dom', () => window.happyDOM.close())) {
+                await window.happyDOM.close()
+            }
+
+            return html
+        } finally {
+            unregisterWindowCloser()
         }
-
-        if (!registerDeferredCloser('happy-dom', () => window.happyDOM.close())) {
-            await window.happyDOM.close()
-        }
-
-        return html
 
     } else if (config.browser === 'jsdom') {
         let window: DOMWindow | undefined
+        let unregisterWindowCloser: (() => void) | undefined
 
         try {
             ({ window } = new JSDOM(data, {
@@ -183,6 +276,7 @@ const browser = async (
                 runScripts: 'dangerously',
                 includeNodeLocations: true,
             }))
+            unregisterWindowCloser = registerActiveBrowserCloser(() => window?.close())
 
             const html = window.document.documentElement.outerHTML
             if (!html) {
@@ -200,6 +294,7 @@ const browser = async (
 
             return html
         } finally {
+            unregisterWindowCloser?.()
             if (window) window.close()
         }
     } else if (config.browser === 'puppeteer') {
@@ -210,6 +305,8 @@ const browser = async (
             : undefined
         let shouldClose = false
         let page: Awaited<ReturnType<NonNullable<typeof browserInstance>['newPage']>> | undefined
+        let unregisterBrowserCloser: (() => void) | undefined
+        let unregisterPageCloser: (() => void) | undefined
 
         try {
             if (!browserInstance) {
@@ -220,9 +317,19 @@ const browser = async (
                     args: config.puppeteer?.args ?? ['--no-sandbox', '--disable-setuid-sandbox']
                 })
                 shouldClose = true
+                unregisterBrowserCloser = registerActiveBrowserCloser(async () => {
+                    if (browserInstance?.connected) {
+                        await browserInstance.close()
+                    }
+                })
             }
 
             page = await browserInstance.newPage()
+            unregisterPageCloser = registerActiveBrowserCloser(async () => {
+                if (page && !page.isClosed()) {
+                    await page.close()
+                }
+            })
             await page.setUserAgent({ userAgent: config.userAgent })
             await page.setRequestInterception(true)
 
@@ -263,10 +370,12 @@ const browser = async (
 
             return html
         } finally {
+            unregisterPageCloser?.()
             if (page && !page.isClosed()) {
                 await page.close()
             }
 
+            unregisterBrowserCloser?.()
             if (shouldClose && browserInstance) {
                 await browserInstance.close()
             }
@@ -419,6 +528,8 @@ const extractSsrPropsScript = (html: string): string | null => {
 export {
     defineConfig,
     browser,
+    closeActiveBrowserResources,
+    registerActiveBrowserCloser,
     globalConfig,
     defaultConfig,
     supportedBrowsers,

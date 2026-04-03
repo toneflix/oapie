@@ -14,7 +14,7 @@ It currently focuses on ReadMe-powered API docs and saved HTML pages, with room 
 
 - npm: https://www.npmjs.com/package/oapiex
 - docs: https://toneflix.github.io/oapiex
-- repository: https://github.com/toneflix/oapi
+- repository: https://github.com/toneflix/oapiex
 
 ## Features
 
@@ -178,7 +178,7 @@ Available output formats:
 
 ## Documentation
 
-Full documentation is available at https://oapi-extractor.toneflix.net.
+Full documentation is available at https://toneflix.github.io/oapiex.
 
 Useful sections:
 

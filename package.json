@@ -7,7 +7,7 @@
     "private": false,
     "homepage": "https://toneflix.github.io/oapiex",
     "repository": {
-        "url": "https://github.com/toneflix/oapi-extractor.git",
+        "url": "https://github.com/toneflix/oapiex.git",
         "type": "git"
     },
     "publishConfig": {

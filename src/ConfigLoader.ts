@@ -1,5 +1,5 @@
 import { UserConfig } from './types/app'
-import { defaultConfig } from './Manager'
+import { createDefaultConfig, mergeConfig } from './config'
 import { createJiti } from 'jiti'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -43,15 +43,7 @@ export async function resolveConfig (
     cliOverrides: Partial<UserConfig> = {}
 ): Promise<UserConfig> {
     const userConfig = await loadUserConfig()
+    const baseConfig = createDefaultConfig()
 
-    return {
-        ...defaultConfig,
-        ...userConfig,
-        ...cliOverrides,
-        happyDom: {
-            ...defaultConfig.happyDom,
-            ...(userConfig?.happyDom || {}),
-            ...(cliOverrides.happyDom || {}),
-        },
-    }
+    return mergeConfig(mergeConfig(baseConfig, userConfig ?? {}), cliOverrides)
 }

@@ -1,5 +1,6 @@
 export * from './Apis/BaseApi'
 export * from './Builder'
+export * from './config'
 export * from './Contracts/Codes'
 export * from './Contracts/Core'
 export * from './Contracts/Interfaces'

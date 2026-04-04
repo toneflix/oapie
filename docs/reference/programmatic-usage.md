@@ -173,6 +173,7 @@ console.log(operation);
 
 ```ts
 import { defineConfig } from 'oapiex';
+import { Application } from 'oapiex';
 
 const config = defineConfig({
   browser: 'axios',
@@ -180,10 +181,12 @@ const config = defineConfig({
   requestTimeout: 15000,
 });
 
-console.log(config);
+const app = new Application(config);
+
+console.log(app.getConfig());
 ```
 
-`defineConfig()` merges your overrides with the internal defaults.
+`defineConfig()` is a typed helper for authoring config objects. Runtime defaults are applied when OAPIEX resolves config or when `Application` consumes the partial config.
 
 ## Reuse A Browser Session Manually
 
@@ -192,12 +195,13 @@ For advanced batching, you can manage the browser session yourself.
 ```ts
 import {
   browser,
-  defineConfig,
+  Application,
   endBrowserSession,
   startBrowserSession,
 } from 'oapiex';
 
-const config = defineConfig({ browser: 'puppeteer' });
+const app = new Application({ browser: 'puppeteer' });
+const config = app.getConfig();
 
 await startBrowserSession(config);
 

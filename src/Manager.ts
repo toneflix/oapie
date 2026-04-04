@@ -1,4 +1,5 @@
 import type { BrowserName, UserConfig } from './types/app'
+import { createDefaultConfig, defaultConfig, mergeConfig } from './config'
 import { DOMWindow, JSDOM } from 'jsdom'
 import type { Page, Browser as PuppeteerBrowser } from 'puppeteer'
 
@@ -21,26 +22,7 @@ declare global {
 
 const supportedBrowsers: BrowserName[] = ['axios', 'happy-dom', 'jsdom', 'puppeteer']
 
-const defaultConfig: UserConfig = {
-    outputFormat: 'pretty',
-    outputShape: 'raw',
-    requestTimeout: 50000,
-    maxRedirects: 5,
-    userAgent: 'Mozilla/5.0 (X11; Linux x64) AppleWebKit/537.36 (KHTML, like Gecko) OpenApiExtractor/1.0.0',
-    retryCount: 3,
-    retryDelay: 1000,
-    browser: 'puppeteer',
-    happyDom: {
-        enableJavaScriptEvaluation: true,
-        suppressInsecureJavaScriptEnvironmentWarning: true,
-    },
-    puppeteer: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
-}
-
-let globalConfig: UserConfig = defaultConfig
+let globalConfig: UserConfig = createDefaultConfig()
 let cleanupInProgress = false
 let terminationHandlersInstalled = false
 const activeClosers = new Set<CleanupCloser>()
@@ -192,15 +174,8 @@ const registerDeferredCloser = (
     return true
 }
 
-const defineConfig = (config: Partial<UserConfig>): UserConfig => {
-    const userConfig = {
-        ...defaultConfig,
-        ...config,
-        happyDom: {
-            ...defaultConfig.happyDom,
-            ...config.happyDom,
-        },
-    }
+const updateConfig = (config: Partial<UserConfig>): UserConfig => {
+    const userConfig = mergeConfig(globalConfig, config)
 
     globalConfig = userConfig
 
@@ -526,7 +501,7 @@ const extractSsrPropsScript = (html: string): string | null => {
 }
 
 export {
-    defineConfig,
+    updateConfig,
     browser,
     closeActiveBrowserResources,
     registerActiveBrowserCloser,

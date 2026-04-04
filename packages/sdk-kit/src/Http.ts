@@ -7,7 +7,7 @@ import { Builder } from './Builder'
 import { AuthConfig, AuthRequestConfig, HttpMethod, UnifiedResponse } from './Contracts/Core'
 import { HttpException } from './Exceptions/HttpException'
 import { XGenericObject } from './Contracts/Interfaces'
-import { defineConfig, getConfig } from './utilities/Manager'
+import { getConfig, updateConfig } from './utilities/Manager'
 import { Logger } from './utilities/Log'
 
 export class Http {
@@ -61,7 +61,7 @@ export class Http {
      */
     static setBearerToken (token: string) {
         this.bearerToken = token
-        defineConfig({
+        updateConfig({
             auth: {
                 type: 'bearer',
                 token,
@@ -70,7 +70,7 @@ export class Http {
     }
 
     static setAuth (auth: AuthConfig | AuthConfig[]) {
-        defineConfig({ auth })
+        updateConfig({ auth })
     }
 
     static setBasicAuth (username: string, password: string) {
@@ -98,7 +98,7 @@ export class Http {
 
     static clearAuth () {
         this.bearerToken = undefined
-        defineConfig({ auth: undefined })
+        updateConfig({ auth: undefined })
     }
 
     setDefaultHeaders (defaults: Record<string, string>) {

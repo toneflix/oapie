@@ -1,5 +1,5 @@
 import { Command } from '@h3ravel/musket'
-import { defaultConfig } from '../Manager'
+import { defaultConfig } from '../config'
 import { fileURLToPath } from 'url'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -36,7 +36,7 @@ export class InitCommand extends Command {
 
     buildConfigTemplate (addSdkConfig: boolean = false): string {
         const def = defaultConfig
-        const from = __filename.includes('node_modules') ? 'oapiex' : './src/Manager'
+        const from = __filename.includes('node_modules') ? 'oapiex' : './src/config'
 
         return [
             `import { defineConfig } from '${from}'`,

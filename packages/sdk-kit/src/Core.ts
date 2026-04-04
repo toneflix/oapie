@@ -7,7 +7,7 @@ import { BaseApi } from './Apis/BaseApi'
 import { Builder } from './Builder'
 import { Http } from './Http'
 import { createRuntimeApi } from './RuntimeSdk'
-import { defineConfig, getConfig } from './utilities/Manager'
+import { getConfig, updateConfig } from './utilities/Manager'
 
 export class Core {
     static apiClass: typeof BaseApi = BaseApi
@@ -109,7 +109,7 @@ export class Core {
     }
 
     configure (config: Partial<UserConfig>): this {
-        const nextConfig = defineConfig(config)
+        const nextConfig = updateConfig(config)
 
         if (nextConfig.environment) {
             this.environment = nextConfig.environment

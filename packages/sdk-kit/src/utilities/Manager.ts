@@ -1,4 +1,5 @@
 import { InitOptions, UserConfig } from '../Contracts/Core'
+import { createDefaultConfig, defaultConfig, mergeConfig } from '../config'
 import { createJiti } from 'jiti'
 import path from 'node:path'
 
@@ -8,43 +9,10 @@ const CONFIG_BASENAMES = [
     'oapiex.config.cjs',
 ] as const
 
-const defaultConfig: UserConfig = {
-    environment: 'sandbox',
-    urls: {
-        live: '',
-        sandbox: ''
-    },
-    headers: {},
-    debugLevel: 0,
-}
-
-const createBaseConfig = (): UserConfig => ({
-    ...defaultConfig,
-    urls: { ...(defaultConfig.urls ?? {}) },
-    headers: { ...(defaultConfig.headers ?? {}) },
-})
-
-let globalConfig: UserConfig = createBaseConfig()
+let globalConfig: UserConfig = createDefaultConfig()
 let loadedConfigRoot: string | null = null
 
 type SyncJitiLoader = (id: string) => unknown
-
-const mergeConfig = (baseConfig: UserConfig, config: Partial<UserConfig>): UserConfig => ({
-    ...baseConfig,
-    ...config,
-    urls: config.urls
-        ? {
-            ...(baseConfig.urls ?? defaultConfig.urls),
-            ...config.urls,
-        }
-        : baseConfig.urls,
-    headers: config.headers
-        ? {
-            ...(baseConfig.headers ?? defaultConfig.headers),
-            ...config.headers,
-        }
-        : baseConfig.headers,
-})
 
 const pickInitOptions = (value: unknown): Partial<InitOptions> | null => {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -105,7 +73,7 @@ const ensureConfigLoaded = (rootDir: string = process.cwd()): UserConfig => {
         return globalConfig
     }
 
-    globalConfig = createBaseConfig()
+    globalConfig = createDefaultConfig()
     loadedConfigRoot = rootDir
 
     const userConfig = loadUserConfig(rootDir)
@@ -117,7 +85,7 @@ const ensureConfigLoaded = (rootDir: string = process.cwd()): UserConfig => {
     return globalConfig
 }
 
-const defineConfig = (config: Partial<UserConfig>): UserConfig => {
+const updateConfig = (config: Partial<UserConfig>): UserConfig => {
     const baseConfig = ensureConfigLoaded()
     const userConfig = mergeConfig(baseConfig, config)
 
@@ -130,14 +98,14 @@ const getConfig = (): UserConfig => ensureConfigLoaded()
 
 const resetConfig = (): UserConfig => {
     loadedConfigRoot = null
-    globalConfig = createBaseConfig()
+    globalConfig = createDefaultConfig()
 
     return globalConfig
 }
 
 export {
     getConfig,
-    defineConfig,
+    updateConfig,
     globalConfig,
     defaultConfig,
     resetConfig,

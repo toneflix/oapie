@@ -1,4 +1,5 @@
-import { browser, defineConfig, endBrowserSession, getBrowserSession, startBrowserSession } from './Manager'
+import { browser, endBrowserSession, getBrowserSession, startBrowserSession } from './Manager'
+import { createDefaultConfig, mergeConfig } from './config'
 
 import { Logger } from '@h3ravel/shared'
 import { UserConfig } from './types/app'
@@ -11,7 +12,7 @@ export class Application {
     private config: UserConfig
 
     constructor(config: Partial<UserConfig> = {}) {
-        this.config = defineConfig(config)
+        this.config = mergeConfig(createDefaultConfig(), config)
     }
 
     getConfig (config: Partial<UserConfig> = {}): UserConfig {
@@ -19,10 +20,7 @@ export class Application {
     }
 
     configure (config: Partial<UserConfig>): UserConfig {
-        this.config = defineConfig({
-            ...this.config,
-            ...config,
-        })
+        this.config = mergeConfig(this.config, config)
 
         return this.config
     }

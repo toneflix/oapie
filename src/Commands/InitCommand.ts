@@ -42,7 +42,7 @@ export class InitCommand extends Command {
             `import { defineConfig } from '${from}'`,
             '',
             '/**',
-            ' * See https://toneflix.github.io/oapiex/configuration for docs',
+            ' * See https://toneflix.github.io/oapiex/reference/configuration for docs',
             ' */',
             'export default defineConfig({',
             `  outputFormat: '${def.outputFormat}',`,

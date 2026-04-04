@@ -76,6 +76,7 @@
         "@happy-dom/server-renderer": "^20.8.9",
         "axios": "^1.14.0",
         "happy-dom": "^20.8.9",
+        "jiti": "^2.6.1",
         "jsdom": "^29.0.1",
         "prettier": "^3.8.1",
         "puppeteer": "^24.40.0",

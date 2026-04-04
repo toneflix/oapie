@@ -1,8 +1,8 @@
 import { UserConfig } from './types/app'
 import { defaultConfig } from './Manager'
+import { createJiti } from 'jiti'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 
 const CONFIG_BASENAMES = [
     'oapiex.config.ts',
@@ -13,14 +13,21 @@ const CONFIG_BASENAMES = [
 export async function loadUserConfig (
     rootDir: string = process.cwd()
 ): Promise<Partial<UserConfig> | null> {
+    const jiti = createJiti(import.meta.url, {
+        interopDefault: true,
+        moduleCache: false,
+        fsCache: false,
+    })
+
     for (const basename of CONFIG_BASENAMES) {
         const configPath = path.join(rootDir, basename)
         try {
             await fs.access(configPath)
-            // Use dynamic import for .js/.ts/.cjs
-            const configModule = await import(pathToFileURL(configPath).href)
-            // Support both default and named export
-            const config = configModule.default || configModule.config || configModule
+            const configModule = await jiti.import<Partial<UserConfig> | Record<string, unknown>>(configPath)
+            const loadedModule = (typeof configModule === 'object' && configModule !== null
+                ? configModule as Record<string, unknown>
+                : null)
+            const config = loadedModule?.default ?? loadedModule?.config ?? configModule
             if (typeof config === 'object' && config !== null) {
                 return config as Partial<UserConfig>
             }

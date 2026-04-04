@@ -43,6 +43,30 @@ class TestCore extends Core {
     declare api: TestBaseApi
 }
 
+const withClearedCredentialEnv = async (run: () => Promise<void> | void) => {
+    const previousClientId = process.env.CLIENT_ID
+    const previousClientSecret = process.env.CLIENT_SECRET
+
+    delete process.env.CLIENT_ID
+    delete process.env.CLIENT_SECRET
+
+    try {
+        await run()
+    } finally {
+        if (previousClientId === undefined) {
+            delete process.env.CLIENT_ID
+        } else {
+            process.env.CLIENT_ID = previousClientId
+        }
+
+        if (previousClientSecret === undefined) {
+            delete process.env.CLIENT_SECRET
+        } else {
+            process.env.CLIENT_SECRET = previousClientSecret
+        }
+    }
+}
+
 describe('BaseApi', () => {
     afterEach(() => {
         vi.restoreAllMocks()
@@ -376,61 +400,65 @@ describe('BaseApi', () => {
     })
 
     it('allows auth-only initialization without client credentials', async () => {
-        const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oapiex-sdk-kit-empty-config-'))
-        vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
-        resetConfig()
+        await withClearedCredentialEnv(async () => {
+            const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oapiex-sdk-kit-empty-config-'))
+            vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
+            resetConfig()
 
-        const core = new TestCore({
-            environment: 'sandbox',
-            urls: {
-                sandbox: 'https://sandbox.override.test/api',
-            },
-            auth: {
-                type: 'bearer',
-                token: 'auth-only-token',
-            },
+            const core = new TestCore({
+                environment: 'sandbox',
+                urls: {
+                    sandbox: 'https://sandbox.override.test/api',
+                },
+                auth: {
+                    type: 'bearer',
+                    token: 'auth-only-token',
+                },
+            })
+            const request = vi.fn().mockResolvedValue({
+                data: {
+                    message: 'ok',
+                    data: [],
+                    meta: {},
+                },
+            })
+            const axiosInstance = Object.assign(request, {
+                interceptors: {
+                    request: { use: vi.fn() },
+                    response: { use: vi.fn() },
+                },
+                defaults: {},
+            })
+            const createSpy = vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
+
+            core.setAccessValidator(async () => true)
+
+            expect(core.getClientId()).toBeUndefined()
+            expect(core.getClientSecret()).toBeUndefined()
+            await expect(core.api.testExamples.list()).resolves.toEqual([])
+            expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+                headers: expect.objectContaining({
+                    Authorization: 'Bearer auth-only-token',
+                }),
+            }))
+
+            await rm(tempDir, { recursive: true, force: true })
         })
-        const request = vi.fn().mockResolvedValue({
-            data: {
-                message: 'ok',
-                data: [],
-                meta: {},
-            },
-        })
-        const axiosInstance = Object.assign(request, {
-            interceptors: {
-                request: { use: vi.fn() },
-                response: { use: vi.fn() },
-            },
-            defaults: {},
-        })
-        const createSpy = vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
-
-        core.setAccessValidator(async () => true)
-
-        expect(core.getClientId()).toBeUndefined()
-        expect(core.getClientSecret()).toBeUndefined()
-        await expect(core.api.testExamples.list()).resolves.toEqual([])
-        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
-            headers: expect.objectContaining({
-                Authorization: 'Bearer auth-only-token',
-            }),
-        }))
-
-        await rm(tempDir, { recursive: true, force: true })
     })
 
     it('still requires a client secret when auth is not configured', async () => {
-        const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oapiex-sdk-kit-empty-config-'))
-        vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
-        resetConfig()
+        await withClearedCredentialEnv(async () => {
+            const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oapiex-sdk-kit-empty-config-'))
+            vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
+            resetConfig()
 
-        expect(() => new TestCore({
-            clientId: 'client-id',
-            environment: 'sandbox',
-        })).toThrow('Client Secret is required to initialize API instance when auth is not provided')
+            expect(() => new TestCore({
+                clientId: 'client-id',
+                environment: 'sandbox',
+            })).toThrow('Client Secret is required to initialize API instance when auth is not provided')
 
-        await rm(tempDir, { recursive: true, force: true })
+            await rm(tempDir, { recursive: true, force: true })
+        })
     })
 
     it('keeps bearer auth helper working for authorization headers', async () => {

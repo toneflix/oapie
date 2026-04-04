@@ -1,5 +1,4 @@
 import { defineConfig } from 'tsdown'
-import { rmSync } from 'node:fs'
 
 export default defineConfig([
     {
@@ -8,7 +7,7 @@ export default defineConfig([
             contracts: 'src/Contracts/index.ts',
         },
         exports: true,
-        format: ['esm', 'cjs'],
+        format: ['esm'],
         outDir: 'dist',
         dts: true,
         sourcemap: false,
@@ -21,24 +20,5 @@ export default defineConfig([
             '@h3ravel/shared',
         ],
         clean: true,
-        outExtensions (ctx) {
-            return {
-                'js': ctx.format === 'es' ? '.mjs' : '.cjs',
-                'dts': '.d.ts'
-            }
-        },
-        hooks (hooks) {
-            hooks.hook('build:done', (ctx) => {
-                try {
-                    // Get the absolute output directory
-                    const outDir = ctx.options.outDir ?? 'dist'
-                    // Delete unnecessary folders or files
-                    rmSync(`${outDir}/contracts.cjs`)
-                    rmSync(`${outDir}/contracts.js`)
-                } catch (error) {
-                    console.error('Error during post-build cleanup:', error)
-                }
-            })
-        },
     },
 ]) 

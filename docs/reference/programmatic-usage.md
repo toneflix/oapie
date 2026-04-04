@@ -30,7 +30,7 @@ The core programmatic pieces are:
 - `extractReadmeOperationFromHtml`: extract a normalized operation from HTML
 - `transformer.createDocument`: convert extracted operations into an OpenAPI-like document
 - `TypeScriptGenerator.generateModule`: emit a TypeScript OpenAPI module from an OpenAPI-like document
-- `defineConfig`: merge config with defaults
+- `defineConfig`: typed helper for authoring config objects
 - `startBrowserSession` and `endBrowserSession`: control shared browser sessions for advanced workflows
 
 ## Extract A Single Operation

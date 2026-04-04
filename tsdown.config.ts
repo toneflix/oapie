@@ -13,6 +13,9 @@ export default defineConfig([
             'fs',
             'path',
             'os',
+            'chalk',
+            'jiti',
+            '@h3ravel/shared',
         ],
         clean: true,
         outExtensions (ctx) {
@@ -33,6 +36,8 @@ export default defineConfig([
             'fs',
             'path',
             'os',
+            'jiti',
+            '@h3ravel/shared',
         ],
         clean: true,
         outExtensions: () => ({ 'js': '.mjs' })

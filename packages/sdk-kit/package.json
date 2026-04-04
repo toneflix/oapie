@@ -14,15 +14,15 @@
   "publishConfig": {
     "access": "public"
   },
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.cts",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
     "./contracts": {
-      "import": "./dist/contracts.js",
+      "import": "./dist/contracts.mjs",
       "require": "./dist/contracts.cjs"
     },
     "./package.json": "./package.json"

@@ -5,6 +5,29 @@ export interface OpenApiSdkParameterManifest {
     required: boolean
 }
 
+export interface OpenApiSdkSecurityRequirementSchemeManifest {
+    name: string
+    scopes: string[]
+}
+
+export interface OpenApiSdkSecurityRequirementManifest {
+    schemes: OpenApiSdkSecurityRequirementSchemeManifest[]
+}
+
+export interface OpenApiSdkSecuritySchemeManifest {
+    name: string
+    helperName: string
+    description?: string
+    type: 'http' | 'apiKey' | 'oauth2' | 'openIdConnect'
+    authType: 'bearer' | 'basic' | 'apiKey' | 'oauth2'
+    scheme?: string
+    bearerFormat?: string
+    in?: 'header' | 'query' | 'cookie'
+    parameterName?: string
+    openIdConnectUrl?: string
+    scopes?: string[]
+}
+
 export interface OpenApiSdkOperationManifest {
     path: string
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -21,6 +44,7 @@ export interface OpenApiSdkOperationManifest {
     pathParams: OpenApiSdkParameterManifest[]
     queryParams: OpenApiSdkParameterManifest[]
     headerParams: OpenApiSdkParameterManifest[]
+    security?: OpenApiSdkSecurityRequirementManifest[]
 }
 
 export interface OpenApiSdkGroupManifest {
@@ -31,6 +55,8 @@ export interface OpenApiSdkGroupManifest {
 
 export interface OpenApiSdkManifest {
     groups: OpenApiSdkGroupManifest[]
+    securitySchemes: OpenApiSdkSecuritySchemeManifest[]
+    security?: OpenApiSdkSecurityRequirementManifest[]
 }
 
 export interface OpenApiRuntimeBundle<TApi = unknown> {
@@ -234,6 +260,7 @@ export const exampleDocumentManifest = {
             ],
         },
     ],
+    securitySchemes: [],
 } as const satisfies OpenApiSdkManifest
 
 export const exampleDocumentSdk: OpenApiRuntimeBundle<ExampleDocumentApi> = {

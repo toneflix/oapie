@@ -16,9 +16,17 @@ export default defineConfig([
             'fs',
             'path',
             'os',
-            'dotenv'
+            'dotenv',
+            'jiti',
+            '@h3ravel/shared',
         ],
         clean: true,
+        outExtensions (ctx) {
+            return {
+                'js': ctx.format === 'es' ? '.mjs' : '.cjs',
+                'dts': '.d.ts'
+            }
+        },
         hooks (hooks) {
             hooks.hook('build:done', (ctx) => {
                 try {

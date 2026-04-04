@@ -2,6 +2,8 @@ import { XGenericObject } from './Interfaces'
 
 export type Environment = 'sandbox' | 'live'
 
+export type DebugLevel = 0 | 1 | 2 | 3
+
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export type ResponseStatus = 'failed' | 'success'
@@ -150,11 +152,11 @@ export interface InitOptions {
     /**
      * Your API Public Key
      */
-    clientId: string
+    clientId?: string
     /**
      * Your API Secret Key
      */
-    clientSecret: string
+    clientSecret?: string
     /**
      * Your API Encryption Key
      */
@@ -179,6 +181,10 @@ export interface InitOptions {
      * Request authentication strategy or strategies.
      */
     auth?: AuthConfig | AuthConfig[]
+    /**
+     * HTTP debug verbosity. Use 0 to disable logging.
+     */
+    debugLevel?: DebugLevel
 }
 
 export interface UserConfig {

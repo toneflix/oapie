@@ -1,6 +1,6 @@
 import './utilities/global'
 
-import { AccessValidationResult, AuthConfig, Environment, InitOptions, UserConfig } from './Contracts/Core'
+import { AccessValidationResult, AuthConfig, DebugLevel, Environment, InitOptions, UserConfig } from './Contracts/Core'
 import { InferRuntimeSdkApi, RuntimeSdkBundle } from './types'
 
 import { BaseApi } from './Apis/BaseApi'
@@ -12,17 +12,17 @@ import { defineConfig, getConfig } from './utilities/Manager'
 export class Core {
     static apiClass: typeof BaseApi = BaseApi
 
-    debugLevel = 0
+    debugLevel: DebugLevel = 0
 
     /**
      * Client ID
      */
-    private clientId: string
+    private clientId?: string
 
     /**
      * Client Secret
      */
-    private clientSecret: string
+    private clientSecret?: string
 
     /**
      * API Environment
@@ -59,9 +59,9 @@ export class Core {
     ) {
         const currentConfig = getConfig()
 
-        if (typeof clientId === 'object') {
-            this.clientId = clientId.clientId
-            this.clientSecret = clientId.clientSecret
+        if (clientId && typeof clientId === 'object') {
+            this.clientId = Core.normalizeCredential(clientId.clientId)
+            this.clientSecret = Core.normalizeCredential(clientId.clientSecret)
             this.environment = clientId.environment
                 ?? currentConfig.environment
                 ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
@@ -74,9 +74,12 @@ export class Core {
                 encryptionKey: clientId.encryptionKey,
                 auth: clientId.auth,
             })
+            this.debug(clientId.debugLevel ?? 0)
         } else {
-            this.clientId = clientId ?? process.env.CLIENT_ID ?? ''
-            this.clientSecret = clientSecret ?? process.env.CLIENT_SECRET ?? ''
+            this.clientId = Core.normalizeCredential(clientId)
+                ?? Core.normalizeCredential(process.env.CLIENT_ID)
+            this.clientSecret = Core.normalizeCredential(clientSecret)
+                ?? Core.normalizeCredential(process.env.CLIENT_SECRET)
             this.environment = env
                 ?? currentConfig.environment
                 ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
@@ -86,10 +89,11 @@ export class Core {
                 environment: this.environment,
                 encryptionKey: encryptionKey ?? config?.encryptionKey,
             })
+            this.debug(0)
         }
 
-        if (!this.clientId || !this.clientSecret) {
-            throw new Error('Client ID and Client Secret are required to initialize API instance')
+        if (!this.clientSecret && !this.hasConfiguredAuth()) {
+            throw new Error('Client Secret is required to initialize API instance when auth is not provided')
         }
 
         this.api = this.createApi()
@@ -139,7 +143,7 @@ export class Core {
      * @param level 
      * @returns 
      */
-    debug (level: number = 0): this {
+    debug (level: DebugLevel = 0): this {
         this.debugLevel = level
 
         Http.setDebugLevel(level)
@@ -263,6 +267,26 @@ export class Core {
         }
 
         return undefined
+    }
+
+    private static normalizeCredential (value?: string): string | undefined {
+        if (typeof value !== 'string') {
+            return undefined
+        }
+
+        const normalized = value.trim()
+
+        return normalized ? normalized : undefined
+    }
+
+    private hasConfiguredAuth (): boolean {
+        const auth = getConfig().auth
+
+        if (Array.isArray(auth)) {
+            return auth.length > 0
+        }
+
+        return auth != null
     }
 
     private isAuthConfigOrArray (value: unknown): value is AuthConfig | AuthConfig[] {

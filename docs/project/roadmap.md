@@ -43,7 +43,7 @@ This page collects likely future directions for OAPIEX. It is not a strict relea
 - add first-class config for inclusion and exclusion rules during crawl
 - support custom output paths and file naming strategies
 - add machine-readable summary output for CI pipelines
-- add optional debug modes for inspecting intermediate extraction state
+- expand debug surfaces beyond the current SDK HTTP controls (`client.debug(level)` and init-time `debugLevel`)
 
 ## Performance And Reliability
 

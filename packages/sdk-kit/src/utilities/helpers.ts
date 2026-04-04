@@ -42,4 +42,4 @@ export const buildUrl = (baseUrl: string, ...endpoint: string[]) => {
     const cleanedUrl = url.replace(/([^:]\/)\/+/g, '$1')
 
     return cleanedUrl
-}
+} 

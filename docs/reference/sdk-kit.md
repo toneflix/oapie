@@ -43,22 +43,58 @@ const sdk = new Core({
     'X-Trace-Source': 'custom-sdk',
   },
   timeout: 15000,
+  debugLevel: 1,
   encryptionKey: process.env.ENCRYPTION_KEY,
 });
 ```
 
 Supported init fields:
 
-- `clientId`
-- `clientSecret`
+- `clientId` optional, useful when a validator or token exchange still needs client credentials
+- `clientSecret` optional when `auth` is already configured
 - `environment`
 - `urls`
 - `headers`
 - `timeout`
 - `encryptionKey`
 - `auth`
+- `debugLevel` optional HTTP debug verbosity, one of `0 | 1 | 2 | 3`
 
 `urls` lets you override the base URL for `sandbox` and `live`, which is useful when an API has regional hosts, mock servers, or staging gateways.
+
+If you already have an access token or API key, you can initialize without client credentials:
+
+```ts
+const sdk = new Core({
+  environment: 'sandbox',
+  auth: {
+    type: 'bearer',
+    token: process.env.ACCESS_TOKEN!,
+  },
+  debugLevel: 1,
+});
+```
+
+## Debugging
+
+SDK HTTP debugging is disabled by default.
+
+- Use `sdk.debug(level)` after initialization when you want to turn debugging on or change verbosity dynamically.
+- Use `debugLevel` in `InitOptions` when you want debug logging enabled immediately during construction.
+- Supported levels are `0 | 1 | 2 | 3`.
+
+```ts
+const sdk = new Core({
+  environment: 'sandbox',
+  auth: {
+    type: 'bearer',
+    token: process.env.ACCESS_TOKEN!,
+  },
+  debugLevel: 2,
+});
+
+sdk.debug(3);
+```
 
 ## Auth Strategies
 
@@ -344,22 +380,25 @@ You can also call `core.setAuth(...)`, `core.clearAuth()`, or `core.configure(..
 For APIs that return expiring bearer tokens, `createAccessTokenCache()` avoids hitting the auth endpoint on every request.
 
 ```ts
-import axios from 'axios'
-import { createAccessTokenCache } from '@oapiex/sdk-kit'
+import axios from 'axios';
+import { createAccessTokenCache } from '@oapiex/sdk-kit';
 
 const tokenCache = createAccessTokenCache(async (core) => {
-  const response = await axios.post('https://developersandbox-api.example.com/auth/token', {
-    client_id: core.getClientId(),
-    client_secret: core.getClientSecret(),
-  })
+  const response = await axios.post(
+    'https://developersandbox-api.example.com/auth/token',
+    {
+      client_id: core.getClientId(),
+      client_secret: core.getClientSecret(),
+    },
+  );
 
   return {
     token: response.data.access_token,
     expiresInSeconds: Math.max((response.data.expires_in ?? 60) - 30, 1),
-  }
-})
+  };
+});
 
-sdk.setAccessValidator(tokenCache)
+sdk.setAccessValidator(tokenCache);
 ```
 
 `createAccessTokenCache()` returns an access validator that caches the auth result until expiry, then refreshes it automatically on the next guarded request.

@@ -134,14 +134,15 @@ await sdk.api.examples.list();
 
 `Core` and `createSdk()` both accept the same `InitOptions` object.
 
-- `clientId`: required API client identifier
-- `clientSecret`: required API client secret
+- `clientId`: optional API client identifier, useful when your validator or auth exchange still needs client credentials
+- `clientSecret`: optional when `auth` is already provided, otherwise required
 - `environment`: selects `sandbox` or `live`
 - `urls`: optional base URL overrides per environment
 - `headers`: optional default headers added to every request
 - `timeout`: optional Axios timeout in milliseconds
 - `encryptionKey`: optional runtime encryption key override
 - `auth`: one auth strategy or an array of strategies applied to outgoing requests
+- `debugLevel`: optional HTTP debug verbosity, one of `0 | 1 | 2 | 3`
 
 ```ts
 const sdk = new Core({
@@ -156,7 +157,42 @@ const sdk = new Core({
     'X-Trace-Source': 'example-sdk',
   },
   timeout: 15000,
+  debugLevel: 1,
 });
+```
+
+If you already have a token or API key strategy, you can initialize without client credentials:
+
+```ts
+const sdk = new Core({
+  environment: 'sandbox',
+  auth: {
+    type: 'bearer',
+    token: process.env.ACCESS_TOKEN!,
+  },
+  debugLevel: 1,
+});
+```
+
+## Debugging
+
+SDK HTTP debugging is disabled by default.
+
+- Use `sdk.debug(level)` after initialization when you want to enable or adjust request logging.
+- Use `debugLevel` in `InitOptions` when you want debug logging active immediately during construction.
+- Supported levels are `0 | 1 | 2 | 3`.
+
+```ts
+const sdk = new Core({
+  environment: 'sandbox',
+  auth: {
+    type: 'bearer',
+    token: process.env.ACCESS_TOKEN!,
+  },
+  debugLevel: 2,
+});
+
+sdk.debug(3);
 ```
 
 ## Auth Shapes

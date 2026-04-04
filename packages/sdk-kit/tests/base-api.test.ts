@@ -164,6 +164,22 @@ describe('BaseApi', () => {
         })
     })
 
+    it('accepts debugLevel during initialization and forwards it to Http', () => {
+        const setDebugLevelSpy = vi.spyOn(Http, 'setDebugLevel')
+
+        const core = new TestCore({
+            environment: 'sandbox',
+            auth: {
+                type: 'bearer',
+                token: 'debug-token',
+            },
+            debugLevel: 2,
+        })
+
+        expect(core.debugLevel).toBe(2)
+        expect(setDebugLevelSpy).toHaveBeenCalledWith(2)
+    })
+
     it('applies drop-in auth strategies to outgoing requests', async () => {
         new TestCore({
             clientId: 'client-id',
@@ -257,6 +273,52 @@ describe('BaseApi', () => {
                 api_key: 'query-key',
             },
         }))
+    })
+
+    it('allows auth-only initialization without client credentials', async () => {
+        const core = new TestCore({
+            environment: 'sandbox',
+            urls: {
+                sandbox: 'https://sandbox.override.test/api',
+            },
+            auth: {
+                type: 'bearer',
+                token: 'auth-only-token',
+            },
+        })
+        const request = vi.fn().mockResolvedValue({
+            data: {
+                message: 'ok',
+                data: [],
+                meta: {},
+            },
+        })
+        const axiosInstance = Object.assign(request, {
+            interceptors: {
+                request: { use: vi.fn() },
+                response: { use: vi.fn() },
+            },
+            defaults: {},
+        })
+        const createSpy = vi.spyOn(axios, 'create').mockReturnValue(axiosInstance as unknown as ReturnType<typeof axios.create>)
+
+        core.setAccessValidator(async () => true)
+
+        expect(core.getClientId()).toBeUndefined()
+        expect(core.getClientSecret()).toBeUndefined()
+        await expect(core.api.testExamples.list()).resolves.toEqual([])
+        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: 'Bearer auth-only-token',
+            }),
+        }))
+    })
+
+    it('still requires a client secret when auth is not configured', () => {
+        expect(() => new TestCore({
+            clientId: 'client-id',
+            environment: 'sandbox',
+        })).toThrow('Client Secret is required to initialize API instance when auth is not provided')
     })
 
     it('keeps bearer auth helper working for authorization headers', async () => {

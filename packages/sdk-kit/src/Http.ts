@@ -8,6 +8,7 @@ import { AuthConfig, AuthRequestConfig, HttpMethod, UnifiedResponse } from './Co
 import { HttpException } from './Exceptions/HttpException'
 import { XGenericObject } from './Contracts/Interfaces'
 import { defineConfig, getConfig } from './utilities/Manager'
+import { Logger } from './utilities/Log'
 
 export class Http {
     /**
@@ -134,7 +135,7 @@ export class Http {
 
         if (Http.debugLevel > 0) {
             instance.interceptors.request.use(request => {
-                console.log('Starting Request', JSON.stringify({
+                Logger.run('Starting Request:', {
                     url: request.url,
                     method: request.method,
                     // Remove auth token from logs for security
@@ -143,33 +144,33 @@ export class Http {
                     ) : request.headers,
                     params: request.params,
                     data: request.data,
-                }, null, 2))
+                })
 
                 return request
             }, error => {
-                console.log('Request Error:', JSON.stringify(error, null, 2))
+                Logger.run('Request Error:', error)
 
                 return Promise.reject(error)
             })
 
             instance.interceptors.response.use(response => {
-                console.log('Response:', JSON.stringify({
+                Logger.run('Response:', {
                     status: response.status,
                     // Remove auth token from logs for security
                     data: Http.debugLevel < 3 ? Object.fromEntries(
                         Object.entries(response.data || {}).filter(([key]) => key.toLowerCase() !== 'access_token')
                     ) : response.data,
-                }, null, 2))
+                })
 
                 return response
             }, error => {
-                console.log('Response Error:', JSON.stringify({
+                Logger.run('Response Error:', {
                     status: error.response?.status,
                     // Remove auth token from logs for security
                     data: Object.fromEntries(
                         Object.entries(error.response?.data || {}).filter(([key]) => key.toLowerCase() !== 'access_token')
                     ),
-                }, null, 2))
+                })
 
                 return Promise.reject(error)
             })

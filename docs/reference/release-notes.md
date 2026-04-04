@@ -1,5 +1,42 @@
 # Release Notes
 
+## oapiex 0.3.5
+
+`0.3.5` is a patch release focused on sdk-kit configuration usability, typed config authoring, and small packaging polish for the shared SDK runtime.
+
+### Highlights
+
+- Added file-backed sdk-kit initialization through `oapiex.config.ts`, `oapiex.config.js`, and `oapiex.config.cjs`.
+- Added typed `sdkKit` config support on the root `oapiex` config surface so shared config files now get editor autocomplete.
+- Improved `@oapiex/sdk-kit` package metadata and loader internals to reduce editor friction around config authoring and module loading.
+
+### SDK Kit Configuration
+
+- `@oapiex/sdk-kit` now reads init defaults from `oapiex.config.*` in the current working directory.
+- Config-file loading supports the full sdk-kit init surface, including:
+  - `clientId`
+  - `clientSecret`
+  - `environment`
+  - `urls`
+  - `headers`
+  - `timeout`
+  - `encryptionKey`
+  - `auth`
+  - `debugLevel`
+- Explicit constructor options still override values loaded from `oapiex.config.*`.
+- Shared extractor config files can now safely scope SDK runtime defaults under `sdkKit` or `sdk`.
+
+### Typing And Packaging Improvements
+
+- Added root config typing for `sdkKit` and `sdk` so `defineConfig({ sdkKit: { ... } })` has autocomplete support.
+- Updated sdk-kit package export metadata to expose the main declaration entry more clearly for editor resolution.
+- Switched the Jiti loader setup to the supported named export and removed the deprecated direct callable usage warning from the sdk-kit config loader.
+
+### Documentation And Validation
+
+- Updated sdk-kit docs to prefer `export default defineConfig(...)` for both dedicated sdk-kit config files and shared root `oapiex.config.*` files.
+- Expanded sdk-kit config coverage with tests for file-backed config loading and explicit override precedence.
+
 ## oapiex 0.3.4
 
 `0.3.4` is a focused patch release that tightens generated SDK naming and improves runtime SDK diagnostics and initialization ergonomics.

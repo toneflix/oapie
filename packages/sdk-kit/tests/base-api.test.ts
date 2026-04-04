@@ -376,6 +376,10 @@ describe('BaseApi', () => {
     })
 
     it('allows auth-only initialization without client credentials', async () => {
+        const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oapiex-sdk-kit-empty-config-'))
+        vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
+        resetConfig()
+
         const core = new TestCore({
             environment: 'sandbox',
             urls: {
@@ -412,13 +416,21 @@ describe('BaseApi', () => {
                 Authorization: 'Bearer auth-only-token',
             }),
         }))
+
+        await rm(tempDir, { recursive: true, force: true })
     })
 
-    it('still requires a client secret when auth is not configured', () => {
+    it('still requires a client secret when auth is not configured', async () => {
+        const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oapiex-sdk-kit-empty-config-'))
+        vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
+        resetConfig()
+
         expect(() => new TestCore({
             clientId: 'client-id',
             environment: 'sandbox',
         })).toThrow('Client Secret is required to initialize API instance when auth is not provided')
+
+        await rm(tempDir, { recursive: true, force: true })
     })
 
     it('keeps bearer auth helper working for authorization headers', async () => {

@@ -1,7 +1,7 @@
 {
   "name": "@oapiex/sdk-kit",
   "type": "module",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "A TypeScript Base for building SDKs using OpenAPI specifications extracted by OAPIEX.",
   "main": "./dist/index.cjs",
   "private": false,
@@ -15,10 +15,9 @@
     "access": "public"
   },
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },

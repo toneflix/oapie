@@ -23,7 +23,7 @@
     "build": "tsdown"
   },
   "dependencies": {
-    "@oapiex/sdk-kit": "^0.1.1"
+    "@oapiex/sdk-kit": "file:../../packages/sdk-kit"
   },
   "devDependencies": {
     "@types/node": "^20.14.5",

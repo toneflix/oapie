@@ -1,5 +1,27 @@
 # Release Notes
 
+## oapiex 0.3.4
+
+`0.3.4` is a focused patch release that tightens generated SDK naming and improves runtime SDK diagnostics and initialization ergonomics.
+
+### Highlights
+
+- Added init-time SDK debug configuration through `debugLevel: 0 | 1 | 2 | 3`, alongside the existing `client.debug(level)` runtime control.
+- Relaxed SDK initialization so `clientId` is optional and `clientSecret` is only required when no auth strategy is already configured.
+- Fixed generated SDK naming so singular words like `status` are preserved instead of being incorrectly trimmed to values like `Statu`.
+
+### SDK Runtime Improvements
+
+- `@oapiex/sdk-kit` now supports `debugLevel` directly in `InitOptions`, making it possible to enable request logging during SDK construction.
+- Expanded SDK docs to explain the current debug flow, including when to use `debugLevel` versus `client.debug(level)`.
+- Improved runtime logging support and related test coverage around SDK initialization and HTTP debug behavior.
+
+### SDK Generation Fixes
+
+- Corrected singularization rules in the TypeScript naming pipeline so singular segments ending in `s` are preserved.
+- Added regression coverage to ensure generated schema types, API class names, and manifests keep `status`-based names intact.
+- Updated the checked-in generated SDK example to align with the corrected naming output.
+
 ## oapiex 0.3.0
 
 `0.3.0` expands the generated SDK runtime beyond route scaffolding into real-world client setup, authentication, and security-aware SDK output. This release adds configurable runtime clients, generated auth helpers from OpenAPI security schemes, validator-driven auth refresh, and stronger docs around using `@oapiex/sdk-kit` directly or through generated SDK packages.

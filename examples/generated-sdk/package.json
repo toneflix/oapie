@@ -23,6 +23,7 @@
     "build": "tsdown"
   },
   "dependencies": {
+    "@h3ravel/shared": "^0.30.3",
     "@oapiex/sdk-kit": "file:../../packages/sdk-kit"
   },
   "devDependencies": {

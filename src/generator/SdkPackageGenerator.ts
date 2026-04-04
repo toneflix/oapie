@@ -1,8 +1,9 @@
 import { OperationTypeRefs, SdkManifest, SdkNamingStrategyOptions, SdkSecurityRequirementManifest, SdkSecuritySchemeManifest } from './types'
 
 import type { OpenApiDocumentLike } from '../types/open-api'
-import { TypeScriptGenerator } from './TypeScriptGenerator'
 import { TypeBuilder } from './TypeBuilder'
+import { TypeScriptGenerator } from './TypeScriptGenerator'
+import { execFileSync } from 'node:child_process'
 
 export interface SdkPackageGeneratorOptions extends SdkNamingStrategyOptions {
     outputMode?: 'runtime' | 'classes' | 'both'
@@ -16,6 +17,8 @@ export interface SdkPackageGeneratorOptions extends SdkNamingStrategyOptions {
 }
 
 export class SdkPackageGenerator {
+    private static publishedPackageVersionRanges = new Map<string, string>()
+
     private typeBuilder = new TypeBuilder()
     private typeScriptGenerator = new TypeScriptGenerator()
 
@@ -434,6 +437,8 @@ export class SdkPackageGenerator {
     }
 
     private renderPackageJson (options: SdkPackageGeneratorOptions): string {
+        const sdkKitPackageName = options.sdkKitPackageName ?? '@oapiex/sdk-kit'
+
         return JSON.stringify({
             name: options.packageName ?? 'generated-sdk',
             type: 'module',
@@ -459,7 +464,8 @@ export class SdkPackageGenerator {
                 build: 'tsdown',
             },
             dependencies: {
-                [options.sdkKitPackageName ?? '@oapiex/sdk-kit']: '^0.1.1',
+                '@h3ravel/shared': this.resolvePublishedPackageVersionRange('@h3ravel/shared'),
+                [sdkKitPackageName]: this.resolvePublishedPackageVersionRange(sdkKitPackageName),
             },
             devDependencies: {
                 '@types/node': '^20.14.5',
@@ -468,6 +474,40 @@ export class SdkPackageGenerator {
                 vitest: '^3.2.4',
             },
         }, null, 2)
+    }
+
+    /**
+     * Attempts to resolve the published version range for the given package name by querying npm.
+     * If the package is not found or an error occurs, it falls back to a default version range.
+     * 
+     * @param packageName The name of the npm package to query.
+     * @returns           The resolved version range for the package.
+     */
+    private resolvePublishedPackageVersionRange (packageName: string): string {
+        const cached = SdkPackageGenerator.publishedPackageVersionRanges.get(packageName)
+
+        if (cached) {
+            return cached
+        }
+
+        try {
+            const version = JSON.parse(execFileSync('npm', ['view', packageName, 'version', '--json'], {
+                encoding: 'utf8',
+                stdio: ['ignore', 'pipe', 'ignore'],
+            })) as string
+
+            if (typeof version === 'string' && version.trim().length > 0) {
+                const versionRange = `^${version.trim()}`
+
+                SdkPackageGenerator.publishedPackageVersionRanges.set(packageName, versionRange)
+
+                return versionRange
+            }
+        } catch {
+            SdkPackageGenerator.publishedPackageVersionRanges.set(packageName, 'latest')
+        }
+
+        return 'latest'
     }
 
     private renderReadme (

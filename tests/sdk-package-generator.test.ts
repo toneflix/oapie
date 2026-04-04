@@ -1,8 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SdkPackageGenerator } from '../src/generator/SdkPackageGenerator'
+import { execFileSync } from 'node:child_process'
+
+vi.mock('node:child_process', () => ({
+    execFileSync: vi.fn(),
+}))
+
 
 describe('SdkPackageGenerator', () => {
+    const publishedSdkKitVersion = '0.1.12'
+
+    beforeEach(() => {
+        vi.mocked(execFileSync).mockReset()
+        vi.mocked(execFileSync).mockReturnValue(JSON.stringify(publishedSdkKitVersion))
+    })
+
     const document = {
         openapi: '3.1.0',
         info: {
@@ -174,6 +187,7 @@ describe('SdkPackageGenerator', () => {
         const files = new SdkPackageGenerator().generate(document as never)
 
         expect(files['package.json']).toContain('"name": "generated-sdk"')
+        expect(files['package.json']).toContain(`"@oapiex/sdk-kit": "^${publishedSdkKitVersion}"`)
         expect(files['README.md']).toContain('# generated-sdk')
         expect(files['README.md']).toContain('Generated TypeScript SDK emitted by oapiex with both class-based and runtime-first entrypoints.')
         expect(files['README.md']).toContain('pnpm add generated-sdk')
@@ -209,6 +223,10 @@ describe('SdkPackageGenerator', () => {
         expect(files['src/index.ts']).toContain('createSdk')
         expect(files['tests/exports.test.ts']).toContain('expect(sdk.createClient).toBeTypeOf(\'function\')')
         expect(files['tests/exports.test.ts']).toContain('expect(sdk.extractedApiDocumentSdk).toBeDefined()')
+        expect(execFileSync).toHaveBeenCalledWith('npm', ['view', '@oapiex/sdk-kit', 'version', '--json'], {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+        })
     })
 
     it('supports runtime-only and flat signature class generation modes', () => {

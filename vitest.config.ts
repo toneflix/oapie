@@ -1,9 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import path from 'node:path'
-import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
-    plugins: [tsconfigPaths()],
     resolve: {
         alias: {
             '@oapiex/sdk-kit': path.resolve(import.meta.dirname, 'packages/sdk-kit/src/index.ts'),

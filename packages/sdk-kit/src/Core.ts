@@ -58,39 +58,21 @@ export class Core {
         config?: Partial<UserConfig>
     ) {
         const currentConfig = getConfig()
+        const resolvedConfig = clientId && typeof clientId === 'object'
+            ? this.resolveInitOptionsFromObject(clientId, currentConfig)
+            : this.resolveInitOptionsFromArgs(clientId, clientSecret, encryptionKey, env, config, currentConfig)
 
-        if (clientId && typeof clientId === 'object') {
-            this.clientId = Core.normalizeCredential(clientId.clientId)
-            this.clientSecret = Core.normalizeCredential(clientId.clientSecret)
-            this.environment = clientId.environment
-                ?? currentConfig.environment
-                ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
-                ?? 'live'
-            this.configure({
-                environment: this.environment,
-                urls: clientId.urls,
-                headers: clientId.headers,
-                timeout: clientId.timeout,
-                encryptionKey: clientId.encryptionKey,
-                auth: clientId.auth,
-            })
-            this.debug(clientId.debugLevel ?? 0)
-        } else {
-            this.clientId = Core.normalizeCredential(clientId)
-                ?? Core.normalizeCredential(process.env.CLIENT_ID)
-            this.clientSecret = Core.normalizeCredential(clientSecret)
-                ?? Core.normalizeCredential(process.env.CLIENT_SECRET)
-            this.environment = env
-                ?? currentConfig.environment
-                ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
-                ?? 'live'
-            this.configure({
-                ...(config ?? {}),
-                environment: this.environment,
-                encryptionKey: encryptionKey ?? config?.encryptionKey,
-            })
-            this.debug(0)
-        }
+        this.clientId = Core.normalizeCredential(resolvedConfig.clientId)
+        this.clientSecret = Core.normalizeCredential(resolvedConfig.clientSecret)
+        this.environment = resolvedConfig.environment
+            ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
+            ?? 'live'
+
+        this.configure({
+            ...resolvedConfig,
+            environment: this.environment,
+        })
+        this.debug(resolvedConfig.debugLevel ?? 0)
 
         if (!this.clientSecret && !this.hasConfiguredAuth()) {
             throw new Error('Client Secret is required to initialize API instance when auth is not provided')
@@ -132,6 +114,18 @@ export class Core {
         if (nextConfig.environment) {
             this.environment = nextConfig.environment
             this.builder.setEnvironment(nextConfig.environment)
+        }
+
+        if ('clientId' in config) {
+            this.clientId = Core.normalizeCredential(nextConfig.clientId)
+        }
+
+        if ('clientSecret' in config) {
+            this.clientSecret = Core.normalizeCredential(nextConfig.clientSecret)
+        }
+
+        if (nextConfig.debugLevel !== undefined) {
+            this.debug(nextConfig.debugLevel)
         }
 
         return this
@@ -279,6 +273,78 @@ export class Core {
         return normalized ? normalized : undefined
     }
 
+    private resolveInitOptionsFromObject (
+        config: InitOptions,
+        currentConfig: UserConfig
+    ): UserConfig {
+        return {
+            ...currentConfig,
+            ...config,
+            clientId: Core.normalizeCredential(config.clientId)
+                ?? Core.normalizeCredential(currentConfig.clientId)
+                ?? Core.normalizeCredential(process.env.CLIENT_ID),
+            clientSecret: Core.normalizeCredential(config.clientSecret)
+                ?? Core.normalizeCredential(currentConfig.clientSecret)
+                ?? Core.normalizeCredential(process.env.CLIENT_SECRET),
+            environment: config.environment
+                ?? currentConfig.environment
+                ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
+                ?? 'live',
+            encryptionKey: config.encryptionKey
+                ?? currentConfig.encryptionKey,
+            urls: config.urls
+                ?? currentConfig.urls,
+            headers: config.headers
+                ?? currentConfig.headers,
+            timeout: config.timeout
+                ?? currentConfig.timeout,
+            auth: config.auth
+                ?? currentConfig.auth,
+            debugLevel: config.debugLevel
+                ?? currentConfig.debugLevel
+                ?? 0,
+        }
+    }
+
+    private resolveInitOptionsFromArgs (
+        clientId: string | undefined,
+        clientSecret: string | undefined,
+        encryptionKey: string | undefined,
+        env: Environment | undefined,
+        config: Partial<UserConfig> | undefined,
+        currentConfig: UserConfig
+    ): UserConfig {
+        return {
+            ...currentConfig,
+            ...(config ?? {}),
+            clientId: Core.normalizeCredential(clientId)
+                ?? Core.normalizeCredential(currentConfig.clientId)
+                ?? Core.normalizeCredential(process.env.CLIENT_ID),
+            clientSecret: Core.normalizeCredential(clientSecret)
+                ?? Core.normalizeCredential(currentConfig.clientSecret)
+                ?? Core.normalizeCredential(process.env.CLIENT_SECRET),
+            environment: env
+                ?? config?.environment
+                ?? currentConfig.environment
+                ?? Core.normalizeEnvironment(process.env.ENVIRONMENT)
+                ?? 'live',
+            encryptionKey: encryptionKey
+                ?? config?.encryptionKey
+                ?? currentConfig.encryptionKey,
+            urls: config?.urls
+                ?? currentConfig.urls,
+            headers: config?.headers
+                ?? currentConfig.headers,
+            timeout: config?.timeout
+                ?? currentConfig.timeout,
+            auth: config?.auth
+                ?? currentConfig.auth,
+            debugLevel: config?.debugLevel
+                ?? currentConfig.debugLevel
+                ?? 0,
+        }
+    }
+
     private hasConfiguredAuth (): boolean {
         const auth = getConfig().auth
 
@@ -309,6 +375,6 @@ export class Core {
             return false
         }
 
-        return ['auth', 'environment', 'headers', 'timeout', 'urls', 'encryptionKey'].some((key) => key in value)
+        return ['auth', 'clientId', 'clientSecret', 'debugLevel', 'environment', 'headers', 'timeout', 'urls', 'encryptionKey'].some((key) => key in value)
     }
 }

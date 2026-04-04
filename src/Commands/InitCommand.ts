@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url)
 export class InitCommand extends Command {
     protected signature = `init 
         {--f|force : Overwrite existing config}
-        {--p|pkg? : Generate config for another package (e.g. sdk-kit) instead of oapiex [sdk]}
+        {--S|sdk-kit : Also include default SDK config values.}
     `
     protected description = 'Generate a default oapiex.config.ts in the current directory'
 
@@ -16,15 +16,9 @@ export class InitCommand extends Command {
         const cwd = process.cwd()
         const configPath = path.join(cwd, 'oapiex.config.js')
         const force = this.option('force', false)
-        const pkg = this.option('pkg', 'base').trim().toLowerCase() as 'base' | 'sdk'
+        const sdkKit = this.option('sdkKit', false)
 
-        const configTemplate = {
-            base: this.buildConfigTemplate(),
-            sdk: this.buildSdkConfigTemplate(),
-        }
-
-        if (!['base', 'sdk'].includes(pkg))
-            return void this.error(`Invalid package option: ${pkg}`)
+        const configTemplate = this.buildConfigTemplate(sdkKit)
 
         try {
             await fs.access(configPath)
@@ -36,11 +30,11 @@ export class InitCommand extends Command {
             // File does not exist, proceed
         }
 
-        await fs.writeFile(configPath, configTemplate[pkg], 'utf8')
+        await fs.writeFile(configPath, configTemplate, 'utf8')
         this.line(`Created ${configPath} `)
     }
 
-    buildConfigTemplate (): string {
+    buildConfigTemplate (addSdkConfig: boolean = false): string {
         const def = defaultConfig
         const from = __filename.includes('node_modules') ? 'oapiex' : './src/Manager'
 
@@ -59,24 +53,24 @@ export class InitCommand extends Command {
             `  userAgent: '${def.userAgent}',`,
             `  retryCount: ${def.retryCount},`,
             `  retryDelay: ${def.retryDelay},`,
+            addSdkConfig ? this.buildSdkConfigTemplate() : undefined,
             '})',
-        ].join('\n')
+        ].filter(Boolean).join('\n')
     }
 
     buildSdkConfigTemplate (): string {
         return [
-            'import { defineConfig } from \'@oapiex/sdk-kit\'',
-            '',
-            '/**',
-            ' * See https://toneflix.github.io/oapiex/configuration for docs',
-            ' */',
-            'export default defineConfig({',
-            '  environment: \'sandbox\',',
-            '  urls: {',
-            '    live: \'https://live.oapiex.com\',',
-            '    sandbox: \'https://sandbox.oapiex.com\',',
+            '  sdkKit: {',
+            '    clientId: \'your-client-id\',',
+            '    clientSecret: \'your-client-secret\',',
+            '    encryptionKey: \'your-encryption-key\',',
+            '    environment: \'sandbox\',',
+            '    urls: {',
+            '      live: \'https://live.oapiex.com\',',
+            '      sandbox: \'https://sandbox.oapiex.com\',',
+            '    },',
+            '    debugLevel: 0,',
             '  },',
-            '})',
         ].join('\n')
     }
 }

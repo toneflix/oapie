@@ -174,6 +174,60 @@ const sdk = new Core({
 });
 ```
 
+`@oapiex/sdk-kit` can also read SDK init config from `oapiex.config.ts`, `oapiex.config.js`, or `oapiex.config.cjs` in the current working directory.
+
+For an SDK-focused config file, prefer `defineConfig()` from `@oapiex/sdk-kit`:
+
+```ts
+import { defineConfig } from '@oapiex/sdk-kit';
+
+export default defineConfig({
+  clientId: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+  environment: 'sandbox',
+  urls: {
+    sandbox: 'https://sandbox-api.example.com',
+  },
+  headers: {
+    'X-Trace-Source': 'example-sdk',
+  },
+  timeout: 15000,
+  auth: {
+    type: 'bearer',
+    token: process.env.ACCESS_TOKEN,
+  },
+  debugLevel: 1,
+});
+```
+
+If you use the same `oapiex.config.*` file for extraction and SDK runtime defaults, prefer the root `oapiex` helper and scope the SDK settings under `sdkKit`:
+
+```ts
+import { defineConfig } from 'oapiex';
+
+export default defineConfig({
+  sdkKit: {
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    environment: 'sandbox',
+    urls: {
+      sandbox: 'https://sandbox-api.example.com',
+    },
+    headers: {
+      'X-Trace-Source': 'example-sdk',
+    },
+    timeout: 15000,
+    auth: {
+      type: 'bearer',
+      token: process.env.ACCESS_TOKEN,
+    },
+    debugLevel: 1,
+  },
+});
+```
+
+Explicit constructor options override values loaded from `oapiex.config.*`.
+
 ## Debugging
 
 SDK HTTP debugging is disabled by default.

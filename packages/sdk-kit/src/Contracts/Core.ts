@@ -187,11 +187,4 @@ export interface InitOptions {
     debugLevel?: DebugLevel
 }
 
-export interface UserConfig {
-    environment?: Environment
-    urls?: UserUrls
-    headers?: Record<string, string>
-    timeout?: number
-    encryptionKey?: string
-    auth?: AuthConfig | AuthConfig[]
-}
+export interface UserConfig extends InitOptions {}

@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import axios from 'axios'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 
 import { BadRequestException } from '../src/Exceptions/BadRequestException'
 import { BaseApi } from '../src/Apis/BaseApi'
@@ -178,6 +181,103 @@ describe('BaseApi', () => {
 
         expect(core.debugLevel).toBe(2)
         expect(setDebugLevelSpy).toHaveBeenCalledWith(2)
+    })
+
+    it('loads sdk init options from oapiex.config.cjs', async () => {
+        const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oapiex-sdk-kit-config-'))
+        const setDebugLevelSpy = vi.spyOn(Http, 'setDebugLevel')
+
+        await writeFile(path.join(tempDir, 'oapiex.config.cjs'), `module.exports = {
+        sdkKit: {
+            clientId: 'config-client-id',
+            clientSecret: 'config-client-secret',
+            environment: 'sandbox',
+            urls: { sandbox: 'https://config.override.test/api' },
+            headers: { 'X-Config': 'loaded' },
+            timeout: 2468,
+            encryptionKey: 'config-encryption-key',
+            auth: { type: 'bearer', token: 'config-token' },
+            debugLevel: 3,
+        }}`)
+
+        vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
+        resetConfig()
+
+        const core = new TestCore()
+
+        expect(core.getClientId()).toBe('config-client-id')
+        expect(core.getClientSecret()).toBe('config-client-secret')
+        expect(core.getEnvironment()).toBe('sandbox')
+        expect(core.debugLevel).toBe(3)
+        expect(setDebugLevelSpy).toHaveBeenCalledWith(3)
+        expect(getConfig()).toMatchObject({
+            clientId: 'config-client-id',
+            clientSecret: 'config-client-secret',
+            environment: 'sandbox',
+            encryptionKey: 'config-encryption-key',
+            timeout: 2468,
+            headers: {
+                'X-Config': 'loaded',
+            },
+            urls: {
+                sandbox: 'https://config.override.test/api',
+            },
+            auth: {
+                type: 'bearer',
+                token: 'config-token',
+            },
+            debugLevel: 3,
+        })
+        expect(Builder.baseUrl()).toBe('https://config.override.test/api/')
+
+        await rm(tempDir, { recursive: true, force: true })
+    })
+
+    it('lets explicit init options override oapiex.config values', async () => {
+        const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oapiex-sdk-kit-config-'))
+
+        await writeFile(path.join(tempDir, 'oapiex.config.cjs'), `module.exports = {
+        sdkKit: {
+            clientId: 'config-client-id',
+            clientSecret: 'config-client-secret',
+            environment: 'sandbox',
+            urls: { sandbox: 'https://config.override.test/api' },
+            headers: { 'X-Config': 'loaded' },
+            timeout: 2468,
+            debugLevel: 1,
+        }}`)
+
+        vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
+        resetConfig()
+
+        const core = new TestCore({
+            clientId: 'explicit-client-id',
+            auth: {
+                type: 'bearer',
+                token: 'explicit-token',
+            },
+            headers: {
+                'X-Explicit': 'yes',
+            },
+            debugLevel: 2,
+        })
+
+        expect(core.getClientId()).toBe('explicit-client-id')
+        expect(core.getClientSecret()).toBe('config-client-secret')
+        expect(core.debugLevel).toBe(2)
+        expect(core.getConfig()).toMatchObject({
+            auth: {
+                type: 'bearer',
+                token: 'explicit-token',
+            },
+            headers: {
+                'X-Explicit': 'yes',
+            },
+            timeout: 2468,
+            debugLevel: 2,
+        })
+
+        await rm(tempDir, { recursive: true, force: true })
     })
 
     it('applies drop-in auth strategies to outgoing requests', async () => {

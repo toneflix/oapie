@@ -1,5 +1,37 @@
 # Release Notes
 
+## oapiex 0.3.7
+
+`0.3.7` is a patch release focused on config authoring ergonomics, clearer separation between typed config helpers and runtime config resolution, and improved runtime example compatibility.
+
+### Highlights
+
+- Refactored `defineConfig()` in both `oapiex` and `@oapiex/sdk-kit` into a lightweight typed helper for autocomplete-only usage.
+- Moved runtime config merging into dedicated internal helpers so config files no longer pull in heavy runtime modules just to get type support.
+- Improved config-file loading and example runtime compatibility across the main library, sdk-kit, and checked-in example SDKs.
+
+### Config Authoring And Loading
+
+- Added dedicated lightweight config helper modules for both the root package and `@oapiex/sdk-kit`.
+- `defineConfig()` now behaves as a simple identity-style typing helper rather than performing runtime default merging.
+- Runtime defaults are now applied through explicit config resolution paths such as:
+  - `resolveConfig()` in the main library
+  - `Application` config consumption
+  - sdk-kit runtime config update and load flows
+- The main library now uses Jiti for `oapiex.config.ts`, `oapiex.config.js`, and `oapiex.config.cjs` loading, aligning config-file resolution with sdk-kit.
+
+### SDK Kit And Example Runtime Fixes
+
+- Updated sdk-kit internal config state management to use dedicated runtime update helpers instead of overloading `defineConfig()`.
+- Fixed checked-in runtime and combined SDK examples so their manifest bundle types include the current runtime security metadata shape, including `securitySchemes`.
+- Preserved typed autocomplete support for shared `sdkKit` and `sdk` config blocks in root `oapiex.config.*` files.
+
+### Test And Developer Experience Improvements
+
+- Removed heavy runtime imports from the checked-in root config path so test workers no longer pay unnecessary startup cost when config files are discovered.
+- Restored fast and stable full-suite execution after config-loader and sdk-kit runtime changes.
+- Updated programmatic usage docs to clarify that `defineConfig()` is a typed config helper and that runtime defaults are applied later by the consuming runtime.
+
 ## oapiex 0.3.5
 
 `0.3.5` is a patch release focused on sdk-kit configuration usability, typed config authoring, and small packaging polish for the shared SDK runtime.

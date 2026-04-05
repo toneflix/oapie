@@ -9,7 +9,7 @@ vi.mock('node:child_process', () => ({
 
 
 describe('SdkPackageGenerator', () => {
-    const publishedSdkKitVersion = '0.1.12'
+    const publishedSdkKitVersion = '0.1.13'
 
     beforeEach(() => {
         vi.mocked(execFileSync).mockReset()

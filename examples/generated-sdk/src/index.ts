@@ -1,7 +1,8 @@
+import type { InitOptions, BaseApi as KitBaseApi, Core as KitCore } from '@oapiex/sdk-kit'
+
 import type { ExtractedApiDocumentApi } from './Schema'
-import { extractedApiDocumentSdk } from './Schema'
 import { createSdk as createBoundSdk } from '@oapiex/sdk-kit'
-import type { BaseApi as KitBaseApi, Core as KitCore, InitOptions } from '@oapiex/sdk-kit'
+import { extractedApiDocumentSdk } from './Schema'
 
 export * from './Schema'
 export { ApiBinder } from './ApiBinder'
@@ -77,6 +78,7 @@ export {
     ForbiddenRequestException,
     Http,
     HttpException,
+    setConfigFileBasename,
     UnauthorizedRequestException,
     WebhookValidator,
     createSdk,

@@ -22,6 +22,7 @@ export {
     ForbiddenRequestException,
     Http,
     HttpException,
+    setConfigFileBasename,
     UnauthorizedRequestException,
     WebhookValidator,
     createSdk,

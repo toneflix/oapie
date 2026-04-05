@@ -10,6 +10,7 @@ describe('example-both-sdk exports', () => {
         expect(sdk.ProfileApi).toBeTypeOf('function')
         expect(sdk.createClient).toBeTypeOf('function')
         expect(sdk.createSdk).toBeTypeOf('function')
+        expect(sdk.setConfigFileBasename).toBeTypeOf('function')
         expect(sdk.exampleDocumentSdk).toBeDefined()
         expect(sdk.exampleDocumentManifest).toBeDefined()
     })

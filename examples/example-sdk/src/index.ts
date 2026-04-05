@@ -12,6 +12,7 @@ export {
     ForbiddenRequestException,
     Http,
     HttpException,
+    setConfigFileBasename,
     UnauthorizedRequestException,
     WebhookValidator,
 } from '@oapiex/sdk-kit'

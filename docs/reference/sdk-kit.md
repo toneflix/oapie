@@ -77,6 +77,18 @@ const sdk = new Core({
 
 `@oapiex/sdk-kit` can also read SDK init config from `oapiex.config.ts`, `oapiex.config.js`, or `oapiex.config.cjs` in the current working directory.
 
+If your SDK should look for a different basename, switch it before the first client is created:
+
+```ts
+import { Core, setConfigFileBasename } from '@oapiex/sdk-kit';
+
+setConfigFileBasename('maplerad.config');
+
+const sdk = new Core();
+```
+
+You can pass either the basename stem such as `maplerad.config` or a concrete filename such as `maplerad.config.cjs`. The loader will normalize that value and look for `.ts`, `.js`, and `.cjs` variants under the selected basename.
+
 For an SDK-focused config file, prefer `defineConfig()` from `@oapiex/sdk-kit`:
 
 ```ts
@@ -127,7 +139,7 @@ export default defineConfig({
 });
 ```
 
-Explicit constructor options override values loaded from `oapiex.config.*`.
+Explicit constructor options override values loaded from the selected config basename.
 
 ## Debugging
 

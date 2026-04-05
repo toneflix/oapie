@@ -880,6 +880,7 @@ export class SdkPackageGenerator {
         const assertions = [
             "        expect(sdk.createClient).toBeTypeOf('function')",
             "        expect(sdk.createSdk).toBeTypeOf('function')",
+            "        expect(sdk.setConfigFileBasename).toBeTypeOf('function')",
             `        expect(sdk.${rootExportName}Sdk).toBeDefined()`,
             `        expect(sdk.${rootExportName}Manifest).toBeDefined()`,
         ]
@@ -949,6 +950,7 @@ export class SdkPackageGenerator {
         lines.push('    ForbiddenRequestException,')
         lines.push('    Http,')
         lines.push('    HttpException,')
+        lines.push('    setConfigFileBasename,')
         lines.push('    UnauthorizedRequestException,')
         lines.push('    WebhookValidator,')
         lines.push('    createSdk,')

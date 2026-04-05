@@ -1,12 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { loadUserConfig, resetConfig, setConfigFileBasename } from '../src/utilities/Manager'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 
 import { Core } from '../src/Core'
 import { Http } from '../src/Http'
 import { createSdk } from '../src/RuntimeSdk'
+import os from 'node:os'
+import path from 'node:path'
 
 describe('RuntimeSdk', () => {
     afterEach(() => {
         vi.restoreAllMocks()
+        resetConfig()
     })
 
     it('binds a manifest-driven runtime API onto Core', async () => {
@@ -149,5 +154,60 @@ describe('RuntimeSdk', () => {
 
         await expect(core.api.examples.list({ code: 'NG' })).resolves.toEqual([{ id: 'ex_1' }])
         expect(sendSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads sdk config from a custom basename', async () => {
+        const tempDir = await mkdtemp(path.join(os.tmpdir(), 'sdk-kit-custom-config-'))
+
+        await writeFile(path.join(tempDir, 'maplerad.config.cjs'), `module.exports = {
+        clientId: 'config-client-id',
+        clientSecret: 'config-client-secret',
+        environment: 'sandbox',
+        urls: {
+            sandbox: 'https://sandbox-api.example.com',
+        },
+    }`)
+
+        setConfigFileBasename('maplerad.config')
+
+        const config = loadUserConfig(tempDir)
+
+        expect(config).toMatchObject({
+            clientId: 'config-client-id',
+            clientSecret: 'config-client-secret',
+            environment: 'sandbox',
+            urls: {
+                sandbox: 'https://sandbox-api.example.com',
+            },
+        })
+
+        await rm(tempDir, { recursive: true, force: true })
+    })
+
+    it('uses a custom basename when initializing Core from the current working directory', async () => {
+        const tempDir = await mkdtemp(path.join(os.tmpdir(), 'sdk-kit-custom-config-'))
+
+        await writeFile(path.join(tempDir, 'maplerad.config.cjs'), `module.exports = {
+        clientId: 'config-client-id',
+        clientSecret: 'config-client-secret',
+        environment: 'sandbox',
+        urls: {
+            sandbox: 'https://sandbox-api.example.com',
+        },
+    }`)
+
+        setConfigFileBasename('maplerad.config.cjs')
+        vi.spyOn(process, 'cwd').mockReturnValue(tempDir)
+
+        const core = new Core()
+
+        expect(core.getClientId()).toBe('config-client-id')
+        expect(core.getClientSecret()).toBe('config-client-secret')
+        expect(core.getEnvironment()).toBe('sandbox')
+        expect(core.getConfig().urls).toMatchObject({
+            sandbox: 'https://sandbox-api.example.com',
+        })
+
+        await rm(tempDir, { recursive: true, force: true })
     })
 })

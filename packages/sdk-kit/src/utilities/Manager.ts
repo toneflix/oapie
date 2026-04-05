@@ -1,18 +1,31 @@
 import { InitOptions, UserConfig } from '../Contracts/Core'
 import { createDefaultConfig, defaultConfig, mergeConfig } from '../config'
+
 import { createJiti } from 'jiti'
 import path from 'node:path'
 
-const CONFIG_BASENAMES = [
-    'oapiex.config.ts',
-    'oapiex.config.js',
-    'oapiex.config.cjs',
-] as const
+const DEFAULT_CONFIG_BASENAME = 'oapiex.config'
+const CONFIG_EXTENSIONS = ['ts', 'js', 'cjs'] as const
 
 let globalConfig: UserConfig = createDefaultConfig()
 let loadedConfigRoot: string | null = null
+let configBasename = DEFAULT_CONFIG_BASENAME
 
 type SyncJitiLoader = (id: string) => unknown
+
+const resolveConfigBasenames = (): string[] => {
+    return CONFIG_EXTENSIONS.map((extension) => `${configBasename}.${extension}`)
+}
+
+const normalizeConfigBasename = (value: string): string => {
+    const normalizedValue = value.trim()
+
+    if (!normalizedValue) {
+        return DEFAULT_CONFIG_BASENAME
+    }
+
+    return normalizedValue.replace(/\.(?:ts|js|cjs)$/u, '')
+}
 
 const pickInitOptions = (value: unknown): Partial<InitOptions> | null => {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -46,7 +59,7 @@ const loadUserConfig = (rootDir: string = process.cwd()): Partial<UserConfig> | 
     })
     const syncLoad = jiti as unknown as SyncJitiLoader
 
-    for (const basename of CONFIG_BASENAMES) {
+    for (const basename of resolveConfigBasenames()) {
         const configPath = path.join(rootDir, basename)
 
         try {
@@ -67,6 +80,16 @@ const loadUserConfig = (rootDir: string = process.cwd()): Partial<UserConfig> | 
 
     return null
 }
+
+const setConfigFileBasename = (value: string): string => {
+    configBasename = normalizeConfigBasename(value)
+    loadedConfigRoot = null
+    globalConfig = createDefaultConfig()
+
+    return configBasename
+}
+
+const getConfigFileBasename = (): string => configBasename
 
 const ensureConfigLoaded = (rootDir: string = process.cwd()): UserConfig => {
     if (loadedConfigRoot === rootDir) {
@@ -98,13 +121,16 @@ const getConfig = (): UserConfig => ensureConfigLoaded()
 
 const resetConfig = (): UserConfig => {
     loadedConfigRoot = null
+    configBasename = DEFAULT_CONFIG_BASENAME
     globalConfig = createDefaultConfig()
 
     return globalConfig
 }
 
 export {
+    getConfigFileBasename,
     getConfig,
+    setConfigFileBasename,
     updateConfig,
     globalConfig,
     defaultConfig,

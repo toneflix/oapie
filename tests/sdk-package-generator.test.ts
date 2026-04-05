@@ -221,7 +221,9 @@ describe('SdkPackageGenerator', () => {
         expect(files['src/index.ts']).not.toContain('export * from \'./Apis/ExampleApp\'')
         expect(files['src/index.ts']).toContain('): KitCore & { api: KitBaseApi & ExtractedApiDocumentApi } =>')
         expect(files['src/index.ts']).toContain('createSdk')
+        expect(files['src/index.ts']).toContain('setConfigFileBasename')
         expect(files['tests/exports.test.ts']).toContain('expect(sdk.createClient).toBeTypeOf(\'function\')')
+        expect(files['tests/exports.test.ts']).toContain('expect(sdk.setConfigFileBasename).toBeTypeOf(\'function\')')
         expect(files['tests/exports.test.ts']).toContain('expect(sdk.extractedApiDocumentSdk).toBeDefined()')
         expect(execFileSync).toHaveBeenCalledWith('npm', ['view', '@oapiex/sdk-kit', 'version', '--json'], {
             encoding: 'utf8',

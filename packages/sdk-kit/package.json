@@ -3,7 +3,6 @@
   "type": "module",
   "version": "0.1.14",
   "description": "A TypeScript Base for building SDKs using OpenAPI specifications extracted by OAPIEX.",
-  "main": "./dist/index.js",
   "private": false,
   "homepage": "https://toneflix.github.io/oapiex/reference/sdk-kit",
   "repository": {
@@ -14,11 +13,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./contracts": "./dist/contracts.js",
+    ".": "./dist/index.mjs",
+    "./contracts": "./dist/contracts.mjs",
     "./package.json": "./package.json"
   },
   "files": [

@@ -9,14 +9,16 @@ export default defineConfig([
         minify: false,
         exports: true,
         sourcemap: false,
-        external: [
-            'fs',
-            'path',
-            'os',
-            'chalk',
-            'jiti',
-            '@h3ravel/shared',
-        ],
+        deps: {
+            neverBundle: [
+                'fs',
+                'path',
+                'os',
+                'chalk',
+                'jiti',
+                '@h3ravel/shared',
+            ]
+        },
         clean: true,
         outExtensions (ctx) {
             return {
@@ -32,13 +34,15 @@ export default defineConfig([
         dts: false,
         minify: true,
         sourcemap: false,
-        external: [
-            'fs',
-            'path',
-            'os',
-            'jiti',
-            '@h3ravel/shared',
-        ],
+        deps: {
+            neverBundle: [
+                'fs',
+                'path',
+                'os',
+                'jiti',
+                '@h3ravel/shared',
+            ]
+        },
         clean: true,
         outExtensions: () => ({ 'js': '.mjs' })
     }

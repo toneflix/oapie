@@ -468,10 +468,10 @@ export class SdkPackageGenerator {
                 [sdkKitPackageName]: this.resolvePublishedPackageVersionRange(sdkKitPackageName),
             },
             devDependencies: {
-                '@types/node': '^20.14.5',
-                tsdown: '^0.20.1',
-                typescript: '^5.4.5',
-                vitest: '^3.2.4',
+                '@types/node': '^25.8.0',
+                tsdown: '^0.22.0',
+                typescript: '^6.0.3',
+                vitest: '^4.1.6',
             },
         }, null, 2)
     }

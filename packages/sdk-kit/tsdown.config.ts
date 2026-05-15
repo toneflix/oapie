@@ -11,14 +11,16 @@ export default defineConfig([
         outDir: 'dist',
         dts: true,
         sourcemap: false,
-        external: [
-            'fs',
-            'path',
-            'os',
-            'dotenv',
-            'jiti',
-            '@h3ravel/shared',
-        ],
+        deps: {
+            neverBundle: [
+                'fs',
+                'path',
+                'os',
+                'dotenv',
+                'jiti',
+                '@h3ravel/shared',
+            ]
+        },
         clean: true,
     },
 ]) 
